@@ -921,29 +921,15 @@ class ProductController extends Controller
             // BOM re-save logic removed as table does not exist
             // DB::table('product_boms')->where('product_id', $id)->delete();
 
-            // ✅ Update WarehouseStock when stock quantities change
+            // ✅ Update WarehouseStock box quantity based on new pieces_per_box (preserve total_pieces)
             $warehouseStock = \App\Models\WarehouseStock::where('product_id', $id)->first();
-            $newTotalPieces = 0;
-            if ($mode === 'by_cartons') {
-                $newTotalPieces = ($piecesPerBox * $boxesQuantity) + $loosePieces;
-            } elseif ($mode === 'by_size') {
-                $newTotalPieces = $boxesQuantity * $piecesPerBox;
-            } elseif ($mode === 'by_pieces') {
-                $newTotalPieces = $pieceQuantity;
-            }
+            
+            $ppb = $piecesPerBox > 0 ? $piecesPerBox : 1;
 
             if ($warehouseStock) {
-                $warehouseStock->quantity      = $boxesQuantity;
-                $warehouseStock->total_pieces  = $newTotalPieces;
+                // Keep the actual pieces we have, just update the box display approximation
+                $warehouseStock->quantity = round($warehouseStock->total_pieces / $ppb, 2);
                 $warehouseStock->save();
-            } else {
-                \App\Models\WarehouseStock::create([
-                    'warehouse_id' => \App\Models\Warehouse::first()->id ?? 1,
-                    'product_id'   => $id,
-                    'quantity'     => $boxesQuantity,
-                    'total_pieces' => $newTotalPieces,
-                    'remarks'      => 'Updated via edit',
-                ]);
             }
 
             // Manual stock adjustment (extra on top)
