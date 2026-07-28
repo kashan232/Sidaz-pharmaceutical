@@ -106,7 +106,9 @@ class SaleReturnController extends Controller
             $item->max_returnable = max(0, $item->qty - $alreadyReturned);
             
             // Pricing: use actual sale price (price_per_piece from POS/Sale), not product master price
-            $item->price = $item->price_per_piece ?? $item->price ?? $item->per_price ?? 0;
+            $item->price = (!empty($item->price_per_piece) && $item->price_per_piece > 0) 
+                ? $item->price_per_piece 
+                : ($item->price ?? $item->per_price ?? 0);
             $item->discount = $item->discount ?? $item->per_discount ?? 0;
         });
         
