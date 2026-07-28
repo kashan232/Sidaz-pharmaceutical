@@ -8,14 +8,16 @@ use App\Models\Product;
 use App\Models\StockMovement;
 use App\Models\Subcategory;
 use App\Models\WarehouseStock;
+use App\Models\Unit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 
 class ProductImportExportController extends Controller
 {
     // ──────────────────────────────────────────────────────────
-    //  TEMPLATE  –  blank CSV with correct headers
+    //  TEMPLATE  –  blank CSV with correct headers and example variants
     // ──────────────────────────────────────────────────────────
     public function template()
     {
@@ -23,29 +25,69 @@ class ProductImportExportController extends Controller
 
         $callback = function () use ($headers) {
             $handle = fopen('php://output', 'w');
-            // UTF-8 BOM so Excel opens it correctly
-            fputs($handle, "\xEF\xBB\xBF");
             fputcsv($handle, $headers);
 
-            // One sample row so the user understands the format
+            // Row 1: Product A - Variant 1 (Red, Small)
             fputcsv($handle, [
-                '',             // id (leave blank for new)
-                '',             // item_code (leave blank for new)
-                'Sample Product Name',
-                '123456789012', // barcode
-                'My Category',  // category name
-                'My Sub Category',
-                'My Brand',
-                '',             // model
-                'by_cartons',   // size_mode: by_cartons OR by_pieces
-                '12',           // pcs_per_carton
-                '0',            // stock_total_pieces
-                '500',          // sale_price_per_piece
-                '300',          // purchase_price_per_piece
-                '0',            // sale_discount_percent
-                '0',            // purchase_discount_percent
-                '10',           // alert_quantity
-                '1',            // is_active (1=yes, 0=no)
+                'ITEM-0001',            // Item Code
+                'T-Shirt V-Neck',       // Product Name
+                'Clothing',             // Category
+                'Shirts',               // Sub Category
+                'Nike',                 // Brand
+                'by_pieces',            // Size Mode
+                '1',                    // Pieces Per Box
+                'Red Small',            // Variant Name
+                'S',                    // Variant Size
+                'Red',                  // Variant Color
+                '876543210001',         // Variant Barcode
+                '50',                   // Variant Stock Pieces
+                '1500',                 // Variant Sale Price (Piece)
+                '1000',                 // Variant Purchase Price (Piece)
+                '0',                    // Variant Sale Discount %
+                '0',                    // Variant Purchase Discount %
+                '1',                    // Is Active
+            ]);
+
+            // Row 2: Product A - Variant 2 (Blue, Large)
+            fputcsv($handle, [
+                'ITEM-0001',            // Item Code
+                'T-Shirt V-Neck',       // Product Name
+                'Clothing',             // Category
+                'Shirts',               // Sub Category
+                'Nike',                 // Brand
+                'by_pieces',            // Size Mode
+                '1',                    // Pieces Per Box
+                'Blue Large',           // Variant Name
+                'L',                    // Variant Size
+                'Blue',                 // Variant Color
+                '876543210002',         // Variant Barcode
+                '30',                   // Variant Stock Pieces
+                '1600',                 // Variant Sale Price (Piece)
+                '1000',                 // Variant Purchase Price (Piece)
+                '0',                    // Variant Sale Discount %
+                '0',                    // Variant Purchase Discount %
+                '1',                    // Is Active
+            ]);
+
+            // Row 3: Product B - Single Variant Product
+            fputcsv($handle, [
+                'ITEM-0002',            // Item Code
+                'Jeans Classic',        // Product Name
+                'Clothing',             // Category
+                'Pants',                // Sub Category
+                'Levi',                 // Brand
+                'by_pieces',            // Size Mode
+                '1',                    // Pieces Per Box
+                'Jeans Classic',        // Variant Name
+                '-',                    // Variant Size
+                '-',                    // Variant Color
+                '876543210003',         // Variant Barcode
+                '100',                  // Variant Stock Pieces
+                '2500',                 // Variant Sale Price (Piece)
+                '1800',                 // Variant Purchase Price (Piece)
+                '5',                    // Variant Sale Discount %
+                '0',                    // Variant Purchase Discount %
+                '1',                    // Is Active
             ]);
 
             fclose($handle);
@@ -61,51 +103,95 @@ class ProductImportExportController extends Controller
     }
 
     // ──────────────────────────────────────────────────────────
-    //  EXPORT  –  all products as CSV
+    //  EXPORT  –  all products as CSV (Splitting Variants)
     // ──────────────────────────────────────────────────────────
-    public function export()
+    public function export(Request $request)
     {
-        $products = Product::with([
+        $query = Product::with([
             'category_relation',
             'sub_category_relation',
-            'brand',
-            'warehouseStocks',
-        ])->withSum('warehouseStocks', 'total_pieces')
-          ->orderBy('id')
-          ->get();
+            'brand'
+        ])->orderBy('id');
+        
+        // Basic filtering
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+        if ($request->filled('brand_id')) {
+            $query->where('brand_id', $request->brand_id);
+        }
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === 'active' ? 1 : 0);
+        }
 
+        $products = $query->get();
         $headers = $this->csvHeaders();
 
         $callback = function () use ($products, $headers) {
             $handle = fopen('php://output', 'w');
-            fputs($handle, "\xEF\xBB\xBF");
             fputcsv($handle, $headers);
 
             foreach ($products as $p) {
-                $totalPieces = (int) ($p->warehouse_stocks_sum_total_pieces ?? 0);
-                $sizeMode    = $p->size_mode ?? 'by_cartons';
-
-                fputcsv($handle, [
-                    $p->id,
-                    $p->item_code,
-                    $p->item_name,
-                    $p->barcode_path,
-                    $p->category_relation->name ?? '',
-                    $p->sub_category_relation->name ?? '',
-                    $p->brand->name ?? '',
-                    $p->model,
-                    $sizeMode,
-                    $p->pieces_per_box ?? 1,
-                    $totalPieces,
-                    round($p->sale_price_per_piece ?? 0, 2),
-                    round($p->purchase_price_per_piece ?? 0, 2),
-                    $p->sale_discount_percent ?? 0,
-                    $p->purchase_discount_percent ?? 0,
-                    $p->alert_quantity ?? 0,
-                    $p->is_active ? 1 : 0,
-                ]);
+                $sizeMode    = $p->size_mode ?? 'by_pieces';
+                $pcsPerBox   = $p->pieces_per_box > 0 ? $p->pieces_per_box : 1;
+                
+                $variants = [];
+                if (!empty($p->color)) {
+                    $parsed = is_string($p->color) ? json_decode($p->color, true) : $p->color;
+                    if (is_array($parsed) && count($parsed) > 0 && isset($parsed[0]['name'])) {
+                        $variants = $parsed;
+                    }
+                }
+                
+                // Fallback to single variant row if no variants defined
+                if (empty($variants)) {
+                    $ws = WarehouseStock::where('product_id', $p->id)->first();
+                    $stockPieces = $ws ? $ws->total_pieces : 0;
+                    
+                    fputcsv($handle, [
+                        $p->item_code,
+                        $p->item_name,
+                        $p->category_relation->name ?? '',
+                        $p->sub_category_relation->name ?? '',
+                        $p->brand->name ?? '',
+                        $sizeMode,
+                        $pcsPerBox,
+                        $p->item_name, // Variant Name
+                        '-', // Variant Size
+                        '-', // Variant Color
+                        $p->barcode_path, // Variant Barcode
+                        $stockPieces,
+                        round($p->sale_price_per_piece ?? 0, 2),
+                        round($p->purchase_price_per_piece ?? 0, 2),
+                        $p->sale_discount_percent ?? 0,
+                        $p->purchase_discount_percent ?? 0,
+                        $p->is_active ? 1 : 0,
+                    ]);
+                } else {
+                    foreach ($variants as $v) {
+                        fputcsv($handle, [
+                            $p->item_code,
+                            $p->item_name,
+                            $p->category_relation->name ?? '',
+                            $p->sub_category_relation->name ?? '',
+                            $p->brand->name ?? '',
+                            $sizeMode,
+                            $pcsPerBox,
+                            $v['name'] ?? $p->item_name,
+                            $v['size'] ?? '-',
+                            $v['color'] ?? '-',
+                            $v['barcode'] ?? $p->barcode_path,
+                            $v['stock'] ?? 0,
+                            round($v['sale_price'] ?? $p->sale_price_per_piece ?? 0, 2),
+                            round($v['wholesale_price'] ?? $p->wholesale_price ?? 0, 2),
+                            round($v['purch_price'] ?? $p->purchase_price_per_piece ?? 0, 2),
+                            $p->sale_discount_percent ?? 0, // Master sale discount
+                            $p->purchase_discount_percent ?? 0, // Master purchase discount
+                            $p->is_active ? 1 : 0,
+                        ]);
+                    }
+                }
             }
-
             fclose($handle);
         };
 
@@ -121,259 +207,496 @@ class ProductImportExportController extends Controller
     }
 
     // ──────────────────────────────────────────────────────────
-    //  IMPORT  –  parse CSV, upsert products + stock
+    //  IMPORT STEP 1: VALIDATE & PREVIEW
     // ──────────────────────────────────────────────────────────
-    public function import(Request $request)
+    public function importValidate(Request $request)
     {
         $request->validate([
             'csv_file' => 'required|file|mimes:csv,txt|max:5120',
+            'import_mode' => 'required|in:create,update_only',
         ]);
 
-        $file    = $request->file('csv_file');
-        $handle  = fopen($file->getRealPath(), 'r');
+        $mode = $request->input('import_mode');
+        $autoCreate = $request->has('auto_create');
+        
+        $file = $request->file('csv_file');
+        $handle = fopen($file->getRealPath(), 'r');
 
-        // Remove UTF-8 BOM if present
         $bom = fread($handle, 3);
-        if ($bom !== "\xEF\xBB\xBF") {
-            rewind($handle);
-        }
+        if ($bom !== "\xEF\xBB\xBF") rewind($handle);
 
-        // Read header row
         $headerRow = fgetcsv($handle);
-        if (! $headerRow) {
-            return response()->json(['success' => false, 'message' => 'CSV file is empty or invalid.']);
+        if (!$headerRow) {
+            return redirect()->back()->with('error', 'CSV file is empty or invalid.');
         }
 
-        // Map header names to index positions (case-insensitive, trim)
         $headerMap = [];
         foreach ($headerRow as $i => $col) {
             $headerMap[strtolower(trim($col))] = $i;
         }
+        
+        // Mapping accepted header names (Product Reference is optional now)
+        $requiredCols = [
+            'product_name' => ['product name', 'product_name', 'item_name', 'item_name (*)'],
+            'variant_name' => ['variant name', 'variant_name', 'item_name (*)'],
+            'sale_price' => ['variant sale price', 'sale_price', 'variant_sale_price_per_piece', 'sale_price_per_piece'],
+            'wholesale_price' => ['variant wholesale price', 'wholesale_price', 'wholesale_price'],
+            'purch_price' => ['variant purchase price', 'purchase_price', 'variant_purchase_price_per_piece', 'purchase_price_per_piece'],
+        ];
 
-        $requiredCols = ['item_name (*)'];
-        foreach ($requiredCols as $col) {
-            if (! isset($headerMap[strtolower($col)])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Column \"{$col}\" not found. Please use the correct template.",
-                ]);
+        $matchedHeaders = [];
+        foreach ($requiredCols as $key => $possibleNames) {
+            $found = false;
+            foreach ($possibleNames as $pName) {
+                if (isset($headerMap[$pName])) {
+                    $matchedHeaders[$key] = $headerMap[$pName];
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                return redirect()->back()->with('error', "Required column matching '{$possibleNames[0]}' not found. Please use the downloaded template.");
             }
         }
 
-        // Helper to get value from row by column name
-        $get = function (array $row, string $colName, $default = '') use ($headerMap) {
-            $key = strtolower(trim($colName));
-            return isset($headerMap[$key]) && isset($row[$headerMap[$key]])
-                ? trim($row[$headerMap[$key]])
-                : $default;
-        };
-
-        // Preload lookup tables
-        $categories    = Category::pluck('id', 'name')->toArray();
-        $subCategories = Subcategory::pluck('id', 'name')->toArray();
-        $brands        = Brand::pluck('id', 'name')->toArray();
-
-        // Case-insensitive lookup helper
-        $lookupId = function (array $map, string $name) {
-            if (empty($name)) return null;
-            foreach ($map as $k => $v) {
-                if (strtolower($k) === strtolower($name)) return $v;
+        $get = function (array $row, $possibleNames, $default = '') use ($headerMap) {
+            if (!is_array($possibleNames)) $possibleNames = [$possibleNames];
+            foreach ($possibleNames as $pName) {
+                $key = strtolower(trim($pName));
+                if (isset($headerMap[$key]) && isset($row[$headerMap[$key]])) {
+                    return trim($row[$headerMap[$key]]);
+                }
             }
-            return null;
+            return $default;
         };
 
-        $created  = 0;
-        $updated  = 0;
-        $skipped  = 0;
-        $errors   = [];
-        $rowNum   = 1;
+        $categories = Category::pluck('name', 'id')->map(function($name) { return strtolower($name); })->toArray();
+        $subCategories = Subcategory::pluck('name', 'id')->map(function($name) { return strtolower($name); })->toArray();
+        $brands = Brand::pluck('name', 'id')->map(function($name) { return strtolower($name); })->toArray();
+        
+        $productsByRef = [];
+        $errors = [];
+        $rowNum = 1;
+        $barcodesSeen = [];
+        
+        // For preview tracking
+        $masterDataToCreate = [
+            'categories' => [],
+            'subcategories' => [],
+            'brands' => []
+        ];
 
         while (($row = fgetcsv($handle)) !== false) {
             $rowNum++;
+            if (empty(array_filter($row))) continue;
 
-            // Skip completely empty rows
-            if (empty(array_filter($row))) {
+            $prodRef = $get($row, ['item code', 'item_code', 'product reference', 'product_reference', 'id']);
+            $prodName = $get($row, $requiredCols['product_name']);
+            
+            $isAutoGen = false;
+            if (empty($prodRef)) {
+                $prodRef = 'AUTO_GEN_' . $rowNum;
+                $isAutoGen = true;
+            }
+            
+            if (empty($prodName)) {
+                $errors[] = ["row" => $rowNum, "msg" => "Product Name is required."];
                 continue;
             }
 
-            $itemName  = $get($row, 'item_name (*)');
-            $barcode   = $get($row, 'barcode');
-            $itemCode  = $get($row, 'item_code');
-            $sizeMode  = $get($row, 'size_mode') ?: 'by_cartons';
-
-            // Validate required field
-            if (empty($itemName)) {
-                $errors[]  = "Row {$rowNum}: Item Name is required — skipped.";
-                $skipped++;
-                continue;
+            $catName = $get($row, ['category']);
+            $subCatName = $get($row, ['sub_category', 'sub category']);
+            $brandName = $get($row, ['brand']);
+            $vBarcode = $get($row, ['variant barcode', 'barcode']);
+            
+            if (!empty($vBarcode)) {
+                if (isset($barcodesSeen[$vBarcode])) {
+                    $errors[] = ["row" => $rowNum, "msg" => "Duplicate barcode '$vBarcode' found in CSV (Row ".$barcodesSeen[$vBarcode].")."];
+                }
+                $barcodesSeen[$vBarcode] = $rowNum;
             }
-
-            // Validate size_mode
-            if (! in_array($sizeMode, ['by_cartons', 'by_pieces', 'by_size'])) {
-                $sizeMode = 'by_cartons';
-            }
-
-            // Numeric fields with safe defaults
-            $pcsPerCarton       = max(1, (int) $get($row, 'pcs_per_carton', 1));
-            $stockTotalPieces   = max(0, (int) $get($row, 'stock_total_pieces', 0));
-            $salePricePerPiece  = max(0, (float) $get($row, 'sale_price_per_piece', 0));
-            $purchPricePerPiece = max(0, (float) $get($row, 'purchase_price_per_piece', 0));
-            $saleDisc           = max(0, (float) $get($row, 'sale_discount_%', 0));
-            $purchDisc          = max(0, (float) $get($row, 'purchase_discount_%', 0));
-            $alertQty           = max(0, (int) $get($row, 'alert_quantity', 0));
-            $isActive           = (int) $get($row, 'is_active (1/0)', 1);
-
-            // Lookup category, sub-category, brand IDs
-            $categoryId    = $lookupId($categories,    $get($row, 'category'));
-            $subCategoryId = $lookupId($subCategories, $get($row, 'sub_category'));
-            $brandId       = $lookupId($brands,        $get($row, 'brand'));
-
-            // Calculate derived prices (per carton)
-            $salePricePerBox  = $salePricePerPiece  * $pcsPerCarton;
-            $purchPricePerBox = $purchPricePerPiece * $pcsPerCarton;
-
-            // ── Try to find existing product ──
-            $product = null;
-
-            if (! empty($barcode)) {
-                $product = Product::where('barcode_path', $barcode)->first();
-            }
-
-            if (! $product && ! empty($itemCode)) {
-                $product = Product::where('item_code', $itemCode)->first();
-            }
-
-            try {
-                DB::transaction(function () use (
-                    $product, $itemName, $barcode, $itemCode, $sizeMode,
-                    $pcsPerCarton, $stockTotalPieces, $salePricePerPiece,
-                    $purchPricePerPiece, $salePricePerBox, $purchPricePerBox,
-                    $saleDisc, $purchDisc, $alertQty, $isActive,
-                    $categoryId, $subCategoryId, $brandId,
-                    $get, $row,
-                    &$created, &$updated
-                ) {
-                    $productData = [
-                        'item_name'                 => $itemName,
-                        'category_id'               => $categoryId,
-                        'sub_category_id'           => $subCategoryId,
-                        'brand_id'                  => $brandId,
-                        'model'                     => $get($row, 'model'),
-                        'size_mode'                 => $sizeMode,
-                        'pieces_per_box'            => $pcsPerCarton,
-                        'sale_price_per_piece'      => $salePricePerPiece,
-                        'sale_price_per_box'        => $salePricePerBox,
-                        'purchase_price_per_piece'  => $purchPricePerPiece,
-                        'purchase_price_per_box'    => $purchPricePerBox,
-                        'sale_discount_percent'     => $saleDisc,
-                        'purchase_discount_percent' => $purchDisc,
-                        'alert_quantity'            => $alertQty,
-                        'is_active'                 => $isActive,
-                        // Required DB fields with safe defaults for non-by_size products
-                        'total_m2'                  => 0,
-                        'price_per_m2'              => 0,
-                        'purchase_price_per_m2'     => 0,
-                        'pieces_per_m2'             => 0,
-                        'height'                    => 0,
-                        'width'                     => 0,
-                    ];
-
-                    if ($product) {
-                        // ── UPDATE existing product ──
-                        $product->update($productData);
-
-                        // Stock adjustment
-                        $ws = WarehouseStock::where('product_id', $product->id)
-                            ->where('warehouse_id', 1)
-                            ->first();
-
-                        $currentPieces = $ws ? (int) $ws->total_pieces : 0;
-                        $diff          = $stockTotalPieces - $currentPieces;
-
-                        if ($diff !== 0) {
-                            if ($ws) {
-                                $ws->total_pieces = $stockTotalPieces;
-                                $ws->quantity     = $sizeMode === 'by_cartons' && $pcsPerCarton > 0
-                                    ? floor($stockTotalPieces / $pcsPerCarton)
-                                    : $stockTotalPieces;
-                                $ws->save();
-                            } else {
-                                WarehouseStock::create([
-                                    'warehouse_id' => 1,
-                                    'product_id'   => $product->id,
-                                    'quantity'     => floor($stockTotalPieces / max(1, $pcsPerCarton)),
-                                    'total_pieces' => $stockTotalPieces,
-                                    'remarks'      => 'Import adjustment',
-                                ]);
-                            }
-
-                            // Log stock movement
-                            StockMovement::create([
-                                'product_id' => $product->id,
-                                'type'       => 'adjustment',
-                                'qty'        => $diff,
-                                'ref_type'   => 'IMPORT',
-                                'note'       => 'Stock adjusted via CSV import',
-                            ]);
-                        }
-
-                        $updated++;
-
-                    } else {
-                        // ── CREATE new product ──
-                        $lastProduct = Product::orderBy('id', 'desc')->first();
-                        $nextId      = $lastProduct ? $lastProduct->id + 1 : 1;
-                        $newCode     = 'ITEM-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
-
-                        $newProduct = Product::create(array_merge($productData, [
-                            'creater_id'    => Auth::id(),
-                            'item_code'     => ! empty($itemCode) ? $itemCode : $newCode,
-                            'barcode_path'  => ! empty($barcode)  ? $barcode  : rand(100000000000, 999999999999),
-                            'is_part'       => 0,
-                            'is_assembled'  => 0,
-                        ]));
-
-                        // Initial warehouse stock
-                        WarehouseStock::create([
-                            'warehouse_id' => 1,
-                            'product_id'   => $newProduct->id,
-                            'quantity'     => $sizeMode === 'by_cartons' && $pcsPerCarton > 0
-                                ? floor($stockTotalPieces / $pcsPerCarton)
-                                : $stockTotalPieces,
-                            'total_pieces' => $stockTotalPieces,
-                            'remarks'      => 'Initial Stock via Import',
-                        ]);
-
-                        // Log stock movement
-                        if ($stockTotalPieces > 0) {
-                            StockMovement::create([
-                                'product_id' => $newProduct->id,
-                                'type'       => 'adjustment',
-                                'qty'        => $stockTotalPieces,
-                                'ref_type'   => 'IMPORT',
-                                'note'       => 'Initial Stock via CSV import',
-                            ]);
-                        }
-
-                        $created++;
+            
+            // Check master data
+            if (!empty($catName) && !in_array(strtolower($catName), $categories)) {
+                if ($autoCreate) {
+                    if (!in_array($catName, $masterDataToCreate['categories'])) {
+                        $masterDataToCreate['categories'][] = $catName;
                     }
-                });
-
-            } catch (\Throwable $e) {
-                $errors[] = "Row {$rowNum} ({$itemName}): " . $e->getMessage();
-                $skipped++;
+                } else {
+                    $errors[] = ["row" => $rowNum, "msg" => "Category '$catName' does not exist."];
+                }
             }
+            
+            if (!empty($brandName) && !in_array(strtolower($brandName), $brands)) {
+                if ($autoCreate) {
+                    if (!in_array($brandName, $masterDataToCreate['brands'])) {
+                        $masterDataToCreate['brands'][] = $brandName;
+                    }
+                } else {
+                    $errors[] = ["row" => $rowNum, "msg" => "Brand '$brandName' does not exist."];
+                }
+            }
+
+            if (!isset($productsByRef[$prodRef])) {
+                $productsByRef[$prodRef] = [
+                    'ref' => $prodRef,
+                    'name' => $prodName,
+                    'category' => $catName,
+                    'sub_category' => $subCatName,
+                    'brand' => $brandName,
+                    'size_mode' => $get($row, ['size mode', 'size_mode'], 'by_pieces'),
+                    'pcs_per_carton' => max(1, (int)$get($row, ['pcs per box', 'pieces per box', 'pcs_per_carton'], 1)),
+                    'sale_discount' => max(0, (float)$get($row, ['sale discount %', 'sale_discount_%'], 0)),
+                    'purch_discount' => max(0, (float)$get($row, ['purchase discount %', 'purchase_discount_%'], 0)),
+                    'is_active' => (int)$get($row, ['is_active', 'is active'], 1),
+                    'variants' => []
+                ];
+            } else {
+                // Check conflicting product info
+                if (strtolower($productsByRef[$prodRef]['name']) !== strtolower($prodName)) {
+                    $errors[] = ["row" => $rowNum, "msg" => "Conflicting product name for reference '$prodRef'."];
+                }
+            }
+
+            // Variant Data
+            $productsByRef[$prodRef]['variants'][] = [
+                'row' => $rowNum,
+                'name' => $get($row, $requiredCols['variant_name'], $prodName),
+                'size' => $get($row, ['variant size', 'variant_size'], '-'),
+                'color' => $get($row, ['variant color', 'variant_color'], '-'),
+                'barcode' => $vBarcode,
+                'stock' => max(0, (int)$get($row, ['variant stock pieces', 'variant_stock', 'stock_total_pieces'], 0)),
+                'sale_price' => max(0, (float)$get($row, $requiredCols['sale_price'], 0)),
+                'wholesale_price' => max(0, (float)$get($row, $requiredCols['wholesale_price'], 0)),
+                'purch_price' => max(0, (float)$get($row, $requiredCols['purch_price'], 0)),
+            ];
         }
 
         fclose($handle);
 
-        return response()->json([
-            'success' => true,
-            'created' => $created,
-            'updated' => $updated,
-            'skipped' => $skipped,
-            'errors'  => $errors,
+        // Prepare Preview Summary
+        $existingCodes = Product::pluck('id', 'item_code')->toArray();
+        $productsToCreate = 0;
+        $productsToUpdate = 0;
+        $variantsToCreate = 0;
+        $variantsToUpdate = 0;
+        $ignored = 0;
+        
+        $validPayload = [];
+
+        foreach ($productsByRef as $ref => $pData) {
+            $isUpdate = isset($existingCodes[$ref]);
+            
+            if ($isUpdate) {
+                $existingProduct = Product::find($existingCodes[$ref]);
+                $existingVariants = [];
+                if (!empty($existingProduct->color)) {
+                    $parsed = is_string($existingProduct->color) ? json_decode($existingProduct->color, true) : $existingProduct->color;
+                    if (is_array($parsed)) $existingVariants = $parsed;
+                }
+                
+                $newVCount = 0;
+                $updVCount = 0;
+                $filteredVariants = [];
+                
+                foreach ($pData['variants'] as $newV) {
+                    $found = false;
+                    foreach ($existingVariants as $eV) {
+                        if (isset($eV['name']) && strcasecmp($eV['name'], $newV['name']) === 0) {
+                            if (isset($eV['size']) && strcasecmp($eV['size'], $newV['size']) === 0) {
+                                if (isset($eV['color']) && strcasecmp($eV['color'], $newV['color']) === 0) {
+                                    $found = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if ($found) {
+                        $updVCount++;
+                        $filteredVariants[] = $newV;
+                    } else {
+                        $newVCount++;
+                        $filteredVariants[] = $newV;
+                    }
+                }
+                
+                $pData['variants'] = $filteredVariants;
+                if (empty($filteredVariants)) {
+                    continue; // Skip product completely if all variants ignored
+                }
+                
+                $productsToUpdate++;
+                $variantsToUpdate += $updVCount;
+                $variantsToCreate += $newVCount;
+                
+            } else {
+                if ($mode === 'update_only') {
+                    $ignored += count($pData['variants']);
+                    continue; // Skip new products entirely
+                }
+                $productsToCreate++;
+                $variantsToCreate += count($pData['variants']);
+            }
+            
+            $validPayload[$ref] = $pData;
+        }
+
+        // Store payload in session for confirmation
+        Session::put('import_payload', [
+            'mode' => $mode,
+            'auto_create' => $autoCreate,
+            'products' => $validPayload,
+            'master_data' => $masterDataToCreate,
+            'errors' => $errors,
+            'preview_stats' => [
+                'products_create' => $productsToCreate,
+                'products_update' => $productsToUpdate,
+                'variants_create' => $variantsToCreate,
+                'variants_update' => $variantsToUpdate,
+                'ignored' => $ignored,
+                'master_create' => count($masterDataToCreate['categories']) + count($masterDataToCreate['brands'])
+            ]
         ]);
+
+        return redirect()->route('products.import.preview');
+    }
+    
+    // ──────────────────────────────────────────────────────────
+    //  IMPORT STEP 2: SHOW PREVIEW
+    // ──────────────────────────────────────────────────────────
+    public function importPreview()
+    {
+        if (!Session::has('import_payload')) {
+            return redirect()->route('product')->with('error', 'Import session expired or invalid.');
+        }
+        
+        $payload = Session::get('import_payload');
+        return view('admin_panel.product.import_preview', compact('payload'));
+    }
+    
+    // ──────────────────────────────────────────────────────────
+    //  IMPORT STEP 3: CONFIRM & IMPORT
+    // ──────────────────────────────────────────────────────────
+    public function importConfirm()
+    {
+        if (!Session::has('import_payload')) {
+            return redirect()->route('product')->with('error', 'Import session expired.');
+        }
+
+        $payload = Session::get('import_payload');
+        $productsToProcess = $payload['products'];
+        $autoCreate = $payload['auto_create'];
+        
+        $createdProducts = 0;
+        $updatedProducts = 0;
+        $createdVariants = 0;
+        $updatedVariants = 0;
+
+        DB::beginTransaction();
+        try {
+            // 1. Auto Create Master Data
+            $catMap = Category::pluck('id', 'name')->mapWithKeys(function ($item, $key) { return [strtolower($key) => $item]; })->toArray();
+            $brandMap = Brand::pluck('id', 'name')->mapWithKeys(function ($item, $key) { return [strtolower($key) => $item]; })->toArray();
+            $subCatMap = Subcategory::pluck('id', 'name')->mapWithKeys(function ($item, $key) { return [strtolower($key) => $item]; })->toArray();
+            
+            if ($autoCreate) {
+                foreach ($payload['master_data']['categories'] as $catName) {
+                    $key = strtolower($catName);
+                    if (!isset($catMap[$key])) {
+                        $c = Category::create(['name' => $catName]);
+                        $catMap[$key] = $c->id;
+                    }
+                }
+                foreach ($payload['master_data']['brands'] as $brandName) {
+                    $key = strtolower($brandName);
+                    if (!isset($brandMap[$key])) {
+                        $b = Brand::create(['name' => $brandName]);
+                        $brandMap[$key] = $b->id;
+                    }
+                }
+            }
+
+            // 2. Process Products
+            foreach ($productsToProcess as $ref => $pData) {
+                $product = Product::where('item_code', $ref)->first();
+                
+                $cId = isset($catMap[strtolower($pData['category'])]) ? $catMap[strtolower($pData['category'])] : null;
+                $bId = isset($brandMap[strtolower($pData['brand'])]) ? $brandMap[strtolower($pData['brand'])] : null;
+                $sId = isset($subCatMap[strtolower($pData['sub_category'])]) ? $subCatMap[strtolower($pData['sub_category'])] : null;
+                
+                // Compile final variant array
+                $finalVariants = [];
+                $existingTotalStock = 0;
+                
+                if ($product) {
+                    // Update
+                    $existingVariants = [];
+                    if (!empty($product->color)) {
+                        $parsed = is_string($product->color) ? json_decode($product->color, true) : $product->color;
+                        if (is_array($parsed)) $existingVariants = $parsed;
+                    }
+                    
+                    // If mode is 'update_only', we strictly sync (delete omitted).
+                    // If mode is 'create', we preserve all existing variants and merge/append the CSV ones.
+                    if ($payload['mode'] === 'update_only') {
+                        $finalVariants = []; // Wipe and replace
+                    } else {
+                        $finalVariants = $existingVariants; // Preserve and merge
+                    }
+                    
+                    foreach ($pData['variants'] as $newV) {
+                        $foundIdx = -1;
+                        $oldBarcode = '';
+                        
+                        foreach ($finalVariants as $idx => $eV) {
+                            if (strcasecmp($eV['name'] ?? '', $newV['name']) === 0 && 
+                                strcasecmp($eV['size'] ?? '', $newV['size']) === 0 && 
+                                strcasecmp($eV['color'] ?? '', $newV['color']) === 0) {
+                                $foundIdx = $idx;
+                                $oldBarcode = $eV['barcode'] ?? '';
+                                break;
+                            }
+                        }
+                        
+                        $vArr = [
+                            'name' => $newV['name'],
+                            'size' => $newV['size'],
+                            'color' => $newV['color'],
+                            'stock' => $newV['stock'],
+                            'sale_price' => $newV['sale_price'],
+                            'wholesale_price' => $newV['wholesale_price'] ?? 0,
+                            'purch_price' => $newV['purch_price'],
+                            'barcode' => $newV['barcode'] ?: $oldBarcode,
+                        ];
+                        
+                        if ($foundIdx >= 0) {
+                            $finalVariants[$foundIdx] = $vArr;
+                            $updatedVariants++;
+                        } else {
+                            $finalVariants[] = $vArr;
+                            $createdVariants++;
+                        }
+                    }
+                    
+                    $stockTotal = array_sum(array_column($finalVariants, 'stock'));
+                    
+                    $product->update([
+                        'item_name' => $pData['name'],
+                        'category_id' => $cId,
+                        'sub_category_id' => $sId,
+                        'brand_id' => $bId,
+                        'size_mode' => $pData['size_mode'],
+                        'pieces_per_box' => $pData['pcs_per_carton'],
+                        'sale_discount_percent' => $pData['sale_discount'],
+                        'purchase_discount_percent' => $pData['purch_discount'],
+                        'sale_price_per_piece' => $finalVariants[0]['sale_price'] ?? 0,
+                        'wholesale_price' => $finalVariants[0]['wholesale_price'] ?? 0,
+                        'purchase_price_per_piece' => $finalVariants[0]['purch_price'] ?? 0,
+                        'color' => json_encode($finalVariants),
+                        'is_active' => $pData['is_active'],
+                    ]);
+                    
+                    $ws = WarehouseStock::firstOrNew([
+                        'warehouse_id' => 1,
+                        'product_id' => $product->id
+                    ]);
+                    $diff = $stockTotal - ($ws->total_pieces ?? 0);
+                    $ws->total_pieces = $stockTotal;
+                    $ws->quantity = floor($stockTotal / max(1, $pData['pcs_per_carton']));
+                    $ws->remarks = 'Updated via Bulk Import';
+                    $ws->save();
+                    
+                    if ($diff != 0) {
+                        StockMovement::create([
+                            'product_id' => $product->id,
+                            'type'       => 'adjustment',
+                            'qty'        => $diff,
+                            'ref_type'   => 'IMPORT',
+                            'note'       => 'Stock adjusted via CSV import',
+                        ]);
+                    }
+                    
+                    $updatedProducts++;
+                    
+                } else {
+                    foreach ($pData['variants'] as $newV) {
+                        $finalVariants[] = [
+                            'name' => $newV['name'],
+                            'size' => $newV['size'],
+                            'color' => $newV['color'],
+                            'stock' => $newV['stock'],
+                            'sale_price' => $newV['sale_price'],
+                            'wholesale_price' => $newV['wholesale_price'] ?? 0,
+                            'purch_price' => $newV['purch_price'],
+                            'barcode' => $newV['barcode'],
+                        ];
+                        $createdVariants++;
+                    }
+                    
+                    $stockTotal = array_sum(array_column($finalVariants, 'stock'));
+                    
+                    // Always generate a fresh ITEM-XXXX code for new products
+                    $lastProduct = Product::orderBy('id', 'desc')->first();
+                    $actualRef = $lastProduct ? ('ITEM-'.str_pad($lastProduct->id + 1, 4, '0', STR_PAD_LEFT)) : 'ITEM-0001';
+                    
+                    $product = Product::create([
+                        'creater_id' => Auth::id(),
+                        'item_code' => $actualRef,
+                        'item_name' => $pData['name'],
+                        'category_id' => $cId,
+                        'sub_category_id' => $sId,
+                        'brand_id' => $bId,
+                        'size_mode' => $pData['size_mode'],
+                        'pieces_per_box' => $pData['pcs_per_carton'],
+                        'sale_discount_percent' => $pData['sale_discount'],
+                        'purchase_discount_percent' => $pData['purch_discount'],
+                        'sale_price_per_piece' => $finalVariants[0]['sale_price'] ?? 0,
+                        'wholesale_price' => $finalVariants[0]['wholesale_price'] ?? 0,
+                        'purchase_price_per_piece' => $finalVariants[0]['purch_price'] ?? 0,
+                        'color' => json_encode($finalVariants),
+                        'is_active' => $pData['is_active'],
+                        'is_part' => 0,
+                        'is_assembled' => 0,
+                        'barcode_path' => rand(100000000000, 999999999999), // Master barcode
+                        'total_m2' => 0,
+                        'price_per_m2' => 0,
+                        'purchase_price_per_m2' => 0,
+                        'pieces_per_m2' => 0,
+                        'height' => 0,
+                        'width' => 0,
+                    ]);
+                    
+                    WarehouseStock::create([
+                        'warehouse_id' => 1,
+                        'product_id'   => $product->id,
+                        'quantity'     => floor($stockTotal / max(1, $pData['pcs_per_carton'])),
+                        'total_pieces' => $stockTotal,
+                        'remarks'      => 'Initial Stock via Import',
+                    ]);
+                    
+                    if ($stockTotal > 0) {
+                        StockMovement::create([
+                            'product_id' => $product->id,
+                            'type'       => 'adjustment',
+                            'qty'        => $stockTotal,
+                            'ref_type'   => 'IMPORT',
+                            'note'       => 'Initial Stock via CSV import',
+                        ]);
+                    }
+                    
+                    $createdProducts++;
+                }
+            }
+
+            DB::commit();
+            Session::forget('import_payload');
+            
+            return redirect()->route('product')->with('success', "Import completed successfully. {$createdProducts} products created, {$updatedProducts} products updated. {$createdVariants} variants created, {$updatedVariants} variants updated.");
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('product')->with('error', 'Import failed: ' . $e->getMessage());
+        }
     }
 
     // ──────────────────────────────────────────────────────────
@@ -382,23 +705,24 @@ class ProductImportExportController extends Controller
     private function csvHeaders(): array
     {
         return [
-            'id',
-            'item_code',
-            'item_name (*)',
-            'barcode',
-            'category',
-            'sub_category',
-            'brand',
-            'model',
-            'size_mode',
-            'pcs_per_carton',
-            'stock_total_pieces',
-            'sale_price_per_piece',
-            'purchase_price_per_piece',
-            'sale_discount_%',
-            'purchase_discount_%',
-            'alert_quantity',
-            'is_active (1/0)',
+            'Item Code',
+            'Product Name',
+            'Category',
+            'Sub Category',
+            'Brand',
+            'Size Mode',
+            'Pieces Per Box',
+            'Variant Name',
+            'Variant Size',
+            'Variant Color',
+            'Variant Barcode',
+            'Variant Stock Pieces',
+            'Variant Sale Price',
+            'Variant Wholesale Price',
+            'Variant Purchase Price',
+            'Sale Discount %',
+            'Purchase Discount %',
+            'Is Active',
         ];
     }
 }

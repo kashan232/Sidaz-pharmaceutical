@@ -214,103 +214,71 @@
             <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
 
                 {{-- Header --}}
-                <div class="modal-header" style="background: linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff;">
+                <div class="modal-header" style="background: linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; border-bottom: none;">
                     <div>
                         <h5 class="modal-title fw-bold" id="importModalLabel">
                             <i class="las la-file-upload me-2"></i>Import Products from CSV
                         </h5>
-                        <small class="opacity-75">New products will be created. Existing ones (matched by Barcode or Item Code) will be updated.</small>
+                        <small style="color: rgba(255,255,255,0.85);">New products will be created. Existing ones (matched by Barcode or Item Code) will be updated.</small>
                     </div>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity:1; font-size:1.5rem; background:none; border:none;">&times;</button>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; text-shadow: none;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
 
                 {{-- Body --}}
-                <div class="modal-body p-4">
+                <div class="modal-body p-4 bg-light">
+                    <form action="{{ route('products.import.validate') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        
+                        @if(session('error'))
+                            <div class="alert alert-danger mb-4 shadow-sm"><i class="las la-exclamation-circle"></i> {{ session('error') }}</div>
+                        @endif
 
-                    {{-- Instructions --}}
-                    <div class="alert alert-info d-flex gap-2 align-items-start mb-4" style="font-size:0.85rem;">
-                        <i class="las la-info-circle fs-5 mt-1 flex-shrink-0"></i>
-                        <div>
-                            <strong>How to use:</strong><br>
-                            1. Download the <a href="{{ route('products.template') }}" class="alert-link">CSV Template</a> first.<br>
-                            2. Fill in your data in Excel and save as <strong>CSV</strong>.<br>
-                            3. Upload here — existing products (matched by Barcode or Item Code) will be <strong>updated</strong>; new rows will be <strong>created</strong>.<br>
-                            4. Stock differences will be automatically adjusted and logged.
-                        </div>
-                    </div>
-
-                    {{-- File Drop Zone --}}
-                    <div id="dropZone" class="border border-2 border-dashed rounded-3 text-center p-5 mb-3"
-                         style="border-color:#c7d2fe !important; background:#f5f3ff; cursor:pointer; transition: all 0.2s;"
-                         onclick="document.getElementById('csvFileInput').click()"
-                         ondragover="event.preventDefault(); this.style.background='#ede9fe';"
-                         ondragleave="this.style.background='#f5f3ff';"
-                         ondrop="handleDrop(event)">
-                        <i class="las la-cloud-upload-alt" style="font-size:3rem; color:#7c3aed;"></i>
-                        <div class="fw-bold mt-2 text-primary" style="font-size:1rem;">Click to browse or drag & drop CSV file here</div>
-                        <div class="text-muted mt-1" id="fileNameDisplay" style="font-size:0.82rem;">No file selected — Max 5 MB</div>
-                    </div>
-                    <input type="file" id="csvFileInput" class="d-none" accept=".csv,.txt">
-
-                    {{-- Progress --}}
-                    <div id="importProgress" class="d-none mb-3">
-                        <div class="d-flex align-items-center gap-2 text-primary fw-bold mb-1">
-                            <div class="spinner-border spinner-border-sm"></div>
-                            Processing your file, please wait...
-                        </div>
-                        <div class="progress" style="height:6px;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width:100%"></div>
-                        </div>
-                    </div>
-
-                    {{-- Results --}}
-                    <div id="importResults" class="d-none">
-                        <hr>
-                        <h6 class="fw-bold mb-3">📊 Import Results</h6>
-                        <div class="row g-3 mb-3">
-                            <div class="col-4">
-                                <div class="text-center p-3 rounded-3" style="background:#d1fae5;">
-                                    <div style="font-size:2rem; font-weight:800; color:#065f46;" id="resultCreated">0</div>
-                                    <div class="text-success fw-bold" style="font-size:0.8rem;">CREATED</div>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="text-center p-3 rounded-3" style="background:#dbeafe;">
-                                    <div style="font-size:2rem; font-weight:800; color:#1e40af;" id="resultUpdated">0</div>
-                                    <div class="text-primary fw-bold" style="font-size:0.8rem;">UPDATED</div>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="text-center p-3 rounded-3" style="background:#fef3c7;">
-                                    <div style="font-size:2rem; font-weight:800; color:#92400e;" id="resultSkipped">0</div>
-                                    <div class="text-warning fw-bold" style="font-size:0.8rem;">SKIPPED</div>
-                                </div>
+                        {{-- Instructions --}}
+                        <div class="alert alert-info d-flex gap-2 align-items-start mb-4" style="font-size:0.85rem;">
+                            <i class="las la-info-circle fs-5 mt-1 flex-shrink-0"></i>
+                            <div>
+                                <strong>How to use:</strong><br>
+                                1. Download the <a href="{{ route('products.template') }}" class="alert-link">CSV Template</a> first.<br>
+                                2. Fill in your data in Excel and save as <strong>CSV</strong>.<br>
+                                3. Upload here to validate and preview the changes.<br>
+                                4. Confirm the preview to actually import the data.
                             </div>
                         </div>
-                        <div id="importErrorsList" class="d-none">
-                            <div class="alert alert-warning p-2" style="font-size:0.82rem; max-height:150px; overflow-y:auto;">
-                                <strong>⚠ Skipped Rows:</strong>
-                                <ul class="mb-0 mt-1" id="errorItemsList"></ul>
-                            </div>
-                        </div>
-                        <div id="importSuccessMsg" class="alert alert-success d-none" style="font-size:0.85rem;">
-                            ✅ Import completed successfully! <a href="{{ route('product') }}" class="alert-link">Refresh product list</a>
-                        </div>
-                    </div>
 
+                        <div class="form-group mb-3">
+                            <label class="fw-bold">Import Mode</label>
+                            <select name="import_mode" class="form-select form-control" required>
+                                <option value="create">Create (Add new products & variants)</option>
+                                <option value="update_only">Update Only (Update existing variants only)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoCreate" name="auto_create" value="1" checked>
+                                <label class="form-check-label fw-bold ms-2" for="autoCreate">Auto-create missing Category & Brand</label>
+                            </div>
+                            <small class="text-muted ms-4 d-block">If disabled, missing master data will throw validation errors.</small>
+                        </div>
+
+                        {{-- File Input --}}
+                        <div class="form-group mb-4">
+                            <label class="fw-bold">Upload CSV File</label>
+                            <input type="file" name="csv_file" class="form-control p-1" accept=".csv,.txt" required>
+                            <small class="text-muted">Max 5 MB</small>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary px-4"><i class="las la-arrow-right"></i> Next: Validate & Preview</button>
+                        </div>
+                    </form>
                 </div>
-
-                {{-- Footer --}}
-                <div class="modal-footer bg-light gap-2">
-                    <a href="{{ route('products.template') }}" class="btn btn-outline-secondary btn-sm">
-                        <i class="las la-download me-1"></i>Download Template
-                    </a>
-                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-warning fw-bold px-4" id="startImportBtn" disabled
-                            style="min-width:130px;">
-                        <i class="las la-file-upload me-1"></i> Start Import
-                    </button>
-                </div>
+            </div>
+        </div>
+    </div>
 
             </div>
         </div>
@@ -319,117 +287,10 @@
     {{-- Import JS --}}
     <script>
     $(document).ready(function () {
-
-        var selectedFile = null;
-
-        var fileInput   = document.getElementById('csvFileInput');
-        var dropZone    = document.getElementById('dropZone');
-        var fileDisplay = document.getElementById('fileNameDisplay');
-        var startBtn    = document.getElementById('startImportBtn');
-        var progressEl  = document.getElementById('importProgress');
-        var resultsEl   = document.getElementById('importResults');
-
         // ── Open modal via jQuery (Bootstrap 4) ──
         $('#openImportModalBtn').on('click', function () {
             $('#importModal').modal('show');
         });
-
-        // ── File selection ──
-        function setFile(file) {
-            if (!file || !file.name.match(/\.(csv|txt)$/i)) {
-                Swal.fire('Invalid File', 'Please select a valid CSV file.', 'warning');
-                return;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                Swal.fire('File Too Large', 'File size exceeds 5 MB limit.', 'warning');
-                return;
-            }
-            selectedFile = file;
-            fileDisplay.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
-            fileDisplay.style.color = '#4f46e5';
-            startBtn.disabled = false;
-            resultsEl.classList.add('d-none');
-        }
-
-        $(fileInput).on('change', function () {
-            if (this.files[0]) setFile(this.files[0]);
-        });
-
-        window.handleDrop = function (e) {
-            e.preventDefault();
-            dropZone.style.background = '#f5f3ff';
-            if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
-        };
-
-        // ── Start Import ──
-        $('#startImportBtn').on('click', function () {
-            if (!selectedFile) return;
-
-            var formData = new FormData();
-            formData.append('csv_file', selectedFile);
-            formData.append('_token', '{{ csrf_token() }}');
-
-            startBtn.disabled = true;
-            progressEl.classList.remove('d-none');
-            resultsEl.classList.add('d-none');
-
-            fetch('{{ route("products.import") }}', {
-                method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
-                body: formData
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                progressEl.classList.add('d-none');
-                resultsEl.classList.remove('d-none');
-
-                if (!data.success && !data.created && !data.updated) {
-                    Swal.fire('Error', data.message || 'Import failed.', 'error');
-                    startBtn.disabled = false;
-                    return;
-                }
-
-                document.getElementById('resultCreated').textContent = data.created  || 0;
-                document.getElementById('resultUpdated').textContent = data.updated  || 0;
-                document.getElementById('resultSkipped').textContent = data.skipped  || 0;
-
-                var errList  = document.getElementById('errorItemsList');
-                var errBlock = document.getElementById('importErrorsList');
-                var sucMsg   = document.getElementById('importSuccessMsg');
-
-                errList.innerHTML = '';
-                if (data.errors && data.errors.length > 0) {
-                    data.errors.forEach(function(msg) {
-                        var li = document.createElement('li');
-                        li.textContent = msg;
-                        errList.appendChild(li);
-                    });
-                    errBlock.classList.remove('d-none');
-                } else {
-                    errBlock.classList.add('d-none');
-                }
-
-                sucMsg.classList.remove('d-none');
-                startBtn.disabled = false;
-            })
-            .catch(function () {
-                progressEl.classList.add('d-none');
-                Swal.fire('Server Error', 'Something went wrong. Please try again.', 'error');
-                startBtn.disabled = false;
-            });
-        });
-
-        // ── Reset on modal close ──
-        $('#importModal').on('hidden.bs.modal', function () {
-            selectedFile = null;
-            fileDisplay.textContent = 'No file selected — Max 5 MB';
-            fileDisplay.style.color = '';
-            startBtn.disabled = true;
-            progressEl.classList.add('d-none');
-            resultsEl.classList.add('d-none');
-            fileInput.value = '';
-        });
-
     });
     </script>
 
