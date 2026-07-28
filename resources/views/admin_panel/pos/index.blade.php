@@ -671,7 +671,7 @@
                         <div class="summary-row align-items-center">
                             <span>Discount (Rs):</span>
                             <div class="d-flex align-items-center gap-1">
-                                <input type="number" id="summaryDiscount" class="form-control form-control-sm text-end bg-light" value="0" style="width: 80px; height: 26px !important; padding: 2px 8px;">
+                                <input type="number" step="0.01" min="0" id="summaryDiscount" class="form-control form-control-sm text-end bg-light" value="0" style="width: 80px; height: 26px !important; padding: 2px 8px;">
                                 <button type="button" class="btn btn-dark btn-sm py-0 px-2" id="btnDiscountDistribute" style="height: 24px; font-size: 10px; line-height: 20px;" title="Distribute Discount"><i class="fas fa-divide"></i> Distribute</button>
                             </div>
                         </div>
@@ -929,7 +929,7 @@
             <div class="modal-body">
                 <div class="form-group mb-3">
                     <label class="form-label fw-bold">Total Discount to Distribute (Rs):</label>
-                    <input type="number" id="distributeAmount" class="form-control" min="0" value="0">
+                    <input type="number" id="distributeAmount" step="0.01" class="form-control" min="0" value="0">
                 </div>
                 
                 <div class="form-group mb-3">
@@ -1622,7 +1622,7 @@
                                 ${!isRet ? `
                                 <div class="d-flex align-items-center">
                                     <span class="me-1" style="font-size: 10px; color: #4b5563;">Disc (Rs):</span>
-                                    <input type="number" name="item_disc[]" class="form-control form-control-sm text-end cart-item-disc-val" style="width: 60px; padding: 1px 4px; height: 22px; font-size: 11px; border: 1px solid #e5e7eb; border-radius: 4px;" value="${item.discount || 0}" min="0">
+                                    <input type="number" name="item_disc[]" step="0.01" class="form-control form-control-sm text-end cart-item-disc-val" style="width: 60px; padding: 1px 4px; height: 22px; font-size: 11px; border: 1px solid #e5e7eb; border-radius: 4px;" value="${item.discount || 0}" min="0">
                                     <input type="hidden" name="discount_type[]" value="pkr">
                                 </div>` : ''}
                             </div>
@@ -2009,7 +2009,7 @@
                         <tr>
                             <td>${item.name} <small class="text-muted">(Rs ${item.qty * item.price})</small></td>
                             <td>
-                                <input type="number" class="form-control form-control-sm text-end manual-dist-item-input" data-index="${index}" value="${item.discount || 0}" min="0" style="height: 24px; padding: 2px 4px;">
+                                <input type="number" step="0.01" class="form-control form-control-sm text-end manual-dist-item-input" data-index="${index}" value="${item.discount || 0}" min="0" style="height: 24px; padding: 2px 4px;">
                             </td>
                         </tr>
                     `);
