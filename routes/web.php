@@ -129,8 +129,14 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:products.view')->name('products.export');
     Route::get('/products/template', [App\Http\Controllers\ProductImportExportController::class, 'template'])
         ->middleware('permission:products.view')->name('products.template');
-    Route::post('/products/import',  [App\Http\Controllers\ProductImportExportController::class, 'import'])
-        ->middleware('permission:products.create')->name('products.import');
+        
+    // Import process
+    Route::post('/products/import/validate',  [App\Http\Controllers\ProductImportExportController::class, 'importValidate'])
+        ->middleware('permission:products.create')->name('products.import.validate');
+    Route::get('/products/import/preview',  [App\Http\Controllers\ProductImportExportController::class, 'importPreview'])
+        ->middleware('permission:products.create')->name('products.import.preview');
+    Route::post('/products/import/confirm',  [App\Http\Controllers\ProductImportExportController::class, 'importConfirm'])
+        ->middleware('permission:products.create')->name('products.import.confirm');
 
     // Route::get('/barcode/{id}', [ProductController::class, 'barcode'])->name('product.barcode');
     // Searches

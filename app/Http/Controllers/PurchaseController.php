@@ -374,11 +374,27 @@ class PurchaseController extends Controller
         if (! $hasGatepass) {
             $movRows = [];
             foreach ($purchase->items as $item) {
+                // Determine conversion factor for weight products
+                $convFactor = 1;
+                if (!empty($item->color)) {
+                    $itemColor = $item->color;
+                    $b64Decoded = base64_decode($itemColor, true);
+                    $json = $b64Decoded !== false ? json_decode($b64Decoded, true) : null;
+                    if (!is_array($json)) {
+                        $json = json_decode($itemColor, true);
+                    }
+                    if (is_array($json) && isset($json['conv_factor'])) {
+                        $convFactor = (float) $json['conv_factor'];
+                    }
+                }
+                
+                $baseQty = $item->qty * $convFactor;
+
                 // movements (+)
                 $movRows[] = [
                     'product_id' => $item->product_id,
                     'type' => 'in',
-                    'qty' => $item->qty,
+                    'qty' => $baseQty,
                     'ref_type' => 'PURCHASE',
                     'ref_id' => $purchase->id,
                     'note' => 'Purchase Confirmed',
@@ -386,7 +402,7 @@ class PurchaseController extends Controller
                     'updated_at' => now(),
                 ];
                 // stocks
-                $this->upsertStocks($item->product_id, +$item->qty, $branchId, $warehouseId);
+                $this->upsertStocks($item->product_id, +$baseQty, $branchId, $warehouseId);
             }
 
             if (! empty($movRows)) {
@@ -1643,6 +1659,25 @@ class PurchaseController extends Controller
                     'color' => $request->color[$index] ?? null,
                 ]);
 
+                // Check for weight product conversion factor
+                $stockQty = $qty;
+                $colorField = $request->color[$index] ?? null;
+                if (!empty($colorField)) {
+                    try {
+                        $b64Decoded = base64_decode($colorField, true);
+                        $variantData = $b64Decoded !== false ? json_decode($b64Decoded, true) : null;
+                        if (!is_array($variantData)) {
+                            $variantData = is_string($colorField) ? json_decode($colorField, true) : $colorField;
+                        }
+                        if (is_array($variantData) && isset($variantData['conv_factor'])) {
+                            $factor = (float)$variantData['conv_factor'];
+                            if ($factor > 0) {
+                                $stockQty = $stockQty * $factor;
+                            }
+                        }
+                    } catch (\Exception $e) {}
+                }
+
                 // Update Stock (DECREMENT)
                 $stock = WarehouseStock::where('warehouse_id', $validated['warehouse_id'])
                     ->where('product_id', $productId)
@@ -1660,7 +1695,7 @@ class PurchaseController extends Controller
                     }
                     
                     // Subtract Return Qty (Pieces)
-                    $newTotalPieces = max(0, $currentTotalPieces - $qty);
+                    $newTotalPieces = max(0, $currentTotalPieces - $stockQty);
                     
                     $stock->total_pieces = $newTotalPieces;
                     $stock->quantity = $newTotalPieces / $ppbVal; // Convert back to Boxes
@@ -1673,8 +1708,8 @@ class PurchaseController extends Controller
                      WarehouseStock::create([
                         'warehouse_id' => $validated['warehouse_id'],
                         'product_id' => $productId,
-                        'total_pieces' => -$qty, // Negative stock?
-                        'quantity' => -$qty / $ppbVal,
+                        'total_pieces' => -$stockQty, // Negative stock?
+                        'quantity' => -$stockQty / $ppbVal,
                         'price' => 0
                      ]);
                 }
@@ -1683,10 +1718,10 @@ class PurchaseController extends Controller
                 $movements[] = [
                     'product_id' => $productId,
                     'type' => 'out', // Return OUT to vendor
-                    'qty' => $qty,
+                    'qty' => $stockQty,
                     'ref_type' => 'PURCHASE_RETURN',
                     'ref_id' => $return->id,
-                    'note' => "Return #{$nextInvoice}",
+                    'note' => "Purchase Return",
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];

@@ -671,7 +671,7 @@
                         <div class="summary-row align-items-center">
                             <span>Discount (Rs):</span>
                             <div class="d-flex align-items-center gap-1">
-                                <input type="number" id="summaryDiscount" class="form-control form-control-sm text-end bg-light" value="0" style="width: 80px; height: 26px !important; padding: 2px 8px;">
+                                <input type="number" step="0.01" min="0" id="summaryDiscount" class="form-control form-control-sm text-end bg-light" value="0" style="width: 80px; height: 26px !important; padding: 2px 8px;">
                                 <button type="button" class="btn btn-dark btn-sm py-0 px-2" id="btnDiscountDistribute" style="height: 24px; font-size: 10px; line-height: 20px;" title="Distribute Discount"><i class="fas fa-divide"></i> Distribute</button>
                             </div>
                         </div>
@@ -929,7 +929,7 @@
             <div class="modal-body">
                 <div class="form-group mb-3">
                     <label class="form-label fw-bold">Total Discount to Distribute (Rs):</label>
-                    <input type="number" id="distributeAmount" class="form-control" min="0" value="0">
+                    <input type="number" id="distributeAmount" step="0.01" class="form-control" min="0" value="0">
                 </div>
                 
                 <div class="form-group mb-3">
@@ -1622,7 +1622,7 @@
                                 ${!isRet ? `
                                 <div class="d-flex align-items-center">
                                     <span class="me-1" style="font-size: 10px; color: #4b5563;">Disc (Rs):</span>
-                                    <input type="number" name="item_disc[]" class="form-control form-control-sm text-end cart-item-disc-val" style="width: 60px; padding: 1px 4px; height: 22px; font-size: 11px; border: 1px solid #e5e7eb; border-radius: 4px;" value="${item.discount || 0}" min="0">
+                                    <input type="number" name="item_disc[]" step="0.01" class="form-control form-control-sm text-end cart-item-disc-val" style="width: 60px; padding: 1px 4px; height: 22px; font-size: 11px; border: 1px solid #e5e7eb; border-radius: 4px;" value="${item.discount || 0}" min="0">
                                     <input type="hidden" name="discount_type[]" value="pkr">
                                 </div>` : ''}
                             </div>
@@ -1787,26 +1787,75 @@
             let extraDiscount = typedDiscount - itemDiscountsSum;
             $('#backendExtraDiscount').val(extraDiscount.toFixed(2));
             
-            let payable = Math.max(0, subtotal - typedDiscount - totalReturn);
+            let payable = 0;
+            let isExchange = (totalReturn > 0);
+            let netTotal = subtotal - typedDiscount - totalReturn;
             
-            $('#summarySubtotal').text('Rs ' + subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            // Rebuild summary UI
+            let $summaryContainer = $('.pos-cart-summary');
+            $summaryContainer.find('.dynamic-exchange-row').remove();
             
-            // Show return value if there are returned items
-            if (totalReturn > 0) {
-                if ($('#summaryReturnRow').length === 0) {
-                    $('.pos-cart-summary').prepend(`
-                        <div class="summary-row text-danger" id="summaryReturnRow">
-                            <span>Return Value (-):</span>
-                            <span id="summaryReturnVal">Rs 0.00</span>
-                        </div>
-                    `);
+            if (isExchange) {
+                // Exchange Mode UI
+                $summaryContainer.find('.summary-row').not('.payable, .dynamic-exchange-row').hide();
+                $('#summaryPayable').parent().hide();
+                
+                let diffText = "";
+                let diffColor = "text-dark";
+                let actionText = "";
+                let actionVal = "";
+                let actionColor = "";
+                
+                if (netTotal === 0) {
+                    diffText = "Rs 0.00";
+                    actionText = "No Payment Needed";
+                    actionVal = "Rs 0.00";
+                    payable = 0;
+                } else if (netTotal < 0) {
+                    let refundAmt = Math.abs(netTotal);
+                    diffText = "- Rs " + refundAmt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    diffColor = "text-danger";
+                    actionText = "Amount to Refund";
+                    actionVal = "Rs " + refundAmt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    actionColor = "text-danger";
+                    payable = 0;
+                } else {
+                    diffText = "+ Rs " + netTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    diffColor = "text-success";
+                    actionText = "Amount to Collect";
+                    actionVal = "Rs " + netTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    actionColor = "text-success";
+                    payable = netTotal;
                 }
-                $('#summaryReturnVal').text('Rs ' + totalReturn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                
+                $summaryContainer.prepend(`
+                    <div class="summary-row dynamic-exchange-row">
+                        <span>Original Product Price:</span>
+                        <span>Rs ${totalReturn.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </div>
+                    <div class="summary-row dynamic-exchange-row">
+                        <span>Replacement Price:</span>
+                        <span>Rs ${(subtotal - typedDiscount).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </div>
+                    <hr class="dynamic-exchange-row my-1" style="border-color: #ddd;">
+                    <div class="summary-row dynamic-exchange-row ${diffColor} fw-bold">
+                        <span>Price Difference:</span>
+                        <span>${diffText}</span>
+                    </div>
+                    <div class="summary-row dynamic-exchange-row payable mt-2 ${actionColor}">
+                        <span>${actionText}:</span>
+                        <span>${actionVal}</span>
+                    </div>
+                `);
+                
             } else {
-                $('#summaryReturnRow').remove();
+                // Normal Mode UI
+                $summaryContainer.find('.summary-row').not('.payable, .dynamic-exchange-row').show();
+                $('#summaryPayable').parent().show();
+                payable = Math.max(0, subtotal - typedDiscount);
+                $('#summarySubtotal').text('Rs ' + subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                $('#summaryPayable').text('Rs ' + payable.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
             }
-            
-            $('#summaryPayable').text('Rs ' + payable.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
             
             // Calculate Total Received from all payment rows
             let totalReceived = 0;
@@ -1816,26 +1865,20 @@
             $('#totalReceivedDisplay').val(totalReceived.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
             
             // Handle negative payable (Refund to Customer)
-            let netTotal = subtotal - itemDiscountsSum - totalReturn;
             if (netTotal < 0) {
                 let refundAmt = Math.abs(netTotal);
-                $('#summaryPayable').html(`<span class="text-danger">Refund: Rs ${refundAmt.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>`);
-                payable = 0; // Payable is 0, since it's a refund
                 $('.receipt-amount:not(:disabled)').val(0).prop('readonly', true);
                 $('#returnedChange').val(refundAmt.toFixed(2));
             } else {
                 $('.receipt-amount:not(:disabled)').prop('readonly', false);
-            }
-            
-            let change = Math.max(0, totalReceived - payable);
-            if (netTotal >= 0) {
+                let change = Math.max(0, totalReceived - payable);
                 $('#returnedChange').val(change.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
             }
             
             // Populating hidden backend mirrors
             $('#backendSubTotal1').val(subtotal.toFixed(2));
             $('#backendSubTotal2').val(subtotal.toFixed(2));
-            $('#backendTotalNet').val(payable.toFixed(2));
+            $('#backendTotalNet').val((subtotal - typedDiscount).toFixed(2)); // backend Total Net is Replacement Price
             $('#backendCash').val(totalReceived.toFixed(2));
         }
 
@@ -1845,10 +1888,22 @@
             
             // Validate Cash Received (Avoid checkout without payment unless registered)
             let isWalkin = $('#isWalkinInput').val() === '1';
-            let payable = parseFloat($('#backendTotalNet').val()) || 0;
+            
+            let calcSubtotal = 0;
+            let calcTotalReturn = 0;
+            cart.forEach(item => {
+                if (item.is_return) {
+                    calcTotalReturn += item.qty * item.price;
+                } else {
+                    calcSubtotal += item.qty * item.price;
+                }
+            });
+            let calcDiscount = parseFloat($('#summaryDiscount').val()) || 0;
+            let truePayable = Math.max(0, calcSubtotal - calcDiscount - calcTotalReturn);
+            
             let received = parseFloat($('#backendCash').val()) || 0;
             
-            if (isWalkin && received < payable) {
+            if (isWalkin && received < truePayable) {
                 Swal.fire('Incomplete Payment', 'Walk-in customer must pay the full bill amount.', 'warning');
                 return;
             }
@@ -1954,7 +2009,7 @@
                         <tr>
                             <td>${item.name} <small class="text-muted">(Rs ${item.qty * item.price})</small></td>
                             <td>
-                                <input type="number" class="form-control form-control-sm text-end manual-dist-item-input" data-index="${index}" value="${item.discount || 0}" min="0" style="height: 24px; padding: 2px 4px;">
+                                <input type="number" step="0.01" class="form-control form-control-sm text-end manual-dist-item-input" data-index="${index}" value="${item.discount || 0}" min="0" style="height: 24px; padding: 2px 4px;">
                             </td>
                         </tr>
                     `);

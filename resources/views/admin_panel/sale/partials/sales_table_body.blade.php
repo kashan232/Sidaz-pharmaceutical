@@ -12,9 +12,13 @@
 
         // Status Styling
         $statusBadge = '<span class="badge badge-warning text-dark border border-warning">Draft</span>';
+        $isExchange = \Illuminate\Support\Str::startsWith($sale->reference, 'Exchange for');
+        
         if ($sale->sale_status === 'posted') {
             if ($sale->is_booking) {
                 $statusBadge = '<span class="badge badge-success border border-success"><i class="fas fa-check-circle me-1"></i>Confirmed Booking</span>';
+            } elseif ($isExchange) {
+                $statusBadge = '<span class="badge badge-info text-white border border-info"><i class="fas fa-exchange-alt me-1"></i>Exchange</span>';
             } else {
                 $statusBadge = '<span class="badge badge-success border border-success">Posted</span>';
             }
@@ -81,7 +85,29 @@
             @endif
         </td>
         <td class="text-end text-success fw-bold font-monospace">
-            Rs. {{ number_format($sale->total_net, 2) }}
+            @if (isset($isExchange) && $isExchange)
+                @php
+                    $collected = $sale->cash - $sale->change;
+                    $refunded = 0;
+                    if ($collected <= 0) {
+                        $refundPayment = \App\Models\CustomerPayment::where('note', 'Refund Paid for POS Exchange #'.$sale->invoice_no)->first();
+                        if ($refundPayment) {
+                            $refunded = $refundPayment->amount;
+                        }
+                    }
+                @endphp
+                
+                @if ($collected > 0)
+                    Rs. {{ number_format($collected, 2) }}
+                @elseif ($refunded > 0)
+                    <span class="text-danger">-Rs. {{ number_format($refunded, 2) }}</span>
+                @else
+                    Rs. 0.00
+                @endif
+                <br><span class="badge badge-info text-white border border-info px-1 py-0 mt-1" style="font-size: 10px;"><i class="fas fa-exchange-alt me-1"></i>Exchange</span>
+            @else
+                Rs. {{ number_format($sale->total_net, 2) }}
+            @endif
         </td>
         <td class="text-nowrap small text-muted">
             {{ $sale->created_at->format('d/m/Y') }}

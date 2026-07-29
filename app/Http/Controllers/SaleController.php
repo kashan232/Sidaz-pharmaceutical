@@ -558,11 +558,35 @@ class SaleController extends Controller
                 ->where('warehouse_id', $warehouseId)
                 ->first();
 
+            // Find variant color from SaleItem
+            $saleColor = null;
+            if ($sale && $sale->items) {
+                $sItem = $sale->items->where('product_id', $productId)->first();
+                if ($sItem) $saleColor = $sItem->color;
+            }
+
+            $stockQty = $qty;
+            if (!empty($saleColor)) {
+                try {
+                    $b64Decoded = base64_decode($saleColor, true);
+                    $variantData = $b64Decoded !== false ? json_decode($b64Decoded, true) : null;
+                    if (!is_array($variantData)) {
+                        $variantData = is_string($saleColor) ? json_decode($saleColor, true) : $saleColor;
+                    }
+                    if (is_array($variantData) && isset($variantData['conv_factor'])) {
+                        $factor = (float)$variantData['conv_factor'];
+                        if ($factor > 0) {
+                            $stockQty = $qty * $factor;
+                        }
+                    }
+                } catch (\Exception $e) {}
+            }
+
             if ($stock) {
-                $stock->total_pieces += $qty;
+                $stock->total_pieces += $stockQty;
                 $prod = Product::find($productId);
                 $ppb = $prod->pieces_per_box > 0 ? $prod->pieces_per_box : 1;
-                $stock->quantity += ($qty / $ppb);
+                $stock->quantity += ($stockQty / $ppb);
                 $stock->save();
             }
 
@@ -570,7 +594,7 @@ class SaleController extends Controller
             $srMovements[] = [
                 'product_id' => $productId,
                 'type' => 'in',
-                'qty' => $qty,
+                'qty' => $stockQty,
                 'ref_type' => 'SR',
                 'ref_id' => $saleReturn->id,
                 'note' => 'Sale return approved',
@@ -1339,9 +1363,27 @@ class SaleController extends Controller
                                     'vendor_id' => $origSaleItem->vendor_id,
                                     'product_name' => $origSaleItem->product_name,
                                     'qty' => $rQty,
+                            // Normalize qty for stock based on variant conv_factor
                                     'purchase_price' => $origSaleItem->purchase_price,
                                 ];
                             } else {
+                                // Normalize qty for stock based on variant conv_factor
+                                $stockQty = $rQty;
+                                if (!empty($rColor)) {
+                                    try {
+                                        $b64Decoded = base64_decode($rColor, true);
+                                        $variantData = $b64Decoded !== false ? json_decode($b64Decoded, true) : null;
+                                        if (!is_array($variantData)) {
+                                            $variantData = is_string($rColor) ? json_decode($rColor, true) : $rColor;
+                                        }
+                                        if (is_array($variantData) && isset($variantData['conv_factor'])) {
+                                            $factor = (float)$variantData['conv_factor'];
+                                            if ($factor > 0) {
+                                                $stockQty = $stockQty * $factor;
+                                            }
+                                        }
+                                    } catch (\Exception $e) {}
+                                }
                                 // Restore stock
                                 $stock = \App\Models\WarehouseStock::where('warehouse_id', 1)
                                     ->where('product_id', $rPid)
@@ -1349,7 +1391,7 @@ class SaleController extends Controller
                                     ->first();
 
                                 if ($stock) {
-                                    $newTotalPieces = $stock->total_pieces + $rQty;
+                                    $newTotalPieces = $stock->total_pieces + $stockQty;
                                     $stock->total_pieces = $newTotalPieces;
                                     $stock->quantity = $newTotalPieces / $ppb;
                                     $stock->save();
@@ -1357,8 +1399,8 @@ class SaleController extends Controller
                                     \App\Models\WarehouseStock::create([
                                         'warehouse_id' => 1,
                                         'product_id' => $rPid,
-                                        'total_pieces' => $rQty,
-                                        'quantity' => $rQty / $ppb,
+                                        'total_pieces' => $stockQty,
+                                        'quantity' => $stockQty / $ppb,
                                         'price' => 0
                                     ]);
                                 }
@@ -1367,7 +1409,7 @@ class SaleController extends Controller
                                 $movements[] = [
                                     'product_id' => $rPid,
                                     'type' => 'in',
-                                    'qty' => $rQty,
+                                    'qty' => $stockQty,
                                     'ref_type' => 'SALE_RETURN',
                                     'ref_id' => $returnHeader->id,
                                     'note' => "Exchange Return #{$nextInvoice} on Sale #{$sale->invoice_no}",
@@ -1387,6 +1429,7 @@ class SaleController extends Controller
 
                     // Recalculate true change based on net payable
                     $sale->change = $sale->cash - max(0, $sale->total_net - $totalReturnAmountForNet);
+                    $sale->reference = "Exchange for " . $origSale->invoice_no;
                     $sale->save();
 
                     // Update Original Sale Header Totals
@@ -1396,40 +1439,9 @@ class SaleController extends Controller
                     $origSale->total_items = $allSaleItems->sum('total_pieces');
                     $origSale->save();
 
-                    // Process Journal Entry for the Sale Return (if not walkin and amounts exist)
-                    if ($saleReturnTotalAmount > 0 && $sale->customer_id) {
-                        try {
-                            $journalService = app(\App\Services\JournalEntryService::class);
-                            $balanceService = app(\App\Services\BalanceService::class);
-                            $arAccountId = $balanceService->getAccountsReceivableId();
-                            $salesAccountId = $balanceService->getSalesRevenueId();
-                            $date = now()->format('Y-m-d');
-                            $customer = \App\Models\Customer::find($sale->customer_id);
-                            
-                            // Debit Sales Return (or Sales Revenue)
-                            $journalService->recordEntry(
-                                clone $returnHeader, // Pass clone to avoid unintended mutability
-                                $salesAccountId,
-                                $saleReturnTotalAmount,
-                                0,
-                                "Sale Return #{$returnHeader->id} - Invoice #{$origSale->invoice_no}",
-                                $date
-                            );
+                    // Exchange Mode: We DO NOT record the full Sales Return journal entry here.
+                    // The difference will be settled later during Sale posting.
 
-                            // Credit Customer (AR)
-                            $journalService->recordEntry(
-                                clone $returnHeader,
-                                $arAccountId,
-                                0,
-                                $saleReturnTotalAmount,
-                                "Sale Return #{$returnHeader->id} - Invoice #{$origSale->invoice_no}",
-                                $date,
-                                $customer
-                            );
-                        } catch (\Exception $e) {
-                            \Log::error('Exchange Return Ledger Error: '.$e->getMessage());
-                        }
-                    }
 
                     // --- MANUAL PRODUCT VENDOR RETURN LEDGER ---
                     if (isset($manualVendorReturnsForLedger) && count($manualVendorReturnsForLedger) > 0) {
@@ -1480,30 +1492,69 @@ class SaleController extends Controller
                 // 1. DEDUCT STOCK FROM WAREHOUSE
                 $this->handleStockImpact($sale, 'out');
 
+                $totalReturnVal = $totalReturnAmountForNet ?? 0;
+                $isExchange = $totalReturnVal > 0;
+                $trueNetPayable = $sale->total_net - $totalReturnVal;
+
                 // 2. LEGACY LEDGER: Post Invoice First (Increases Balance)
-                // This ensures the CustomerLedger has the Debit entry before we potentially Credit it with a receipt.
-                $this->updateLedger($sale);
+                if ($isExchange) {
+                    if ($trueNetPayable !== 0.0) {
+                        $this->updateLedger($sale, $trueNetPayable);
+                    }
+                } else {
+                    $this->updateLedger($sale);
+                }
 
                 try {
                     $journalService = app(\App\Services\JournalEntryService::class);
                     $balanceService = app(\App\Services\BalanceService::class);
-
-                    // Get account IDs dynamically
                     $arAccountId = $balanceService->getAccountsReceivableId();
                     $salesAccountId = $balanceService->getSalesRevenueId();
                     $date = $sale->created_at->format('Y-m-d');
-
-                    // --- PROFESSIONAL LEDGER POSTING (ENTRY 1: THE INVOICE) ---
-                    // Create a Journal Voucher for the Sale Invoice (Debit AR, Credit Sales)
                     $custForVoucher = $sale->customer_relation ?? \App\Models\Customer::find($sale->customer_id);
 
-                    if ($custForVoucher) {
-                        $balanceService->createSaleVoucher(
-                            $custForVoucher,
-                            $sale->total_net,
-                            $sale->invoice_no,
-                            $date
-                        );
+                    // --- PROFESSIONAL LEDGER POSTING (ENTRY 1: THE INVOICE) ---
+                    if ($isExchange) {
+                        if ($trueNetPayable > 0 && $custForVoucher) {
+                            $balanceService->createSaleVoucher(
+                                $custForVoucher,
+                                $trueNetPayable,
+                                $sale->invoice_no,
+                                $date
+                            );
+                        } elseif ($trueNetPayable < 0 && $custForVoucher) {
+                            $refundAmt = abs($trueNetPayable);
+                            
+                            // Debit Sales Return (Reduce Revenue)
+                            $journalService->recordEntry(
+                                clone $sale,
+                                $salesAccountId,
+                                $refundAmt,
+                                0,
+                                "Refund for POS Exchange #{$sale->invoice_no}",
+                                $date
+                            );
+
+                            // Credit Customer (AR)
+                            $journalService->recordEntry(
+                                clone $sale,
+                                $arAccountId,
+                                0,
+                                $refundAmt,
+                                "Refund for POS Exchange #{$sale->invoice_no}",
+                                $date,
+                                $custForVoucher
+                            );
+                        }
+                    } else {
+                        if ($custForVoucher) {
+                            $balanceService->createSaleVoucher(
+                                $custForVoucher,
+                                $sale->total_net,
+                                $sale->invoice_no,
+                                $date
+                            );
+                        }
                     }
 
                     // --- AUTO RECEIPT (ENTRY 2: THE PAYMENT) ---
@@ -1515,44 +1566,41 @@ class SaleController extends Controller
                     );
 
                     // --- AUTO REFUND (ENTRY 3: IF NET PAYABLE IS NEGATIVE) ---
-                    $totalReturnVal = $totalReturnAmountForNet ?? 0;
-                    $trueNetPayable = $sale->total_net - $totalReturnVal;
-
-                    if ($trueNetPayable < 0 && $totalReturnVal > 0) {
+                    if ($isExchange && $trueNetPayable < 0 && $custForVoucher) {
                         $refundAmt = abs($trueNetPayable);
-                        if ($custForVoucher) {
-                            $journalService->recordEntry(
-                                $sale,
-                                $arAccountId,
-                                $refundAmt,
-                                0,
-                                "Refund for POS Exchange #{$sale->invoice_no}",
-                                $date,
-                                $custForVoucher
-                            );
+                        
+                        $cashAccountId = $balanceService->getCashAccountId();
+                        
+                        // Debit AR
+                        $journalService->recordEntry(
+                            clone $sale,
+                            $arAccountId,
+                            $refundAmt,
+                            0,
+                            "Refund Paid for POS Exchange #{$sale->invoice_no}",
+                            $date,
+                            $custForVoucher
+                        );
+                        
+                        // Credit Cash
+                        $journalService->recordEntry(
+                            clone $sale,
+                            $cashAccountId,
+                            0,
+                            $refundAmt,
+                            "Refund Paid for POS Exchange #{$sale->invoice_no}",
+                            $date
+                        );
 
-                            $cashAccountId = $balanceService->getCashAccountId();
-                            $journalService->recordEntry(
-                                $sale,
-                                $cashAccountId,
-                                0,
-                                $refundAmt,
-                                "Refund Paid for POS Exchange #{$sale->invoice_no}",
-                                $date
-                            );
-
-                            // Log refund voucher
-                            \App\Models\CustomerPayment::create([
-                                'customer_id' => $custForVoucher->id,
-                                'admin_or_user_id' => auth()->id(),
-                                'voucher_no' => 'REF-'.$sale->id,
-                                'payment_date' => $date,
-                                'payment_method' => 'Cash',
-                                'amount' => $refundAmt,
-                                'note' => "Refund Paid for POS Exchange #{$sale->invoice_no}",
-                                'type' => 'refund',
-                            ]);
-                        }
+                        // Log refund voucher
+                        \App\Models\CustomerPayment::create([
+                            'customer_id' => $custForVoucher->id,
+                            'admin_or_user_id' => auth()->id(),
+                            'payment_date' => $date,
+                            'payment_method' => 'Cash',
+                            'amount' => $refundAmt,
+                            'note' => "Refund Paid for POS Exchange #{$sale->invoice_no}"
+                        ]);
                     }
 
                     // --- MANUAL PRODUCT VENDOR LEDGER ---
@@ -1671,7 +1719,25 @@ class SaleController extends Controller
             }
 
             // Convert everything to pieces for calculation
-            $qtyPieces = $item->total_pieces;
+            $qtyPieces = (float)$item->total_pieces;
+
+            // Apply weight variant conversion factor if present
+            if (!empty($item->color)) {
+                try {
+                    $itemColor = $item->color;
+                    $b64Decoded = base64_decode($itemColor, true);
+                    $variantData = $b64Decoded !== false ? json_decode($b64Decoded, true) : null;
+                    if (!is_array($variantData)) {
+                        $variantData = is_string($itemColor) ? json_decode($itemColor, true) : $itemColor;
+                    }
+                    if (is_array($variantData) && isset($variantData['conv_factor'])) {
+                        $factor = (float)$variantData['conv_factor'];
+                        if ($factor > 0) {
+                            $qtyPieces = $qtyPieces * $factor;
+                        }
+                    }
+                } catch (\Exception $e) {}
+            }
 
             if ($type === 'out') {
                 // Deduct
@@ -1718,7 +1784,7 @@ class SaleController extends Controller
         }
     }
 
-    public function updateLedger(Sale $sale)
+    public function updateLedger(Sale $sale, $customAmount = null)
     {
         $customer_id = $sale->customer_id;
         if (! $customer_id) {
@@ -1734,7 +1800,8 @@ class SaleController extends Controller
             $prev_bal = $ledger->closing_balance;
         }
 
-        $new_bal = $prev_bal + $sale->total_net;
+        $amount = $customAmount !== null ? $customAmount : $sale->total_net;
+        $new_bal = $prev_bal + $amount;
 
         \Log::info("Legacy Ledger (Invoice): Customer #{$customer_id}. Prev: {$prev_bal} + Sale: {$sale->total_net} = New: {$new_bal}");
 

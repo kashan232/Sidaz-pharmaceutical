@@ -168,49 +168,57 @@ class ProductController extends Controller
                     $vName = ($v['name'] ?? $p->item_name) . $size . $color;
                     
                     $initial = (float) ($v['stock'] ?? 0);
+                    $vBalance = 0;
 
-                    // Calculate Purchased variant qty
-                    $purchased = 0;
-                    foreach ($purchasesList as $pItem) {
-                        if ($this->matchSaleItemToVariant($pItem, $v)) {
-                            $purchased += (float) $pItem->total_pieces;
+                    if (isset($v['conv_factor'])) {
+                        // Weight Unit: Calculate purely based on Product's central total Kg divided by variant's conversion factor
+                        $factor = (float) $v['conv_factor'];
+                        $factor = $factor > 0 ? $factor : 1;
+                        $vBalance = floor($stockPieces / $factor);
+                    } else {
+                        // Calculate Purchased variant qty
+                        $purchased = 0;
+                        foreach ($purchasesList as $pItem) {
+                            if ($this->matchSaleItemToVariant($pItem, $v)) {
+                                $purchased += (float) $pItem->total_pieces;
+                            }
                         }
-                    }
 
-                    // Calculate Purchase Returned variant qty
-                    $pReturned = 0;
-                    foreach ($purchaseReturnsList as $prItem) {
-                        if ($this->matchSaleItemToVariant($prItem, $v)) {
-                            $pReturned += (float) $prItem->qty;
+                        // Calculate Purchase Returned variant qty
+                        $pReturned = 0;
+                        foreach ($purchaseReturnsList as $prItem) {
+                            if ($this->matchSaleItemToVariant($prItem, $v)) {
+                                $pReturned += (float) $prItem->qty;
+                            }
                         }
-                    }
-                    
-                    // Calculate Sold variant qty
-                    $sold = 0;
-                    foreach ($salesList as $sItem) {
-                        if ($this->matchSaleItemToVariant($sItem, $v)) {
-                            $sold += (float) $sItem->total_pieces;
+                        
+                        // Calculate Sold variant qty
+                        $sold = 0;
+                        foreach ($salesList as $sItem) {
+                            if ($this->matchSaleItemToVariant($sItem, $v)) {
+                                $sold += (float) $sItem->total_pieces;
+                            }
                         }
-                    }
 
-                    // Calculate Returned variant qty
-                    $returnedQty = 0;
-                    foreach ($returnsList as $rItem) {
-                        $rColor = $rItem->color;
-                        if (empty($rColor)) {
-                            $saleColors = $saleItemsMap[$rItem->sale_id] ?? [];
-                            $rColor = !empty($saleColors) ? $saleColors[0] : '';
+                        // Calculate Returned variant qty
+                        $returnedQty = 0;
+                        foreach ($returnsList as $rItem) {
+                            $rColor = $rItem->color;
+                            if (empty($rColor)) {
+                                $saleColors = $saleItemsMap[$rItem->sale_id] ?? [];
+                                $rColor = !empty($saleColors) ? $saleColors[0] : '';
+                            }
+                            $rItemCopy = (object)[
+                                'qty' => $rItem->qty,
+                                'color' => $rColor
+                            ];
+                            if ($this->matchSaleItemToVariant($rItemCopy, $v)) {
+                                $returnedQty += (float) $rItem->qty;
+                            }
                         }
-                        $rItemCopy = (object)[
-                            'qty' => $rItem->qty,
-                            'color' => $rColor
-                        ];
-                        if ($this->matchSaleItemToVariant($rItemCopy, $v)) {
-                            $returnedQty += (float) $rItem->qty;
-                        }
-                    }
 
-                    $vBalance = max(0, $initial + $purchased - $sold + $returnedQty - $pReturned);
+                        $vBalance = max(0, $initial + $purchased - $sold + $returnedQty - $pReturned);
+                    }
 
                     $vStockDisplay = $vBalance;
                     if (($p->size_mode === 'by_cartons' || $p->size_mode === 'by_size') && $ppb > 1) {
@@ -590,6 +598,37 @@ class ProductController extends Controller
                 $purch_prices = $request->variant_purchase_price;
                 $alerts = $request->variant_alert_qty;
                 $barcodes = $request->variant_barcode;
+                $conv_factors = $request->variant_conv_factor;
+                $is_bases = $request->variant_is_base;
+
+                // Validate Conv Factors if Weight Unit is selected
+                if (in_array($mode, ['by_kg', 'by_gm', 'by_ton'])) {
+                    $factors = [];
+                    $baseCount = 0;
+                    for ($i = 0; $i < count($names); $i++) {
+                        if (!empty($names[$i])) {
+                            $factor = (float)($conv_factors[$i] ?? 0);
+                            $isBase = (int)($is_bases[$i] ?? 0);
+                            if ($factor <= 0) {
+                                throw new \Exception("Conversion Factor must be greater than 0.");
+                            }
+                            if (in_array((string)$factor, $factors, true)) {
+                                throw new \Exception("Duplicate Conversion Factor found: " . $factor);
+                            }
+                            $factors[] = (string)$factor;
+                            if ($isBase === 1) {
+                                $baseCount++;
+                                if ($factor != 1) {
+                                    throw new \Exception("Base variant must have Conversion Factor exactly equal to 1.");
+                                }
+                            }
+                        }
+                    }
+                    if ($baseCount !== 1) {
+                        throw new \Exception("Exactly one Base Variant is required for weight units.");
+                    }
+                }
+
                 for ($i = 0; $i < count($names); $i++) {
                     if (!empty($names[$i])) {
                         $variants[] = [
@@ -603,6 +642,8 @@ class ProductController extends Controller
                             'purch_price' => $purch_prices[$i] ?? 0,
                             'alert' => $alerts[$i] ?? 0,
                             'barcode' => $barcodes[$i] ?? '',
+                            'conv_factor' => $conv_factors[$i] ?? 0,
+                            'is_base_variant' => $is_bases[$i] ?? 0,
                         ];
                     }
                 }
@@ -840,6 +881,37 @@ class ProductController extends Controller
                 $purch_prices = $request->variant_purchase_price;
                 $alerts = $request->variant_alert_qty;
                 $barcodes = $request->variant_barcode;
+                $conv_factors = $request->variant_conv_factor;
+                $is_bases = $request->variant_is_base;
+
+                // Validate Conv Factors if Weight Unit is selected
+                if (in_array($mode, ['by_kg', 'by_gm', 'by_ton'])) {
+                    $factors = [];
+                    $baseCount = 0;
+                    for ($i = 0; $i < count($names); $i++) {
+                        if (!empty($names[$i])) {
+                            $factor = (float)($conv_factors[$i] ?? 0);
+                            $isBase = (int)($is_bases[$i] ?? 0);
+                            if ($factor <= 0) {
+                                throw new \Exception("Conversion Factor must be greater than 0.");
+                            }
+                            if (in_array((string)$factor, $factors, true)) {
+                                throw new \Exception("Duplicate Conversion Factor found: " . $factor);
+                            }
+                            $factors[] = (string)$factor;
+                            if ($isBase === 1) {
+                                $baseCount++;
+                                if ($factor != 1) {
+                                    throw new \Exception("Base variant must have Conversion Factor exactly equal to 1.");
+                                }
+                            }
+                        }
+                    }
+                    if ($baseCount !== 1) {
+                        throw new \Exception("Exactly one Base Variant is required for weight units.");
+                    }
+                }
+
                 for ($i = 0; $i < count($names); $i++) {
                     if (!empty($names[$i])) {
                         $variants[] = [
@@ -853,6 +925,8 @@ class ProductController extends Controller
                             'purch_price' => $purch_prices[$i] ?? 0,
                             'alert' => $alerts[$i] ?? 0,
                             'barcode' => $barcodes[$i] ?? '',
+                            'conv_factor' => $conv_factors[$i] ?? 0,
+                            'is_base_variant' => $is_bases[$i] ?? 0,
                         ];
                     }
                 }
@@ -921,29 +995,15 @@ class ProductController extends Controller
             // BOM re-save logic removed as table does not exist
             // DB::table('product_boms')->where('product_id', $id)->delete();
 
-            // ✅ Update WarehouseStock when stock quantities change
+            // ✅ Update WarehouseStock box quantity based on new pieces_per_box (preserve total_pieces)
             $warehouseStock = \App\Models\WarehouseStock::where('product_id', $id)->first();
-            $newTotalPieces = 0;
-            if ($mode === 'by_cartons') {
-                $newTotalPieces = ($piecesPerBox * $boxesQuantity) + $loosePieces;
-            } elseif ($mode === 'by_size') {
-                $newTotalPieces = $boxesQuantity * $piecesPerBox;
-            } elseif ($mode === 'by_pieces') {
-                $newTotalPieces = $pieceQuantity;
-            }
+            
+            $ppb = $piecesPerBox > 0 ? $piecesPerBox : 1;
 
             if ($warehouseStock) {
-                $warehouseStock->quantity      = $boxesQuantity;
-                $warehouseStock->total_pieces  = $newTotalPieces;
+                // Keep the actual pieces we have, just update the box display approximation
+                $warehouseStock->quantity = round($warehouseStock->total_pieces / $ppb, 2);
                 $warehouseStock->save();
-            } else {
-                \App\Models\WarehouseStock::create([
-                    'warehouse_id' => \App\Models\Warehouse::first()->id ?? 1,
-                    'product_id'   => $id,
-                    'quantity'     => $boxesQuantity,
-                    'total_pieces' => $newTotalPieces,
-                    'remarks'      => 'Updated via edit',
-                ]);
             }
 
             // Manual stock adjustment (extra on top)
