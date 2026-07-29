@@ -241,6 +241,21 @@ class SaleReturnController extends Controller
                     'line_total' => $lineTotal,
                 ]);
 
+                // Calculate Stock Qty with Variant Conv Factor
+                $stockQty = $qty;
+                $rColor = $request->color[$idx] ?? null;
+                if (!empty($rColor)) {
+                    try {
+                        $variantData = is_string($rColor) ? json_decode($rColor, true) : $rColor;
+                        if (is_array($variantData) && isset($variantData['conv_factor'])) {
+                            $factor = (float)$variantData['conv_factor'];
+                            if ($factor > 0) {
+                                $stockQty = $qty * $factor;
+                            }
+                        }
+                    } catch (\Exception $e) {}
+                }
+
                 // Update Stock (INCREMENT - goods coming back)
                 $stock = WarehouseStock::where('warehouse_id', $validated['warehouse_id'])
                     ->where('product_id', $productId)
@@ -253,7 +268,7 @@ class SaleReturnController extends Controller
                     if ($currentTotalPieces == 0 && $stock->quantity > 0) {
                         $currentTotalPieces = $stock->quantity * $ppb;
                     }
-                    $newTotalPieces = $currentTotalPieces + $qty;
+                    $newTotalPieces = $currentTotalPieces + $stockQty;
                     
                     $stock->total_pieces = $newTotalPieces;
                     $stock->quantity = $newTotalPieces / $ppb;
@@ -263,8 +278,8 @@ class SaleReturnController extends Controller
                     WarehouseStock::create([
                         'warehouse_id' => $validated['warehouse_id'],
                         'product_id' => $productId,
-                        'total_pieces' => $qty,
-                        'quantity' => $qty / $ppb,
+                        'total_pieces' => $stockQty,
+                        'quantity' => $stockQty / $ppb,
                         'price' => 0
                     ]);
                 }
@@ -273,7 +288,7 @@ class SaleReturnController extends Controller
                 $movements[] = [
                     'product_id' => $productId,
                     'type' => 'in',
-                    'qty' => $qty,
+                    'qty' => $stockQty,
                     'ref_type' => 'SALE_RETURN',
                     'ref_id' => $return->id,
                     'note' => "Return #{$nextInvoice}",

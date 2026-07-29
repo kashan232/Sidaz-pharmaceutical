@@ -558,11 +558,31 @@ class SaleController extends Controller
                 ->where('warehouse_id', $warehouseId)
                 ->first();
 
+            // Find variant color from SaleItem
+            $saleColor = null;
+            if ($sale && $sale->items) {
+                $sItem = $sale->items->where('product_id', $productId)->first();
+                if ($sItem) $saleColor = $sItem->color;
+            }
+
+            $stockQty = $qty;
+            if (!empty($saleColor)) {
+                try {
+                    $variantData = is_string($saleColor) ? json_decode($saleColor, true) : $saleColor;
+                    if (is_array($variantData) && isset($variantData['conv_factor'])) {
+                        $factor = (float)$variantData['conv_factor'];
+                        if ($factor > 0) {
+                            $stockQty = $qty * $factor;
+                        }
+                    }
+                } catch (\Exception $e) {}
+            }
+
             if ($stock) {
-                $stock->total_pieces += $qty;
+                $stock->total_pieces += $stockQty;
                 $prod = Product::find($productId);
                 $ppb = $prod->pieces_per_box > 0 ? $prod->pieces_per_box : 1;
-                $stock->quantity += ($qty / $ppb);
+                $stock->quantity += ($stockQty / $ppb);
                 $stock->save();
             }
 
@@ -570,7 +590,7 @@ class SaleController extends Controller
             $srMovements[] = [
                 'product_id' => $productId,
                 'type' => 'in',
-                'qty' => $qty,
+                'qty' => $stockQty,
                 'ref_type' => 'SR',
                 'ref_id' => $saleReturn->id,
                 'note' => 'Sale return approved',
@@ -1342,6 +1362,19 @@ class SaleController extends Controller
                                     'purchase_price' => $origSaleItem->purchase_price,
                                 ];
                             } else {
+                                // Normalize qty for stock based on variant conv_factor
+                                $stockQty = $rQty;
+                                if (!empty($rColor)) {
+                                    try {
+                                        $variantData = is_string($rColor) ? json_decode($rColor, true) : $rColor;
+                                        if (is_array($variantData) && isset($variantData['conv_factor'])) {
+                                            $factor = (float)$variantData['conv_factor'];
+                                            if ($factor > 0) {
+                                                $stockQty = $stockQty * $factor;
+                                            }
+                                        }
+                                    } catch (\Exception $e) {}
+                                }
                                 // Restore stock
                                 $stock = \App\Models\WarehouseStock::where('warehouse_id', 1)
                                     ->where('product_id', $rPid)
@@ -1349,7 +1382,7 @@ class SaleController extends Controller
                                     ->first();
 
                                 if ($stock) {
-                                    $newTotalPieces = $stock->total_pieces + $rQty;
+                                    $newTotalPieces = $stock->total_pieces + $stockQty;
                                     $stock->total_pieces = $newTotalPieces;
                                     $stock->quantity = $newTotalPieces / $ppb;
                                     $stock->save();
@@ -1357,8 +1390,8 @@ class SaleController extends Controller
                                     \App\Models\WarehouseStock::create([
                                         'warehouse_id' => 1,
                                         'product_id' => $rPid,
-                                        'total_pieces' => $rQty,
-                                        'quantity' => $rQty / $ppb,
+                                        'total_pieces' => $stockQty,
+                                        'quantity' => $stockQty / $ppb,
                                         'price' => 0
                                     ]);
                                 }
@@ -1367,7 +1400,7 @@ class SaleController extends Controller
                                 $movements[] = [
                                     'product_id' => $rPid,
                                     'type' => 'in',
-                                    'qty' => $rQty,
+                                    'qty' => $stockQty,
                                     'ref_type' => 'SALE_RETURN',
                                     'ref_id' => $returnHeader->id,
                                     'note' => "Exchange Return #{$nextInvoice} on Sale #{$sale->invoice_no}",
@@ -1677,7 +1710,20 @@ class SaleController extends Controller
             }
 
             // Convert everything to pieces for calculation
-            $qtyPieces = $item->total_pieces;
+            $qtyPieces = (float)$item->total_pieces;
+
+            // Apply weight variant conversion factor if present
+            if (!empty($item->color)) {
+                try {
+                    $variantData = is_string($item->color) ? json_decode($item->color, true) : $item->color;
+                    if (is_array($variantData) && isset($variantData['conv_factor'])) {
+                        $factor = (float)$variantData['conv_factor'];
+                        if ($factor > 0) {
+                            $qtyPieces = $qtyPieces * $factor;
+                        }
+                    }
+                } catch (\Exception $e) {}
+            }
 
             if ($type === 'out') {
                 // Deduct

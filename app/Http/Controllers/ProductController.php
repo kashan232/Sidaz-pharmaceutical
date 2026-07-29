@@ -590,6 +590,37 @@ class ProductController extends Controller
                 $purch_prices = $request->variant_purchase_price;
                 $alerts = $request->variant_alert_qty;
                 $barcodes = $request->variant_barcode;
+                $conv_factors = $request->variant_conv_factor;
+                $is_bases = $request->variant_is_base;
+
+                // Validate Conv Factors if Weight Unit is selected
+                if (in_array($mode, ['by_kg', 'by_gm', 'by_ton'])) {
+                    $factors = [];
+                    $baseCount = 0;
+                    for ($i = 0; $i < count($names); $i++) {
+                        if (!empty($names[$i])) {
+                            $factor = (float)($conv_factors[$i] ?? 0);
+                            $isBase = (int)($is_bases[$i] ?? 0);
+                            if ($factor <= 0) {
+                                throw new \Exception("Conversion Factor must be greater than 0.");
+                            }
+                            if (in_array((string)$factor, $factors, true)) {
+                                throw new \Exception("Duplicate Conversion Factor found: " . $factor);
+                            }
+                            $factors[] = (string)$factor;
+                            if ($isBase === 1) {
+                                $baseCount++;
+                                if ($factor != 1) {
+                                    throw new \Exception("Base variant must have Conversion Factor exactly equal to 1.");
+                                }
+                            }
+                        }
+                    }
+                    if ($baseCount !== 1) {
+                        throw new \Exception("Exactly one Base Variant is required for weight units.");
+                    }
+                }
+
                 for ($i = 0; $i < count($names); $i++) {
                     if (!empty($names[$i])) {
                         $variants[] = [
@@ -603,6 +634,8 @@ class ProductController extends Controller
                             'purch_price' => $purch_prices[$i] ?? 0,
                             'alert' => $alerts[$i] ?? 0,
                             'barcode' => $barcodes[$i] ?? '',
+                            'conv_factor' => $conv_factors[$i] ?? 0,
+                            'is_base_variant' => $is_bases[$i] ?? 0,
                         ];
                     }
                 }
@@ -840,6 +873,37 @@ class ProductController extends Controller
                 $purch_prices = $request->variant_purchase_price;
                 $alerts = $request->variant_alert_qty;
                 $barcodes = $request->variant_barcode;
+                $conv_factors = $request->variant_conv_factor;
+                $is_bases = $request->variant_is_base;
+
+                // Validate Conv Factors if Weight Unit is selected
+                if (in_array($mode, ['by_kg', 'by_gm', 'by_ton'])) {
+                    $factors = [];
+                    $baseCount = 0;
+                    for ($i = 0; $i < count($names); $i++) {
+                        if (!empty($names[$i])) {
+                            $factor = (float)($conv_factors[$i] ?? 0);
+                            $isBase = (int)($is_bases[$i] ?? 0);
+                            if ($factor <= 0) {
+                                throw new \Exception("Conversion Factor must be greater than 0.");
+                            }
+                            if (in_array((string)$factor, $factors, true)) {
+                                throw new \Exception("Duplicate Conversion Factor found: " . $factor);
+                            }
+                            $factors[] = (string)$factor;
+                            if ($isBase === 1) {
+                                $baseCount++;
+                                if ($factor != 1) {
+                                    throw new \Exception("Base variant must have Conversion Factor exactly equal to 1.");
+                                }
+                            }
+                        }
+                    }
+                    if ($baseCount !== 1) {
+                        throw new \Exception("Exactly one Base Variant is required for weight units.");
+                    }
+                }
+
                 for ($i = 0; $i < count($names); $i++) {
                     if (!empty($names[$i])) {
                         $variants[] = [
@@ -853,6 +917,8 @@ class ProductController extends Controller
                             'purch_price' => $purch_prices[$i] ?? 0,
                             'alert' => $alerts[$i] ?? 0,
                             'barcode' => $barcodes[$i] ?? '',
+                            'conv_factor' => $conv_factors[$i] ?? 0,
+                            'is_base_variant' => $is_bases[$i] ?? 0,
                         ];
                     }
                 }
