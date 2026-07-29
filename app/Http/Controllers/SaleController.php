@@ -568,7 +568,11 @@ class SaleController extends Controller
             $stockQty = $qty;
             if (!empty($saleColor)) {
                 try {
-                    $variantData = is_string($saleColor) ? json_decode($saleColor, true) : $saleColor;
+                    $b64Decoded = base64_decode($saleColor, true);
+                    $variantData = $b64Decoded !== false ? json_decode($b64Decoded, true) : null;
+                    if (!is_array($variantData)) {
+                        $variantData = is_string($saleColor) ? json_decode($saleColor, true) : $saleColor;
+                    }
                     if (is_array($variantData) && isset($variantData['conv_factor'])) {
                         $factor = (float)$variantData['conv_factor'];
                         if ($factor > 0) {
@@ -1359,6 +1363,7 @@ class SaleController extends Controller
                                     'vendor_id' => $origSaleItem->vendor_id,
                                     'product_name' => $origSaleItem->product_name,
                                     'qty' => $rQty,
+                            // Normalize qty for stock based on variant conv_factor
                                     'purchase_price' => $origSaleItem->purchase_price,
                                 ];
                             } else {
@@ -1366,7 +1371,11 @@ class SaleController extends Controller
                                 $stockQty = $rQty;
                                 if (!empty($rColor)) {
                                     try {
-                                        $variantData = is_string($rColor) ? json_decode($rColor, true) : $rColor;
+                                        $b64Decoded = base64_decode($rColor, true);
+                                        $variantData = $b64Decoded !== false ? json_decode($b64Decoded, true) : null;
+                                        if (!is_array($variantData)) {
+                                            $variantData = is_string($rColor) ? json_decode($rColor, true) : $rColor;
+                                        }
                                         if (is_array($variantData) && isset($variantData['conv_factor'])) {
                                             $factor = (float)$variantData['conv_factor'];
                                             if ($factor > 0) {
@@ -1715,7 +1724,12 @@ class SaleController extends Controller
             // Apply weight variant conversion factor if present
             if (!empty($item->color)) {
                 try {
-                    $variantData = is_string($item->color) ? json_decode($item->color, true) : $item->color;
+                    $itemColor = $item->color;
+                    $b64Decoded = base64_decode($itemColor, true);
+                    $variantData = $b64Decoded !== false ? json_decode($b64Decoded, true) : null;
+                    if (!is_array($variantData)) {
+                        $variantData = is_string($itemColor) ? json_decode($itemColor, true) : $itemColor;
+                    }
                     if (is_array($variantData) && isset($variantData['conv_factor'])) {
                         $factor = (float)$variantData['conv_factor'];
                         if ($factor > 0) {

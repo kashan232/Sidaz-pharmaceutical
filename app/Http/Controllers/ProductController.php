@@ -168,49 +168,57 @@ class ProductController extends Controller
                     $vName = ($v['name'] ?? $p->item_name) . $size . $color;
                     
                     $initial = (float) ($v['stock'] ?? 0);
+                    $vBalance = 0;
 
-                    // Calculate Purchased variant qty
-                    $purchased = 0;
-                    foreach ($purchasesList as $pItem) {
-                        if ($this->matchSaleItemToVariant($pItem, $v)) {
-                            $purchased += (float) $pItem->total_pieces;
+                    if (isset($v['conv_factor'])) {
+                        // Weight Unit: Calculate purely based on Product's central total Kg divided by variant's conversion factor
+                        $factor = (float) $v['conv_factor'];
+                        $factor = $factor > 0 ? $factor : 1;
+                        $vBalance = floor($stockPieces / $factor);
+                    } else {
+                        // Calculate Purchased variant qty
+                        $purchased = 0;
+                        foreach ($purchasesList as $pItem) {
+                            if ($this->matchSaleItemToVariant($pItem, $v)) {
+                                $purchased += (float) $pItem->total_pieces;
+                            }
                         }
-                    }
 
-                    // Calculate Purchase Returned variant qty
-                    $pReturned = 0;
-                    foreach ($purchaseReturnsList as $prItem) {
-                        if ($this->matchSaleItemToVariant($prItem, $v)) {
-                            $pReturned += (float) $prItem->qty;
+                        // Calculate Purchase Returned variant qty
+                        $pReturned = 0;
+                        foreach ($purchaseReturnsList as $prItem) {
+                            if ($this->matchSaleItemToVariant($prItem, $v)) {
+                                $pReturned += (float) $prItem->qty;
+                            }
                         }
-                    }
-                    
-                    // Calculate Sold variant qty
-                    $sold = 0;
-                    foreach ($salesList as $sItem) {
-                        if ($this->matchSaleItemToVariant($sItem, $v)) {
-                            $sold += (float) $sItem->total_pieces;
+                        
+                        // Calculate Sold variant qty
+                        $sold = 0;
+                        foreach ($salesList as $sItem) {
+                            if ($this->matchSaleItemToVariant($sItem, $v)) {
+                                $sold += (float) $sItem->total_pieces;
+                            }
                         }
-                    }
 
-                    // Calculate Returned variant qty
-                    $returnedQty = 0;
-                    foreach ($returnsList as $rItem) {
-                        $rColor = $rItem->color;
-                        if (empty($rColor)) {
-                            $saleColors = $saleItemsMap[$rItem->sale_id] ?? [];
-                            $rColor = !empty($saleColors) ? $saleColors[0] : '';
+                        // Calculate Returned variant qty
+                        $returnedQty = 0;
+                        foreach ($returnsList as $rItem) {
+                            $rColor = $rItem->color;
+                            if (empty($rColor)) {
+                                $saleColors = $saleItemsMap[$rItem->sale_id] ?? [];
+                                $rColor = !empty($saleColors) ? $saleColors[0] : '';
+                            }
+                            $rItemCopy = (object)[
+                                'qty' => $rItem->qty,
+                                'color' => $rColor
+                            ];
+                            if ($this->matchSaleItemToVariant($rItemCopy, $v)) {
+                                $returnedQty += (float) $rItem->qty;
+                            }
                         }
-                        $rItemCopy = (object)[
-                            'qty' => $rItem->qty,
-                            'color' => $rColor
-                        ];
-                        if ($this->matchSaleItemToVariant($rItemCopy, $v)) {
-                            $returnedQty += (float) $rItem->qty;
-                        }
-                    }
 
-                    $vBalance = max(0, $initial + $purchased - $sold + $returnedQty - $pReturned);
+                        $vBalance = max(0, $initial + $purchased - $sold + $returnedQty - $pReturned);
+                    }
 
                     $vStockDisplay = $vBalance;
                     if (($p->size_mode === 'by_cartons' || $p->size_mode === 'by_size') && $ppb > 1) {
