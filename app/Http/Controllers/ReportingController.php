@@ -982,6 +982,22 @@ class ReportingController extends Controller
                 $total_pieces_arr = $sale->items->pluck('total_pieces')->implode(',');
                 $prices = $sale->items->pluck('price')->implode(','); // Unit Price
                 $totals = $sale->items->pluck('total')->implode(','); // Line Total
+                $isExchange = \Illuminate\Support\Str::startsWith($sale->reference ?? '', 'Exchange for');
+                $netAmount = (float)$sale->total_net;
+
+                if ($isExchange) {
+                    $collected = (float)$sale->cash - (float)$sale->change;
+                    if ($collected > 0) {
+                        $netAmount = $collected;
+                    } elseif ($collected <= 0) {
+                        $refundPayment = \App\Models\CustomerPayment::where('note', 'Refund Paid for POS Exchange #'.$sale->invoice_no)->first();
+                        if ($refundPayment) {
+                            $netAmount = -(float)$refundPayment->amount;
+                        } else {
+                            $netAmount = 0;
+                        }
+                    }
+                }
 
                 return [
                     'id' => $sale->id,
@@ -996,7 +1012,7 @@ class ReportingController extends Controller
                     'qty_decimal' => $qty_decimals,
                     'total_pieces' => $total_pieces_arr,
                     'per_total' => $totals,
-                    'total_net' => $sale->total_net,
+                    'total_net' => $netAmount,
                     'created_at' => $sale->created_at->format('Y-m-d h:i:s A'),
                     'customer_name' => $sale->customer_relation ? $sale->customer_relation->customer_name : 'Walk-in',
                     'returns' => $sale->returns->map(function($ret) {
