@@ -589,7 +589,7 @@ class PurchaseController extends Controller
                 'product_id' => 'array',
                 'product_id.*' => 'nullable|exists:products,id',
                 'qty' => 'array',
-                'qty.*' => 'nullable|required_with:product_id.*|numeric|min:1',
+                'qty.*' => 'nullable|required_with:product_id.*|numeric|min:0.01',
                 'price' => 'array',
                 'price.*' => 'nullable|required_with:product_id.*|numeric|min:0',
                 'price_per_carton' => 'array',

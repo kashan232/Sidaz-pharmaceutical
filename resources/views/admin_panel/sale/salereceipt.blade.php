@@ -346,7 +346,17 @@
                         $totalPieces = (int) $item['total_pieces'];
 
                         $qtyDisplay = $totalPieces;
-                        if ($sizeMode == 'by_cartons' || $sizeMode == 'by_size') {
+                        if (in_array($sizeMode, ['by_kg', 'by_gm', 'by_feet', 'by_meter'])) {
+                            $uomLabel = match($sizeMode) {
+                                'by_kg' => 'Kg',
+                                'by_gm' => 'Gm',
+                                'by_feet' => 'Ft',
+                                'by_meter' => 'Mtr',
+                                default => '',
+                            };
+                            $qtyVal = (float)($item['qty'] ?? $totalPieces);
+                            $qtyDisplay = ($qtyVal == (int)$qtyVal ? (int)$qtyVal : number_format($qtyVal, 2)) . ' ' . $uomLabel;
+                        } elseif ($sizeMode == 'by_cartons' || $sizeMode == 'by_size') {
                             $piecesPerBox = (int)($item['pieces_per_box'] ?? 1);
                             if ($piecesPerBox <= 0) $piecesPerBox = 1;
                             $boxes = floor($totalPieces / $piecesPerBox);

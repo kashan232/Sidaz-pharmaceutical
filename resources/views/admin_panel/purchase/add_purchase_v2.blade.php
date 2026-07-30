@@ -293,16 +293,48 @@
             background-color: #f8fafc !important;
         }
         
-        /* Column Widths */
-        .col-product { width: 300px; min-width: 250px; }
-        .col-qty { width: 100px; }
-        .col-stock { width: 90px; }
-        .col-pieces { width: 100px; }
-        .col-price { width: 120px; }
-        .col-disc { width: 80px; }
-        .col-disc-amt { width: 95px; }
-        .col-amount { width: 120px; text-align: right; }
-        .col-action { width: 50px; text-align: center; }
+        /* Column Widths & Layout */
+        body {
+            overflow-x: hidden !important;
+        }
+
+        .main-container {
+            border: 2px solid #475569 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
+            background-color: #ffffff !important;
+            padding: 18px !important;
+            font-size: .85rem;
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }
+
+        .table-responsive {
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 8px !important;
+            overflow-x: hidden !important;
+            overflow-y: visible !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03) !important;
+            min-height: 150px;
+            background-color: #ffffff;
+        }
+
+        .sales-table {
+            border-collapse: collapse !important;
+            margin-bottom: 0 !important;
+            width: 100% !important;
+            table-layout: auto !important;
+        }
+
+        .col-product { width: 36%; }
+        .col-unit { width: 10%; text-align: center; }
+        .col-qty { width: 12%; text-align: center; }
+        .col-price { width: 13%; text-align: right; }
+        .col-disc { width: 8%; text-align: right; }
+        .col-disc-amt { width: 9%; text-align: right; }
+        .col-amount { width: 12%; text-align: right; }
+        .col-action { width: 4%; text-align: center; }
 
         /* Product Search Dropdown */
         .search-results {
@@ -338,8 +370,8 @@
         }
     </style>
 
-    <div class="container-fluid py-2">
-        <div class="main-container bg-white border shadow-sm mx-auto p-2 rounded-3">
+    <div class="container-fluid py-2 px-1">
+        <div class="main-container bg-white border shadow-sm mx-auto p-3 rounded-3">
 
             <div id="alertBox" class="alert d-none mb-3" role="alert"></div>
 
@@ -347,139 +379,121 @@
                 @csrf
                 <input type="hidden" id="action" name="action" value="purchase">
 
-                {{-- HEADER --}}
-                <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-                    <div>
-                        <a href="{{ route('Purchase.home') }}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-arrow-left"></i> Back to List
-                        </a>
+                {{-- TOP HEADER & INVOICE / VENDOR CARD --}}
+                <div class="card-panel shadow-sm mb-3 p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{{ route('Purchase.home') }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to List
+                            </a>
+                            <h4 class="header-text text-dark fw-bold mb-0 ms-2">Purchase Entry</h4>
+                        </div>
+                        <div>
+                            <span class="badge bg-light text-secondary border px-3 py-2 fs-6 fw-semibold" id="entryDate">
+                                Date: {{ date('d/m/Y') }}
+                            </span>
+                        </div>
                     </div>
 
-                    <h2 class="header-text text-secondary fw-bold mb-0">Purchase Entry</h2>
-
-                    <div class="d-flex align-items-center gap-2">
-                        <small class="text-secondary" id="entryDate">Date: {{ date('d/m/Y') }}</small>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1 text-muted small">System No.</label>
+                            <input type="text" class="form-control input-readonly" name="invoice_no" value="{{ $nextInvoice ?? 'NEW' }}" readonly>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1 text-muted small">Vendor Inv#</label>
+                            <input type="text" class="form-control" name="purchase_order_no" placeholder="Manual Ref">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold mb-1 text-muted small">Select Vendor</label>
+                            <div class="d-flex align-items-center gap-1">
+                                <div class="flex-grow-1">
+                                    <select class="form-select select2" id="vendorSelect" name="vendor_id">
+                                        <option value="" selected disabled>Select Vendor</option>
+                                        @foreach ($Vendor as $v)
+                                            <option value="{{ $v->id }}" data-phone="{{ $v->phone }}" data-address="{{ $v->address }}">{{ $v->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-primary shadow-sm" data-toggle="modal" data-target="#addVendorModal" style="padding: 0.38rem 0.75rem;" title="Add New Vendor">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold mb-1 text-muted small">Date</label>
+                            <input type="text" name="purchase_date" class="form-control datepicker-custom" value="{{ date('Y-m-d') }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold mb-1 text-muted small">M.Bill / Remarks</label>
+                            <input type="text" class="form-control" name="note" id="remarks" placeholder="Optional notes...">
+                        </div>
                     </div>
+
+                    <!-- TOP VENDOR DETAILS & HISTORY STRIP -->
+                    <div id="vendorInfoCard" class="mt-3 p-2 border rounded-3 bg-light d-none">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 px-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-telephone-fill text-primary"></i>
+                                <span class="fw-bold text-muted small">Mobile:</span>
+                                <span class="fw-semibold text-dark small" id="vi_mobile">—</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-geo-alt-fill text-primary"></i>
+                                <span class="fw-bold text-muted small">Address:</span>
+                                <span class="fw-semibold text-dark small" id="vi_address">—</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-danger-subtle text-danger border border-danger fs-6 px-3 py-1">
+                                    Previous Balance: Rs. <span id="vi_prev_bal">0.00</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="warehouse_id" value="{{ $Warehouse->first()->id ?? 1 }}">
                 </div>
 
-                <div class="row g-3 border-bottom pb-4 mb-3">
-                    {{-- LEFT: Invoice & Vendor --}}
-                    <div class="col-lg-3 col-md-4">
-                        <div class="card-panel shadow-sm">
-                            <div class="section-title mb-3">Invoice & Vendor</div>
-
-                            <div class="mb-2 d-flex align-items-center gap-2">
-                                <label class="form-label fw-bold mb-0 text-muted small" style="min-width: 80px;">System
-                                    No.</label>
-                                <input type="text" class="form-control input-readonly" name="invoice_no"
-                                    value="{{ $nextInvoice ?? 'NEW' }}" readonly>
-                            </div>
-
-                            <div class="mb-2 d-flex align-items-center gap-2">
-                                <label class="form-label fw-bold mb-0 text-muted small" style="min-width: 80px;">Vendor
-                                    Inv#</label>
-                                <input type="text" class="form-control" name="purchase_order_no"
-                                    placeholder="Manual Ref">
-                            </div>
-
-                            <!-- VENDOR SELECT -->
-                            <div class="mb-2">
-                                <label class="form-label fw-bold mb-1 text-muted small">Select Vendor</label>
-                                <div class="d-flex align-items-center gap-1">
-                                    <div class="flex-grow-1">
-                                        <select class="form-select select2" id="vendorSelect" name="vendor_id">
-                                            <option value="" selected disabled>Select Vendor</option>
-                                            @foreach ($Vendor as $v)
-                                                <option value="{{ $v->id }}" data-phone="{{ $v->phone }}"
-                                                    data-address="{{ $v->address }}">{{ $v->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <button type="button" class="btn btn-primary shadow-sm" data-toggle="modal" data-target="#addVendorModal" style="padding: 0.38rem 0.75rem;" title="Add New Vendor">
-                                        <i class="bi bi-plus-lg"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="mb-2">
-                                <label class="form-label fw-bold mb-1 text-muted small">Date</label>
-                                <input type="text" name="purchase_date" class="form-control datepicker-custom" value="{{ date('Y-m-d') }}">
-                            </div>
-
-                            <div class="mb-2">
-                                <label class="form-label fw-bold text-muted small"> M.Bill</label>
-                                <textarea class="form-control" name="note" id="remarks" rows="2" placeholder="Optional notes..."></textarea>
-                            </div>
-
-                            <!-- VENDOR INFO CARD -->
-                            <div id="vendorInfoCard" class="mt-3 p-2 border rounded-2 bg-light d-none">
-                                <div class="fw-bold text-muted small mb-2 border-bottom pb-1">Vendor Details</div>
-                                <table class="table table-sm table-borderless mb-0" style="font-size:0.82rem">
-                                    <tr>
-                                        <td class="fw-bold text-muted py-0" style="width:90px">Mobile</td>
-                                        <td class="py-0" id="vi_mobile">—</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold text-muted py-0">Address</td>
-                                        <td class="py-0" id="vi_address">—</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold text-danger py-0">Prev. Bal</td>
-                                        <td class="py-0 text-danger fw-bold" id="vi_prev_bal">0.00</td>
-                                    </tr>
-                                </table>
-                            </div>
-
-                            <input type="hidden" name="warehouse_id" value="{{ $Warehouse->first()->id ?? 1 }}">
-
+                {{-- PURCHASE ITEMS (FULL WIDTH) --}}
+                <div class="card-panel shadow-sm p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="section-title mb-0">Purchase Items</div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-success px-3 shadow-sm" data-toggle="modal" data-target="#quickAddProductModal">
+                                <i class="bi bi-plus-circle me-1"></i>Quick Add Product
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary px-3 shadow-sm" id="btnAdd">
+                                <i class="bi bi-plus-lg"></i> Add Row
+                            </button>
                         </div>
                     </div>
 
-                    {{-- RIGHT: Items --}}
-                    <div class="col-lg-9 col-md-8">
-                        <div class="card-panel shadow-sm p-3">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div class="section-title mb-0">Purchase Items</div>
-                                <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-sm btn-outline-success px-3 shadow-sm" data-toggle="modal" data-target="#quickAddProductModal">
-                                        <i class="bi bi-plus-circle me-1"></i>Quick Add Product
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-primary px-3 shadow-sm" id="btnAdd">
-                                        <i class="bi bi-plus-lg"></i> Add Row
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="table-responsive border rounded-3 bg-white">
-                                <table class="table table-bordered sales-table mb-0" id="purchaseTable">
-                                    <thead>
-                                        <tr>
-                                            <th class="col-product">Product</th>
-                                            <th class="col-qty">Cartons</th>
-                                            <th class="col-qty">Loose Pcs</th>
-                                            <th class="col-stock">Pack Size</th>
-                                            <th class="col-pieces">Total Pcs</th>
-                                            <th class="col-price">Purchase Price</th>
-                                            <th class="col-disc">Disc %</th>
-                                            <th class="col-disc-amt">Disc Amt</th>
-                                            <th class="col-amount">Amount</th>
-                                            <th class="col-action">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="purchaseTableBody">
-                                        <!-- Rows added via JS -->
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="8" class="text-end fw-bold text-muted">Total Amount:</td>
-                                            <td class="text-end fw-bold fs-6 text-dark"><span id="totalAmount">0.00</span>
-                                            </td>
-                                            <td></td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                        </div>
+                    <div class="table-responsive border rounded-3 bg-white">
+                        <table class="table table-bordered sales-table mb-0" id="purchaseTable">
+                            <thead>
+                                <tr>
+                                    <th class="col-product">Product</th>
+                                    <th class="col-unit">Unit</th>
+                                    <th class="col-qty">Qty</th>
+                                    <th class="col-price">Purchase Price</th>
+                                    <th class="col-disc">Disc %</th>
+                                    <th class="col-disc-amt">Disc Amt</th>
+                                    <th class="col-amount">Amount</th>
+                                    <th class="col-action">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="purchaseTableBody">
+                                <!-- Rows added via JS -->
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="6" class="text-end fw-bold text-muted">Total Amount:</td>
+                                    <td class="text-end fw-bold fs-6 text-dark"><span id="totalAmount">0.00</span>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
                     </div>
                 </div>
 
@@ -517,7 +531,7 @@
                             <div class="section-title mb-3">Summary</div>
                             <div class="p-3 bg-light rounded-3 border">
                                 <div class="row py-1 align-items-center">
-                                    <div class="col-7 text-muted fw-medium">Total Qty (Pieces)</div>
+                                    <div class="col-7 text-muted fw-medium">Total Qty</div>
                                     <div class="col-5 text-end"><span id="tQty" class="fw-bold">0</span></div>
                                 </div>
                                 <div class="row py-1 align-items-center">
@@ -672,7 +686,7 @@
             });
 
             // Inputs -> Calc
-            $('#purchaseTableBody').on('input', '.carton-qty, .loose-qty, .price, .item-disc-percent', function() {
+            $('#purchaseTableBody').on('input', '.main-qty-input, .price, .item-disc-percent', function() {
                 recalcRow($(this).closest('tr'));
                 recalcAll();
             });
@@ -900,35 +914,44 @@
                 });
             });
 
-
-            // normalizeQtyInput removed — using separate carton/loose fields now
-
             function addBlankRow() {
-                const rowCount = $('#purchaseTableBody tr').length;
                 const html = `
                 <tr>
-                    <td style="min-width: 250px;">
+                    <td>
                         <select class="form-select product-select2" name="product_id[]"></select>
                         <!-- Hidden fields for product data snapshot -->
                         <input type="hidden" name="size_mode[]" class="hidden-size-mode" value="">
-                        <input type="hidden" name="pieces_per_box[]" class="hidden-pieces-per-box" value="">
-                        <input type="hidden" name="pieces_per_m2[]" class="hidden-pieces-per-m2" value="">
+                        <input type="hidden" name="pieces_per_box[]" class="hidden-pieces-per-box" value="1">
+                        <input type="hidden" name="pieces_per_m2[]" class="hidden-pieces-per-m2" value="0">
                         <input type="hidden" name="price_per_carton[]" class="hidden-price-per-carton" value="0">
                         <input type="hidden" name="length[]" class="hidden-length" value="">
                         <input type="hidden" name="width[]" class="hidden-width" value="">
                         <input type="hidden" name="color[]" class="hidden-variant-data" value="">
                     </td>
-                    <td><input type="number" class="form-control carton-qty" name="boxes_qty[]" value="0" placeholder="Cartons" min="0"></td>
-                    <td><input type="number" class="form-control loose-qty" name="loose_qty[]" value="0" placeholder="Loose Pcs" min="0"></td>
-                    <td><input type="number" class="form-control input-readonly pack-size" name="pieces_per_box_display[]" value="1" readonly></td>
-                    <td><input type="number" name="qty[]" class="form-control input-readonly qty-pcs" value="0" readonly></td>
-                    <td><input type="number" step="0.01" name="price[]" class="form-control price" value="0"></td>
-                    <td><input type="number" name="item_discount[]" class="form-control item-disc-percent" value="0"></td>
-                    <td><input type="number" class="form-control item-disc-amt" value="0" readonly></td>
-                    <td><input type="number" class="form-control input-readonly row-total" value="0" readonly></td>
-                    <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row">x</button></td>
+                    <td class="text-center align-middle">
+                        <span class="badge bg-light text-primary border px-2 py-1 unit-display-badge fw-bold">Pcs</span>
+                        <input type="hidden" name="unit[]" class="unit-input-val" value="Pcs">
+                    </td>
+                    <td>
+                        <input type="number" step="any" min="0.01" name="qty[]" class="form-control text-center main-qty-input" value="1" placeholder="Qty">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" name="price[]" class="form-control text-end price" value="0">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" name="item_discount[]" class="form-control text-end item-disc-percent" value="0">
+                    </td>
+                    <td>
+                        <input type="number" class="form-control text-end input-readonly item-disc-amt" value="0.00" readonly>
+                    </td>
+                    <td>
+                        <input type="number" class="form-control text-end input-readonly row-total" value="0.00" readonly>
+                    </td>
+                    <td class="text-center align-middle">
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-x-lg"></i></button>
+                    </td>
                 </tr>
-            `;
+                `;
                 const $row = $(html);
                 $('#purchaseTableBody').append($row);
                 initProductSelect2($row.find('.product-select2'));
@@ -951,10 +974,8 @@
                         },
                         processResults: function(data, params) {
                             params.page = params.page || 1;
-                            // Transform result to match Select2 format
-                            const results = data.results || [];
                             return {
-                                results: results,
+                                results: data.results || [],
                                 pagination: {
                                     more: (data.pagination && data.pagination.more) ? true : false
                                 }
@@ -971,7 +992,12 @@
                     const data = e.params.data;
                     const $row = $(this).closest('tr');
 
-                    // 1. Snapshot Data Population
+                    // Dynamic Unit
+                    const unitName = data.unit_name || 'Pcs';
+                    $row.find('.unit-display-badge').text(unitName);
+                    $row.find('.unit-input-val').val(unitName);
+
+                    // Snapshot Data Population
                     $row.find('.hidden-size-mode').val(data.size_mode || '');
                     $row.find('.hidden-pieces-per-box').val(data.pieces_per_box || 1);
                     $row.find('.hidden-pieces-per-m2').val(data.pieces_per_m2 || 0);
@@ -984,54 +1010,22 @@
                     $row.find('.hidden-width').val(data.width || '');
                     $row.find('.hidden-variant-data').val(data.variant_data || '');
 
-                    // Also set visible pack size
-                    $row.find('.pack-size').val(data.pieces_per_box || 1);
-
-                    // Attach data to row for dynamic calc
                     $row.data('sizemode', data.size_mode);
                     $row.data('pieces_per_m2', Number(data.pieces_per_m2) || 0);
                     $row.data('p_price_piece', Number(data.purchase_price_per_piece) || 0);
 
-                    // Set default discount
+                    // Discount
                     $row.find('.item-disc-percent').val(data.purchase_discount_percent || 0);
 
-                    // Logic for Cost Price (Purchase Price) based on Size Mode (similar to add_sale)
+                    // Price
                     const sizeMode = data.size_mode || 'std';
                     const pM2 = parseFloat(data.purchase_price_per_m2) || 0;
-                    const pPiece = parseFloat(data.purchase_price_per_piece) || 0;
-                    let pricePc = 0;
-                    let finalPrice = 0;
-                    if (sizeMode === 'by_size') {
-                        finalPrice = pM2;
-                    } else {
-                        // by_cartons or by_pieces or std
-                        finalPrice = pPiece;
-                    }
+                    const pPiece = parseFloat(data.purchase_price_per_piece) || parseFloat(data.trade_price) || 0;
+                    let finalPrice = (sizeMode === 'by_size') ? pM2 : pPiece;
 
-                    $row.find('.price-unit-label').remove();
-                    let unitLabel = '';
+                    $row.find('.price').val(finalPrice);
+                    $row.find('.main-qty-input').focus().select();
 
-
-                    if (sizeMode === 'by_size') {
-                        $row.find('.price').val(finalPrice);
-                        unitLabel = '(m2)';
-                    } else {
-                        // For purchase entry, always show per-piece cost for box-based products
-                        $row.find('.price').val(finalPrice);
-                        unitLabel = '(pieces)';
-                    }
-
-                    if (unitLabel) {
-                        $row.find('.price').after(
-                            '<span class="price-unit-label text-muted small ms-1" style="font-size:0.75rem">' +
-                            unitLabel + '</span>');
-                    }
-                    $row.find('.pack-size').val(data.ppb || 1);
-                    $row.data('sizemode', sizeMode);
-                    $row.data('pieces_per_m2', data.pieces_per_m2);
-                    $row.data('p_price_piece', pPiece);
-                    // Trigger recalc
-                    $row.find('.box-qty').focus();
                     recalcRow($row);
                     recalcAll();
                 });
@@ -1041,19 +1035,21 @@
                 if (repo.loading) return repo.text;
                 let stock = repo.stock !== undefined ? repo.stock : 0;
                 let sku = repo.sku || 'N/A';
-                let badgeClass = 'bg-info'; // Neutral for Purchase
+                let unit = repo.unit_name || 'Pcs';
+                let stockVal = parseFloat(repo.stock_pieces !== undefined ? repo.stock_pieces : repo.stock) || 0;
+                let badgeClass = stockVal > 0 ? 'bg-success' : 'bg-danger';
 
                 return $(`
-            <div class="clearfix">
-                <div class="float-start">
-                    <div class="fw-bold">${repo.name || repo.text}</div>
-                    <small class="text-muted">SKU: ${sku}</small>
+                <div class="clearfix">
+                    <div class="float-start">
+                        <div class="fw-bold">${repo.name || repo.text}</div>
+                        <small class="text-muted">SKU: ${sku} | Unit: ${unit}</small>
+                    </div>
+                    <div class="float-end">
+                        <span class="badge ${badgeClass} rounded-pill">Stock: ${stock}</span>
+                    </div>
                 </div>
-                <div class="float-end">
-                    <span class="badge ${badgeClass} rounded-pill">Stock: ${stock}</span>
-                </div>
-            </div>
-            `);
+                `);
             }
 
             function formatSelection(repo) {
@@ -1061,46 +1057,24 @@
             }
 
             function recalcRow($row) {
-                const ppb = parseFloat($row.find('.pack-size').val()) || 1;
-                const pieces_per_m2 = $row.data('pieces_per_m2');
-                const sizeMode = $row.data().sizemode;
-
-                // Read separate Carton + Loose inputs
-                const cartons = parseInt($row.find('.carton-qty').val()) || 0;
-                let loose = parseInt($row.find('.loose-qty').val()) || 0;
-
-                // Auto-convert excess loose into cartons
-                if (loose >= ppb && ppb > 1) {
-                    const extraCartons = Math.floor(loose / ppb);
-                    loose = loose % ppb;
-                    $row.find('.carton-qty').val(cartons + extraCartons);
-                    $row.find('.loose-qty').val(loose);
-                }
-
-                const totalPieces = (cartons * ppb) + loose;
-
-                // Update the readonly Pieces field (sent as qty[])
-                $row.find('.qty-pcs').val(totalPieces);
-
+                const qty = parseFloat($row.find('.main-qty-input').val()) || 0;
                 const price = parseFloat($row.find('.price').val()) || 0;
                 const discPct = parseFloat($row.find('.item-disc-percent').val()) || 0;
-                let total = 0;
+                const sizeMode = $row.data('sizemode');
+                const pieces_per_m2 = parseFloat($row.data('pieces_per_m2')) || 0;
 
-                // Total Amount calculation based on size mode
-                if (sizeMode == 'by_size') {
-                    total = (pieces_per_m2 || 0) * totalPieces * price;
+                let gross = 0;
+                if (sizeMode === 'by_size') {
+                    gross = (pieces_per_m2 || 1) * qty * price;
                 } else {
-                    // price is always treated as per-piece for purchase entry
-                    total = totalPieces * price;
+                    gross = qty * price;
                 }
 
-                // Discount
-                const discAmt = total * (discPct / 100);
-                $row.find('.item-disc-amt').val(discAmt.toFixed(2));
-                total = total - discAmt;
+                const discAmt = gross * (discPct / 100);
+                const lineTotal = Math.max(0, gross - discAmt);
 
-                $row.data('total-pieces', totalPieces);
-                $row.find('.row-total').val(total.toFixed(2));
+                $row.find('.item-disc-amt').val(discAmt.toFixed(2));
+                $row.find('.row-total').val(lineTotal.toFixed(2));
             }
 
             function recalcAll() {
@@ -1109,11 +1083,7 @@
                 let totalInlineDiscount = 0;
 
                 $('#purchaseTableBody tr').each(function() {
-                    let qty = $(this).data('total-pieces');
-                    // Fallback if data attribute not set
-                    if (qty === undefined) {
-                        qty = parseFloat($(this).find('.qty-pcs').val()) || 0;
-                    }
+                    const qty = parseFloat($(this).find('.main-qty-input').val()) || 0;
                     const total = parseFloat($(this).find('.row-total').val()) || 0;
                     const rowDiscAmt = parseFloat($(this).find('.item-disc-amt').val()) || 0;
 
@@ -1132,7 +1102,6 @@
                 let billDiscVal = parseFloat($('#billDiscount').val());
 
                 if ($(document.activeElement).is('#billDiscount') || $(document.activeElement).is('#billDiscountPct')) {
-                    // User is editing bill discount manually
                     if ($(document.activeElement).is('#billDiscountPct')) {
                         const pct = parseFloat($('#billDiscountPct').val()) || 0;
                         billDiscVal = grossSubtotal * (pct / 100);
@@ -1144,26 +1113,21 @@
                         additionalDiscount = 0;
                     }
                 } else {
-                    // Inline discount or items changed: keep additional discount and update total discount
                     billDiscVal = totalInlineDiscount + additionalDiscount;
                     $('#billDiscount').val(billDiscVal.toFixed(2));
                 }
                 
-                // Calc % from amount
                 const pct = grossSubtotal > 0 ? (billDiscVal / grossSubtotal) * 100 : 0;
                 $('#billDiscountPct').val(pct.toFixed(2));
-
                 $('#discountInput').val(additionalDiscount.toFixed(2));
 
                 const extraCost = parseFloat($('#extraCost').val()) || 0;
-
                 const net = subtotal - additionalDiscount + extraCost;
 
                 $('#tPayable').text(net.toFixed(2));
                 $('#netAmountInput').val(net.toFixed(2));
                 $('#totalAmount').text(subtotal.toFixed(2));
 
-                // NEW: Handle Previous Balance & Total Payable
                 const prevBal = parseFloat($('#tPrev').text()) || 0;
                 const totalPaid = parseFloat($('#totalPaid').text()) || 0;
                 const totalPayable = (prevBal + net) - totalPaid;

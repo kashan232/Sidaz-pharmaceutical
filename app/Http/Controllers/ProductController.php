@@ -89,7 +89,8 @@ class ProductController extends Controller
         $term = $request->get('term') ?? $request->get('q') ?? '';
 
         $query = Product::query()
-            ->select('id', 'item_name', 'item_code', 'barcode_path', 'size_mode', 'height', 'width', 'pieces_per_box', 'purchase_price_per_box', 'purchase_price_per_m2', 'purchase_price_per_piece', 'pieces_per_m2', 'purchase_discount_percent', 'sale_discount_percent', 'color', 'sale_price_per_piece')
+            ->select('id', 'item_name', 'item_code', 'barcode_path', 'size_mode', 'unit_id', 'height', 'width', 'pieces_per_box', 'purchase_price_per_box', 'purchase_price_per_m2', 'purchase_price_per_piece', 'pieces_per_m2', 'purchase_discount_percent', 'sale_discount_percent', 'color', 'sale_price_per_piece')
+            ->with(['unit'])
             ->withSum('warehouseStocks', 'total_pieces') /* Sum PIECES, not boxes */
             ->where('is_active', true) /* Only active products */
             ->where(function ($q) use ($term) {
@@ -103,6 +104,17 @@ class ProductController extends Controller
         $results = $products->getCollection()->flatMap(function ($p) {
             $stockPieces = (float) ($p->warehouse_stocks_sum_total_pieces ?? 0);
             $ppb = $p->pieces_per_box > 0 ? $p->pieces_per_box : 1;
+
+            $unitName = $p->unit->name ?? match($p->size_mode) {
+                'by_kg' => 'Kg',
+                'by_gm' => 'Gm',
+                'by_ton' => 'Ton',
+                'by_meter' => 'Meter',
+                'by_feet' => 'Ft',
+                'by_cartons' => 'Carton',
+                'by_size' => 'M²',
+                default => 'Pcs',
+            };
 
             $stockDisplay = $stockPieces;
             if (($p->size_mode === 'by_cartons' || $p->size_mode === 'by_size') && $ppb > 1) {
@@ -174,7 +186,12 @@ class ProductController extends Controller
                         // Weight Unit: Calculate purely based on Product's central total Kg divided by variant's conversion factor
                         $factor = (float) $v['conv_factor'];
                         $factor = $factor > 0 ? $factor : 1;
-                        $vBalance = floor($stockPieces / $factor);
+                        $rawCalc = $stockPieces / $factor;
+                        if (abs($rawCalc - round($rawCalc)) < 0.0001) {
+                            $vBalance = (int) round($rawCalc);
+                        } else {
+                            $vBalance = round($rawCalc, 3);
+                        }
                     } else {
                         // Calculate Purchased variant qty
                         $purchased = 0;
@@ -221,7 +238,17 @@ class ProductController extends Controller
                     }
 
                     $vStockDisplay = $vBalance;
-                    if (($p->size_mode === 'by_cartons' || $p->size_mode === 'by_size') && $ppb > 1) {
+                    if (isset($v['conv_factor']) && $p->size_mode === 'by_kg') {
+                        $factor = (float) $v['conv_factor'];
+                        if ($factor == 1) {
+                            if ($vBalance < 1 && $vBalance > 0) {
+                                $gmVal = round($vBalance * 1000, 1);
+                                $vStockDisplay = "{$vBalance} Kg ({$gmVal} Gm)";
+                            } else {
+                                $vStockDisplay = "{$vBalance} Kg";
+                            }
+                        }
+                    } elseif (($p->size_mode === 'by_cartons' || $p->size_mode === 'by_size') && $ppb > 1) {
                         $vBoxes = floor($vBalance / $ppb);
                         $vLoose = $vBalance % $ppb;
                         $vStockDisplay = $vLoose > 0 ? "$vBoxes.$vLoose" : $vBoxes;
@@ -238,6 +265,7 @@ class ProductController extends Controller
                         'stock_pieces' => $vBalance,
                         'name' => $vName,
                         'size_mode' => $p->size_mode,
+                        'unit_name' => $unitName,
                         'pieces_per_box' => $ppb,
                         'ppb' => $ppb,
                         'trade_price' => $v['purch_price'] ?? $p->purchase_price_per_piece ?? 0,
@@ -261,6 +289,7 @@ class ProductController extends Controller
                 'stock_pieces' => $stockPieces,
                 'name' => $p->item_name,
                 'size_mode' => $p->size_mode,
+                'unit_name' => $unitName,
                 'pieces_per_box' => $ppb,
                 'ppb' => $ppb,
                 'trade_price' => $p->purchase_price_per_piece ?? 0,

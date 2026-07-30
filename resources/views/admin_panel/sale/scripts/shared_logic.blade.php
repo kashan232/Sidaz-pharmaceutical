@@ -92,9 +92,9 @@
         if (repo.loading) return repo.text;
         let stock = repo.stock !== undefined ? repo.stock : 0;
         let sku = repo.sku || 'N/A';
-        let badgeClass = stock > 0 ? 'bg-success' : 'bg-danger';
-            console.log(repo);
-            
+        let stockVal = parseFloat(repo.stock_pieces !== undefined ? repo.stock_pieces : repo.stock) || 0;
+        let badgeClass = stockVal > 0 ? 'bg-success' : 'bg-danger';
+
         return $(`
         <div class="clearfix">
             <div class="float-start">
@@ -117,6 +117,12 @@
        CORE LOGIC
        ========================================= */
 
+    function updateRowIndexes() {
+        $('#salesTableBody tr').each(function(index) {
+            $(this).find('.row-index').text(index + 1);
+        });
+    }
+
     function addNewRow() {
         const isWholesale = lastSelectedPriceMode === 'wholesale';
         const btnText = isWholesale ? 'W' : 'R';
@@ -125,6 +131,9 @@
 
         const rowHtml = `
   <tr>
+    <!-- # ROW INDEX -->
+    <td class="text-center fw-bold text-muted row-index" style="vertical-align:middle; font-size:0.75rem;">1</td>
+
     <!-- PRODUCT -->
     <td class="col-product">
       <select class="form-select product" style="width:100%">
@@ -145,9 +154,16 @@
       <input type="hidden" class="variant-stock-value">
     </td>
 
-    <!-- Carton Qty (now acts as Qty) -->
-    <td style="width:70px;min-width:70px;">
-      <input type="number" class="form-control carton-qty text-end" name="carton_qty[]" placeholder="" min="0" value="">
+    <!-- Qty cell with Sub-Unit toggle (Kg ↔ Gm / Ft ↔ In) -->
+    <td style="width:105px;min-width:105px;" class="col-qty-wrapper">
+      <div class="d-flex align-items-center gap-1">
+        <input type="number" step="any" class="form-control carton-qty text-end" name="carton_qty[]" placeholder="Qty" min="0" value="" style="flex: 1; min-width: 0;">
+        <button type="button" class="btn btn-sm btn-outline-primary qty-unit-toggle px-1 py-0 d-none" 
+                data-unit-mode="main" title="Toggle Unit (Kg ↔ Gm / Ft ↔ In)" style="font-size: 0.65rem; height: 24px; min-width: 24px; font-weight: bold;">
+          Kg
+        </button>
+      </div>
+      <input type="hidden" class="hidden-sub-unit-mode" name="sub_unit_mode[]" value="main">
     </td>
 
     <!-- Loose Pieces -->
@@ -188,24 +204,19 @@
       <input type="hidden" class="weight-per-piece">
     </td>
 
-    <!-- DISCOUNT -->
+    <!-- SINGLE DISCOUNT COLUMN -->
     <td class="col-disc">
       <div class="discount-wrapper">
         <input type="number"
                class="form-control discount-value text-end"
                name="item_disc[]"
-               placeholder="">
-        <!-- Hidden: tells backend whether value is % or fixed PKR -->
+               placeholder="0">
         <input type="hidden" class="discount-type-hidden" name="discount_type[]" value="percent">
         <button type="button"
                 class="btn btn-outline-secondary discount-toggle"
                 data-type="percent" tabindex="-1">%</button>
       </div>
-    </td>
-
-    <!-- DISCOUNT AMOUNT -->
-    <td class="col-disc-amt">
-      <input type="text" class="form-control discount-amount text-end" readonly tabindex="-1">
+      <input type="hidden" class="discount-amount" value="0">
     </td>
 
     <!-- NET AMOUNT -->
@@ -215,7 +226,7 @@
     </td>
 
     <!-- ACTION -->
-    <td class="col-action">
+    <td class="col-action text-center">
       <button type="button" class="btn btn-sm btn-outline-danger del-row" tabindex="-1">&times;</button>
     </td>
   </tr>`;
@@ -223,6 +234,7 @@
         const $row = $(rowHtml);
         $('#salesTableBody').append($row);
         initProductSelect2($row.find('.product'));
+        updateRowIndexes();
     }
 
     // --- Loading Data for Rows ---
@@ -268,6 +280,8 @@
             $row.data('pieces_per_box', pRes.pieces_per_box || 1);
             $row.data('price_per_m2', pRes.price_per_m2 || 0);
 
+            setupRowQtyToggle($row, pRes.size_mode);
+
             computeRow($row);
         }).fail(function(err) {
             console.error('Price fetch failed', err);
@@ -300,6 +314,14 @@
                             const boxes = Math.floor(w.boxes || 0);
                             const loose = w.stock % ppb;
                             disp = loose > 0 ? `${boxes}.${loose}` : boxes;
+                        } else if (w.size_mode === 'by_kg') {
+                            const s = parseFloat(w.stock) || 0;
+                            if (s > 0 && s < 1) {
+                                const gm = (s * 1000).toFixed(1);
+                                disp = `${s.toFixed(2)} Kg (${gm} Gm)`;
+                            } else {
+                                disp = `${s.toFixed(2)} Kg`;
+                            }
                         } else {
                             disp = w.stock;
                         }
@@ -342,39 +364,60 @@
     function computeRow($row, isManual = false) {
         const rp = toNum($row.find('.retail-price').val()); // Box Price
         const visiblePrice = toNum($row.find('.visible-price').val());
+        const weightPerPiece = parseFloat($row.find('.weight-per-piece').val()) || 0;
 
         const m2_per_piece = parseFloat($row.find('.size-h').val() * $row.find('.size-w').val() / 10000);
 
-        const sizeMode = $row.data('size_mode');
+        const sizeMode = $row.data('size_mode') || $row.find('.size-mode-text').val();
         const packQty = parseFloat($row.find('.pack-qty').val()) || 1;
 
-        // --- NEW: Read separate carton + loose inputs ---
-        const cartonQty = parseInt($row.find('.carton-qty').val()) || 0;
-        const loosePcs  = parseInt($row.find('.loose-pcs-input').val()) || 0;
-        const totalPiecesFromInputs = (cartonQty * packQty) + loosePcs;
+        const rawQty = parseFloat($row.find('.carton-qty').val()) || 0;
+        const loosePcs  = parseFloat($row.find('.loose-pcs-input').val()) || 0;
+        const unitMode = $row.find('.qty-unit-toggle').attr('data-unit-mode') || 'main';
 
-        const weightPerPiece = parseFloat($row.find('.weight-per-piece').val()) || 0;
-        let totalPieces = totalPiecesFromInputs;
-        
-        if (weightPerPiece > 0) {
-            if (sizeMode === 'by_kg') {
-                totalPieces = cartonQty * (weightPerPiece / 1000);
-            } else if (sizeMode === 'by_meter') {
-                totalPieces = cartonQty * weightPerPiece;
-            }
+        // Calculate Base Qty (converting Gm -> Kg or Inches -> Ft)
+        let baseQty = rawQty;
+        if (unitMode === 'gm') {
+            baseQty = rawQty / 1000;
+        } else if (unitMode === 'in') {
+            baseQty = rawQty / 12;
         }
-        let displayCalc = totalPieces; // shown in "Total Pcs" column
 
-        // Sync hidden qty field (backend uses qty[] as box.loose string OR just pieces)
-        // We'll store total_pieces directly; controller reads total_pieces[] for by_cartons
-        const boxLooseStr = cartonQty + (loosePcs > 0 ? '.' + loosePcs : '');
-        $row.find('.sales-qty').val(boxLooseStr || '0');
+        // Calculate Pcs display for Grid (e.g. 1500 Gm -> 2273 Pcs if conv_factor = 0.00066)
+        let pcsDisplay = baseQty;
+        if (sizeMode === 'by_kg' || sizeMode === 'by_gm') {
+            let convFactor = 0;
+            try {
+                const vDataRaw = $row.find('.variant-data-hidden').val();
+                if (vDataRaw) {
+                    const vd = JSON.parse(atob(vDataRaw));
+                    if (vd && vd.conv_factor && parseFloat(vd.conv_factor) > 0) {
+                        convFactor = parseFloat(vd.conv_factor);
+                    }
+                }
+            } catch (e) {}
+
+            if (convFactor > 0) {
+                pcsDisplay = Math.round(baseQty / convFactor);
+            } else if (weightPerPiece > 0) {
+                pcsDisplay = Math.round(baseQty / (weightPerPiece / 1000));
+            } else {
+                pcsDisplay = baseQty.toFixed(3);
+            }
+        } else if (sizeMode === 'by_feet' || sizeMode === 'by_meter') {
+            pcsDisplay = baseQty.toFixed(3);
+        } else if (sizeMode === 'by_cartons') {
+            pcsDisplay = (baseQty * packQty) + loosePcs;
+        }
+
+        // Sync hidden qty field for backend
+        $row.find('.sales-qty').val(baseQty);
 
         const discValue = toNum($row.find('.discount-value').val());
         const discType = $row.find('.discount-toggle').data('type');
         let dam = toNum($row.find('.discount-amount').val());
 
-        $row.find('.total-pieces').val(weightPerPiece > 0 ? totalPieces.toFixed(4) : totalPieces);
+        $row.find('.total-pieces').val(pcsDisplay);
 
         // Price per piece
         let unitPrice = toNum($row.find('.price-per-piece').val());
@@ -383,13 +426,12 @@
         let gross = 0;
 
         if (sizeMode === 'by_size') {
-            gross = m2_per_piece * totalPieces * unitPrice;
+            gross = m2_per_piece * baseQty * unitPrice;
             if (!m2_per_piece) gross = 0;
         } else if (weightPerPiece > 0) {
-            gross = cartonQty * unitPrice;
+            gross = baseQty * unitPrice;
         } else {
-            // by_cartons OR by_pieces: always pieces × price_per_piece
-            gross = totalPieces * unitPrice;
+            gross = baseQty * unitPrice;
         }
 
         // Discount Calculation
@@ -403,6 +445,10 @@
         const netRow = Math.max(0, gross - dam);
         $row.find('.gross-amount').val(gross.toFixed(2));
         $row.find('.sales-amount').val(netRow.toFixed(2));
+
+        if (typeof updateGrandTotals === 'function') {
+            updateGrandTotals();
+        }
     }
 
     function updateGrandTotals() {
@@ -452,22 +498,24 @@
         $('#tPrev').text(prev.toFixed(2));
         $('#tPayable').text(payable.toFixed(2));
         $('#totalAmount').text(tNet.toFixed(2));
+        $('#walkinNetTotal').text(tNet.toFixed(2));
+        $('#bottomPaymentsTotal').text(receipts.toFixed(2));
+        $('#receiptsTotalBadge').text(receipts.toFixed(2));
+        $('#itemsRowCount').text($('#salesTableBody tr').length);
 
         // Display current bill total after all discounts
         $('#tCurrentBill').text(currentInvoiceTotal.toFixed(2));
 
-        // Walk-in specific UI updates
-        if (isWalkin) {
-            $('#walkinNetTotal').text(tNet.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
-            const walkinPaid = receipts;
-            const change = walkinPaid - currentInvoiceTotal;
-            $('#walkinChange').text(change.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
-            $('#backendChange').val(change > 0 ? change.toFixed(2) : 0);
-            if (change >= 0) {
-                $('#walkinChange').removeClass('text-warning text-danger').addClass('text-success');
-            } else {
-                $('#walkinChange').removeClass('text-success text-warning').addClass('text-danger');
-            }
+        const walkinPaid = receipts;
+        const change = walkinPaid - currentInvoiceTotal;
+        const changeStr = change.toFixed(2);
+        $('#walkinChange').text(changeStr);
+        $('#bottomChangeVal').text(changeStr);
+        $('#backendChange').val(change > 0 ? change.toFixed(2) : 0);
+        if (change >= 0) {
+            $('#walkinChange, #bottomChangeVal').removeClass('text-warning text-danger').addClass('text-success');
+        } else {
+            $('#walkinChange, #bottomChangeVal').removeClass('text-success text-warning').addClass('text-danger');
         }
 
         $('#subTotal1').val(tGross.toFixed(2));
@@ -931,8 +979,62 @@
             $row.data('size_mode', data.size_mode);
             $row.data('pieces_per_box', data.pieces_per_box || 1);
             
+            setupRowQtyToggle($row, data.size_mode);
+
             computeRow($row);
         });
+
+    function setupRowQtyToggle($row, sizeMode) {
+        const $toggleBtn = $row.find('.qty-unit-toggle');
+        if (sizeMode === 'by_kg') {
+            $toggleBtn.removeClass('d-none').attr('data-unit-mode', 'kg').text('Kg').removeClass('btn-outline-info btn-outline-warning').addClass('btn-outline-primary');
+            $row.find('.hidden-sub-unit-mode').val('kg');
+        } else if (sizeMode === 'by_gm') {
+            $toggleBtn.removeClass('d-none').attr('data-unit-mode', 'gm').text('Gm').removeClass('btn-outline-primary btn-outline-warning').addClass('btn-outline-info');
+            $row.find('.hidden-sub-unit-mode').val('gm');
+        } else if (sizeMode === 'by_feet') {
+            $toggleBtn.removeClass('d-none').attr('data-unit-mode', 'ft').text('Ft').removeClass('btn-outline-info btn-outline-warning').addClass('btn-outline-primary');
+            $row.find('.hidden-sub-unit-mode').val('ft');
+        } else if (sizeMode === 'by_meter') {
+            $toggleBtn.removeClass('d-none').attr('data-unit-mode', 'm').text('Mtr').removeClass('btn-outline-info btn-outline-warning').addClass('btn-outline-primary');
+            $row.find('.hidden-sub-unit-mode').val('m');
+        } else {
+            $toggleBtn.addClass('d-none').attr('data-unit-mode', 'main');
+            $row.find('.hidden-sub-unit-mode').val('main');
+        }
+    }
+
+    // Toggle Qty Sub-Unit (Kg ↔ Gm / Ft ↔ In)
+    $(document).on('click', '.qty-unit-toggle', function () {
+        const $btn = $(this);
+        const $row = $btn.closest('tr');
+        const sizeMode = $row.data('size_mode') || $row.find('.size-mode-text').val();
+        let currentMode = $btn.attr('data-unit-mode');
+
+        if (sizeMode === 'by_kg' || sizeMode === 'by_gm') {
+            if (currentMode === 'kg') {
+                currentMode = 'gm';
+                $btn.text('Gm').removeClass('btn-outline-primary').addClass('btn-outline-info');
+            } else {
+                currentMode = 'kg';
+                $btn.text('Kg').removeClass('btn-outline-info').addClass('btn-outline-primary');
+            }
+        } else if (sizeMode === 'by_feet' || sizeMode === 'by_meter') {
+            if (currentMode === 'ft' || currentMode === 'm') {
+                currentMode = 'in';
+                $btn.text('In').removeClass('btn-outline-primary').addClass('btn-outline-warning');
+            } else {
+                currentMode = (sizeMode === 'by_feet') ? 'ft' : 'm';
+                $btn.text(sizeMode === 'by_feet' ? 'Ft' : 'Mtr').removeClass('btn-outline-warning').addClass('btn-outline-primary');
+            }
+        }
+
+        $btn.attr('data-unit-mode', currentMode);
+        $row.find('.hidden-sub-unit-mode').val(currentMode);
+        computeRow($row);
+        if (typeof updateGrandTotals === 'function') updateGrandTotals();
+        if (typeof refreshPostedState === 'function') refreshPostedState();
+    });
 
         // Warehouse change -> stock (respect variant stock)
         $('#salesTableBody').on('change', '.warehouse', function() {
@@ -1007,6 +1109,7 @@
         $(document).on('click', '.del-row', function() {
             if ($('#salesTableBody tr').length > 1) {
                 $(this).closest('tr').remove();
+                updateRowIndexes();
                 updateGrandTotals();
                 refreshPostedState();
             }
@@ -1209,9 +1312,74 @@
             updateGrandTotals();
         }
 
-        // NOTE: Customer Loading Logic (loadCustomersByType, customer change events)
-        // is now delegated to the parent view (add_sale / edit_sale) 
-        // to avoid conflicts and allow specific behaviors for each mode.
+        // --- Sidebar Direct Add Product ---
+        $(document).on('click', '.add-product-direct-btn', function() {
+            const prodId = $(this).data('id');
+            if (!prodId) return;
+
+            let $targetRow = $('#salesTableBody tr:last');
+            const lastProdVal = $targetRow.find('.product').val();
+
+            if (!$targetRow.length || lastProdVal) {
+                addNewRow();
+                $targetRow = $('#salesTableBody tr:last');
+            }
+
+            const $select = $targetRow.find('.product');
+            const prodName = $(this).closest('.pos-product-card').find('.pos-product-name').text();
+            if ($select.find(`option[value="${prodId}"]`).length === 0) {
+                $select.append(new Option(prodName, prodId, true, true));
+            } else {
+                $select.val(prodId).trigger('change.select2');
+            }
+            $select.trigger('change');
+        });
+
+        // --- Sidebar Live Search ---
+        $('#sidebarProductSearch').on('input', function() {
+            const q = $(this).val().trim();
+            if (q.length < 1) return;
+            $.get('{{ route('search-product-name') }}', { q: q }).done(function(res) {
+                let html = '';
+                if (res && res.length > 0) {
+                    res.forEach(p => {
+                        const stockText = p.wh_stock ? `${p.wh_stock} Pcs` : '0 Pcs';
+                        const priceText = p.retail_price ? parseFloat(p.retail_price).toFixed(2) : '0.00';
+                        html += `
+                            <div class="pos-product-card">
+                                <div class="pos-product-img">
+                                    <i class="fas fa-box text-secondary fs-5"></i>
+                                </div>
+                                <div class="pos-product-info">
+                                    <div class="pos-product-name" title="${p.item_name}">${p.item_name}</div>
+                                    <div class="pos-product-sub">
+                                        <span class="badge-stock-green">${stockText}</span> SKU: ${p.item_code || '-'}
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="pos-product-price">${priceText}<br><small class="text-muted fs-7">PCS</small></div>
+                                    <button type="button" class="pos-product-add-btn add-product-direct-btn" data-id="${p.id}" title="Add to Grid"><i class="fas fa-plus"></i></button>
+                                </div>
+                            </div>`;
+                    });
+                } else {
+                    html = '<div class="text-center text-muted py-3" style="font-size:0.75rem;">No products found</div>';
+                }
+                $('#sidebarProductContainer').html(html);
+            });
+        });
+
+        // --- Save & Complete (F9) Handler ---
+        $('#btnSaveAndComplete, #btnHeaderSaveSale').on('click', function() {
+            $('#btnPosted').trigger('click');
+        });
+
+        $(document).on('keydown', function(e) {
+            if (e.key === 'F9') {
+                e.preventDefault();
+                $('#btnSaveAndComplete').trigger('click');
+            }
+        });
 
         // Initialize Posted Button State
         refreshPostedState();

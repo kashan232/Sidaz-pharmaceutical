@@ -89,6 +89,7 @@ class SaleController extends Controller
         $customer = Customer::all();
         $warehouse = Warehouse::all();
         $nextInvoiceNumber = Sale::generateInvoiceNo();
+        $recentProducts = Product::latest()->take(12)->get();
 
         // Filter accounts (Cash/Bank) for Payment Voucher
         $accounts = \App\Models\Account::whereHas('head', function($q) {
@@ -97,7 +98,7 @@ class SaleController extends Controller
             ->orderBy('title')
             ->get();
 
-        return view('admin_panel.sale.add_sale222', compact('warehouse', 'customer', 'nextInvoiceNumber', 'accounts'));
+        return view('admin_panel.sale.add_sale222', compact('warehouse', 'customer', 'nextInvoiceNumber', 'accounts', 'recentProducts'));
     }
 
     public function searchpname(Request $request)

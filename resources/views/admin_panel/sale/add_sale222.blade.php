@@ -13,145 +13,12 @@
     <link href="{{ asset('assets/vendors/bootstrap5/css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/vendors/select2/css/select2.min.css') }}" rel="stylesheet" />
     <style>
-        /* ================= ULTRA-COMPACT EXCEL-LIKE UI ================= */
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        .sales-table { min-width: 700px; }
-        .sales-table td.large-col { min-width: 80px; width: 80px; padding: 0 !important; }
-        .discount-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-            gap: 0;
-            flex-wrap: nowrap;
-        }
-        .discount-wrapper .discount-value { width: 50px; min-width: 50px; font-size: 0.75rem; padding: 1px 3px; }
-        .discount-wrapper .discount-plus { width: 18px; height: 18px; padding: 0; font-size: 11px; line-height: 1; }
-        .discount-wrapper .discount-type { position: absolute; right: 0; top: 115%; width: 55px; font-size: 0.7rem; z-index: 30; }
-        @media (max-width: 992px) { .main-container { max-width: 100%; } .sales-table { min-width: 700px; } .minw-350 { min-width: 100%; } }
-        @media (max-width: 768px) { .header-text { font-size: 0.85rem; } .btn { padding: .2rem .4rem; } .minw-350 { width: 100%; } .form-control, .form-select { font-size: .75rem; } }
-        @media (max-width: 576px) { .sales-table { min-width: 650px; } .discount-wrapper .discount-value { min-width: 70px; } }
-    </style>
-    <style>
-        /* Premium Customer Card CSS - Refactored 2-row layout */
-        .customer-card-premium {
-            background-color: #111827 !important;
-            border-radius: 10px !important;
-            padding: 12px 16px !important;
-            color: #f3f4f6 !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: space-between !important;
-            width: 100% !important;
-        }
-
-        .customer-card-premium .col-title {
-            font-size: 0.65rem !important;
-            text-transform: uppercase !important;
-            font-weight: 700 !important;
-            color: #9ca3af !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            margin-bottom: 2px !important;
-        }
-
-        .customer-card-premium .col-title i {
-            margin-right: 2px !important;
-        }
-
-        .customer-card-premium .col-value {
-            font-size: 0.88rem !important;
-            font-weight: 700 !important;
-            line-height: 1.2 !important;
-        }
-
-        .customer-card-premium .col-value-sub {
-            font-size: 0.7rem !important;
-            font-weight: 700 !important;
-            margin-top: -2px !important;
-        }
-
-        /* Sleek Segmented Control for Radio Buttons */
-        .toggle-button-group {
-            background-color: #f1f5f9;
-            border: 2px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 2px;
-            display: flex;
-            height: 38px;
-            align-items: center;
-        }
-        .toggle-button-group .btn-check {
-            display: none;
-        }
-        .toggle-button-group .toggle-btn {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: #475569;
-            height: 100%;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        .toggle-button-group .toggle-btn:hover {
-            color: #1e293b;
-            background-color: #e2e8f0;
-        }
-        .toggle-button-group .btn-check:checked + .toggle-btn {
-            background-color: #2563eb;
-            color: #ffffff !important;
-        }
-        .toggle-button-group .btn-check:checked + .toggle-btn:hover {
-            background-color: #1d4ed8;
-            color: #ffffff !important;
-        }
-
-        /* Specific styling for the customer selection Select2 to match standard input heights */
-        #customerSelect + .select2-container--default .select2-selection--single {
-            border: 2px solid #cbd5e1 !important;
-            border-radius: 8px !important;
-            height: 38px !important;
-            padding: 0 12px !important;
-            font-weight: 500 !important;
-            color: #1e293b !important;
-            background-color: #ffffff !important;
-            transition: all 0.2s ease-in-out !important;
-            display: flex !important;
-            align-items: center !important;
-        }
-        #customerSelect + .select2-container--default .select2-selection--single .select2-selection__rendered {
-            line-height: 34px !important;
-            padding-left: 0 !important;
-            font-size: 0.85rem !important;
-            color: #1e293b !important;
-        }
-        #customerSelect + .select2-container--default .select2-selection--single .select2-selection__arrow {
-            height: 34px !important;
-            top: 2px !important;
-            right: 8px !important;
-        }
-        #customerSelect + .select2-container--default.select2-container--focus .select2-selection--single {
-            border-color: #2563eb !important;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15) !important;
-        }
-
-        /* 💎 ULTRA-COMPACT EXCEL-LIKE ERP THEME 💎 */
+        /* ================= ULTRA-COMPACT EXCEL-LIKE ERP UI ================= */
         body {
-            background-color: #f8fafc;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc !important;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
         }
-        
-        /* Containers & Cards */
+
         .main-container {
             border: 1px solid #94a3b8 !important;
             border-radius: 4px !important;
@@ -161,7 +28,7 @@
             font-size: .78rem;
             max-width: 100%;
         }
-        
+
         .card-panel {
             background-color: #f8fafc !important;
             border: 1px solid #cbd5e1 !important;
@@ -169,14 +36,14 @@
             padding: 6px !important;
             height: 100%;
         }
-        
+
         .totals-card {
             background-color: #f1f5f9 !important;
             border: 1px solid #cbd5e1 !important;
             border-radius: 3px !important;
             padding: 6px !important;
         }
-        
+
         /* Section Titles */
         .section-title {
             font-weight: 700 !important;
@@ -188,8 +55,7 @@
             border-left: 3px solid #2563eb !important;
             padding-left: 6px !important;
         }
-        
-        /* Clean inputs - compact */
+
         .form-control,
         .form-select,
         .select2-container--default .select2-selection--single {
@@ -200,10 +66,10 @@
             color: #1e293b !important;
             background-color: #ffffff !important;
             transition: all 0.15s ease-in-out !important;
-            height: auto !important;
+            height: 26px !important;
             font-size: 0.78rem !important;
         }
-        
+
         .form-control:focus,
         .form-select:focus,
         .select2-container--default.select2-container--focus .select2-selection--single {
@@ -211,7 +77,7 @@
             box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1) !important;
             outline: none !important;
         }
-        
+
         /* Read-only fields */
         .input-readonly {
             background-color: #f1f5f9 !important;
@@ -220,7 +86,7 @@
             font-weight: 600 !important;
             cursor: not-allowed !important;
         }
-        
+
         /* Compact Buttons */
         .btn-action-primary {
             background-color: #2563eb !important;
@@ -236,7 +102,7 @@
             background-color: #1d4ed8 !important;
             color: #ffffff !important;
         }
-        
+
         .btn-action-secondary {
             background-color: #ffffff !important;
             border: 1px solid #cbd5e1 !important;
@@ -251,7 +117,7 @@
             background-color: #f1f5f9 !important;
             color: #1e293b !important;
         }
-        
+
         /* Transaction Grid / Table */
         .table-responsive {
             border: 1px solid #cbd5e1 !important;
@@ -262,7 +128,7 @@
             min-height: 100px;
             background-color: #ffffff;
         }
-        
+
         .minw-350 {
             min-width: 280px;
             width: 280px;
@@ -275,7 +141,7 @@
             width: 100%;
             min-width: 900px;
         }
-        
+
         .sales-table thead th {
             background-color: #e2e8f0 !important;
             color: #0f172a !important;
@@ -295,7 +161,7 @@
             text-align: left !important;
             padding-left: 4px !important;
         }
-        
+
         .sales-table tbody td {
             border: 1px solid #cbd5e1 !important;
             padding: 0 !important;
@@ -416,7 +282,7 @@
             background-color: #cbd5e1 !important;
             color: #0f172a !important;
         }
-        
+
         .sales-table tfoot td {
             background-color: #e2e8f0 !important;
             border: 1px solid #94a3b8 !important;
@@ -426,27 +292,24 @@
             color: #0f172a !important;
             font-size: 0.78rem !important;
         }
-        
+
         /* Row hover */
         .sales-table tbody tr:hover td {
             background-color: #f8fafc !important;
         }
-        
+
         /* Column Widths - Compact & Full Width */
         .col-product { width: auto; min-width: 280px; }
-        .col-warehouse { min-width: 100px; }
         .col-stock { width: 70px; min-width: 70px; }
         .col-qty { width: 70px; min-width: 70px; }
-        .col-price { width: 85px; min-width: 85px; }
-        .col-disc { width: 90px; min-width: 90px; }
-        .col-disc-amt { width: 80px; min-width: 80px; }
-        .col-pieces { width: 70px; min-width: 70px; }
-        .col-price-p { width: 85px; min-width: 85px; }
-        .col-price-m2 { width: 85px; min-width: 85px; }
-        .col-amount { width: 95px; min-width: 95px; }
-        .col-action { width: 35px; min-width: 35px; text-align: center; }
         .col-size { width: 75px; min-width: 75px; }
         .col-color { width: 85px; min-width: 85px; }
+        .col-pieces { width: 70px; min-width: 70px; }
+        .col-price-p { width: 85px; min-width: 85px; }
+        .col-disc { width: 90px; min-width: 90px; }
+        .col-disc-amt { width: 80px; min-width: 80px; }
+        .col-amount { width: 95px; min-width: 95px; }
+        .col-action { width: 35px; min-width: 35px; text-align: center; }
 
         /* Invalid cells & inputs */
         .invalid-cell {
@@ -491,12 +354,143 @@
             border-color: #2563eb !important;
             box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1) !important;
         }
+    <style>
+        /* 💎 SCREENSHOT POS 3-COLUMN LAYOUT SYSTEM 💎 */
+        .pos-product-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.15s ease;
+        }
+        .pos-product-card:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.1);
+        }
+        .pos-product-img {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            object-fit: cover;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pos-product-info {
+            flex: 1;
+            margin-left: 8px;
+            margin-right: 8px;
+            overflow: hidden;
+        }
+        .pos-product-name {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #1e293b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .pos-product-sub {
+            font-size: 0.68rem;
+            color: #64748b;
+        }
+        .pos-product-price {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #0f172a;
+            text-align: right;
+        }
+        .pos-product-add-btn {
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .pos-product-add-btn:hover {
+            background: #1d4ed8;
+            color: #fff;
+        }
+
+        .badge-stock-green {
+            background-color: #dcfce7 !important;
+            color: #166534 !important;
+            font-weight: 700 !important;
+            border: 1px solid #bbf7d0 !important;
+            padding: 2px 6px !important;
+            border-radius: 4px !important;
+            font-size: 0.7rem !important;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px dashed #e2e8f0;
+            font-size: 0.8rem;
+        }
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+        .summary-val-net {
+            font-weight: 800;
+            color: #2563eb;
+            font-size: 1rem;
+        }
+        .summary-val-change {
+            background: #ffe4e6;
+            color: #e11d48;
+            font-weight: 800;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+
+        .bottom-summary-strip {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .btn-save-complete {
+            background: #10b981 !important;
+            color: #ffffff !important;
+            font-weight: 800 !important;
+            border-radius: 8px !important;
+            padding: 8px 24px !important;
+            font-size: 0.9rem !important;
+            border: none !important;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25) !important;
+            transition: all 0.2s ease !important;
+            cursor: pointer;
+        }
+        .btn-save-complete:hover {
+            background: #059669 !important;
+            transform: translateY(-1px);
+        }
     </style>
 
-
-
     <div class="container-fluid py-0 px-1">
-        <div class="main-container bg-white border mx-auto">
+        <div class="main-container bg-white border mx-auto p-2 rounded-3">
 
             <div id="alertBox" class="alert d-none mb-1" role="alert" style="padding:4px 8px; font-size:0.78rem;"></div>
 
@@ -505,68 +499,71 @@
                 <input type="hidden" id="booking_id" name="booking_id" value="">
                 <input type="hidden" id="action" name="action" value="sale">
 
-                {{-- HEADER - Compact --}}
-                <div class="d-flex justify-content-between align-items-center px-2 py-1 border-bottom" style="min-height:28px;">
-                    <small class="text-secondary" id="entryDateTime" style="font-size:0.72rem;">Entry Date_Time: --</small>
-                    <div class="d-flex align-items-center gap-1">
-                        <small class="text-secondary d-none" id="entryDate" style="font-size:0.72rem;">Date: --</small>
-                        <button type="button" class="btn btn-sm btn-success py-0 px-2" id="btnHeaderPosted"
-                            disabled style="font-size:0.72rem; height:22px; line-height:20px;">Sale</button>
+                {{-- TOP HEADER BAR --}}
+                <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{{ route('sale.index') }}" class="btn btn-sm btn-light border rounded-circle" title="Back"><i class="fas fa-arrow-left text-secondary"></i></a>
+                        <div>
+                            <h5 class="mb-0 fw-bold text-dark d-flex align-items-center gap-2" style="font-size: 1.05rem;">
+                                <i class="fas fa-shopping-cart text-primary"></i> New Sale
+                            </h5>
+                            <small class="text-muted" style="font-size: 0.7rem;">Create a new invoice</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-light border rounded-3 text-secondary" title="Calculator"><i class="fas fa-calculator"></i></button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-3 text-secondary" title="Toggle Theme"><i class="fas fa-moon"></i></button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-3 text-secondary" title="Fullscreen" onclick="document.documentElement.requestFullscreen()"><i class="fas fa-expand"></i></button>
                     </div>
                 </div>
 
-                <!-- HORIZONTAL TOP PANEL -->
-                <div class="p-1 border bg-white mb-1" style="border-radius:3px;">
-                    <div class="row g-1 align-items-end w-100 m-0">
+                <!-- TOP INFORMATION PANEL -->
+                <div class="card-panel mb-2">
+                    <div class="row g-2 align-items-end w-100 m-0">
                         <!-- Invoice No -->
                         <div class="col-sm-2">
-                            <label class="form-label fw-bold text-secondary mb-0" style="font-size: 0.72rem;">Invoice No.</label>
-                            <input type="text" class="form-control input-readonly" name="Invoice_no"
-                                value="{{ $nextInvoiceNumber }}" readonly style="height: 26px !important;">
+                            <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.7rem;">Invoice No.</label>
+                            <input type="text" class="form-control input-readonly" name="Invoice_no" value="{{ $nextInvoiceNumber }}" readonly>
                         </div>
-                        
-                        <!-- Credit Days -->
-                        <div class="col-sm-1">
-                            <label class="form-label fw-bold text-secondary mb-0" style="font-size: 0.72rem;">Cr. Days</label>
-                            <input type="number" class="form-control" name="credit_days" placeholder="0"
-                                min="0" value="{{ $sale->credit_days ?? '' }}" style="height: 26px !important; padding: 0 4px;">
-                        </div>
-                        
                         <!-- Date -->
                         <div class="col-sm-2">
-                            <label class="form-label fw-bold text-secondary mb-0" style="font-size: 0.72rem;">Date:</label>
-                            <input type="text" name="sale_date" class="form-control datepicker-custom" id="displayDateInput" value="{{ date('Y-m-d') }}" style="background-color: #ffffff; height: 26px !important; padding: 0 4px;">
+                            <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.7rem;">Date</label>
+                            <input type="text" name="sale_date" class="form-control datepicker-custom text-center fw-bold" id="displayDateInput" value="{{ date('Y-m-d') }}">
                         </div>
-                        
-                        <!-- M.Bill -->
+                        <!-- Cr. Days -->
+                        <div class="col-sm-1">
+                            <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.7rem;">Cr. Days</label>
+                            <input type="number" class="form-control text-center fw-bold" name="credit_days" placeholder="0" min="0" value="{{ $sale->credit_days ?? '0' }}">
+                        </div>
+                        <!-- M.Bill / Remarks -->
                         <div class="col-sm-2">
-                            <label class="form-label fw-bold text-secondary mb-0" style="font-size: 0.72rem;">M.Bill:</label>
-                            <input type="text" class="form-control" name="reference" id="remarks" placeholder="Remarks" style="height: 26px !important; padding: 0 4px;">
+                            <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.7rem;">M.Bill / Remarks</label>
+                            <input type="text" class="form-control" name="reference" id="remarks" placeholder="Enter remarks">
                         </div>
-                        
-                        <!-- Customer & Walkin Toggle -->
-                        <div class="col-sm-5">
-                            <div class="d-flex justify-content-between align-items-center mb-0">
-                                <label class="form-label fw-bold text-secondary mb-0" style="font-size: 0.72rem;">Customer:</label>
-                                <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="btn btn-outline-success py-0 px-1" data-bs-toggle="modal" data-bs-target="#addCustomerModal" title="Add New Customer" style="font-size: 0.68rem; height: 18px; line-height: 16px;">
-                                        <i class="fas fa-plus"></i> New
-                                    </button>
-                                    <div class="form-check form-switch mb-0 d-flex align-items-center" style="min-height: 0; padding-left: 2.5em;">
-                                        <input class="form-check-input" type="checkbox" role="switch" id="walkinToggle" name="is_walkin" value="1" checked style="height: 14px; width: 28px; margin-top:0;">
-                                        <label class="form-check-label fw-bold ms-1" for="walkinToggle" style="color: #6366f1; font-size: 0.72rem; cursor: pointer;">Walk-in</label>
-                                    </div>
-                                </div>
+                        <!-- Customer & Walk-in Toggle -->
+                        <div class="col-sm-4">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label fw-bold text-secondary mb-0" style="font-size:0.7rem;">Customer</label>
+                                <button type="button" class="btn btn-sm btn-outline-success py-0 px-2 rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#addCustomerModal" style="font-size: 0.65rem;">
+                                    <i class="fas fa-user-plus me-1"></i>New
+                                </button>
                             </div>
-                            <!-- Input Morph Container -->
-                            <div id="customerInputWrapper" style="height: 26px;">
-                                <!-- Walk-in Input -->
-                                <input type="text" class="form-control" name="walkin_name" id="walkinNameInput" value="Walk-in Customer" placeholder="Enter Name..." style="height: 26px !important;">
-                                <!-- Main Customer Select2 -->
+                            <div id="customerInputWrapper">
+                                <input type="text" class="form-control fw-bold" name="walkin_name" id="walkinNameInput" value="Walk-in Customer" placeholder="Enter Walk-in Name...">
                                 <select class="form-select d-none" id="customerSelect" name="customer" style="width:100%">
                                     <option value=""></option>
                                 </select>
                             </div>
+                        </div>
+                        <!-- Walkin & Save Button -->
+                        <div class="col-sm-1 d-flex flex-column align-items-end justify-content-end">
+                            <div class="d-flex align-items-center gap-1 mb-1">
+                                <div class="form-check form-switch mb-0 d-flex align-items-center p-0">
+                                    <input class="form-check-input ms-0" type="checkbox" role="switch" id="walkinToggle" name="is_walkin" value="1" checked style="cursor: pointer;">
+                                    <label class="form-check-label fw-bold ms-1" for="walkinToggle" style="color: #2563eb; font-size: 0.72rem; cursor: pointer;">Walk-in</label>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-success w-100 fw-bold py-1 shadow-sm" id="btnHeaderSaveSale" style="font-size: 0.75rem;"><i class="fas fa-check me-1"></i>Save Sale</button>
                         </div>
                     </div>
                 </div>
@@ -577,173 +574,195 @@
                 <input type="hidden" id="previousBalance" value="0">
                 <input type="hidden" id="rangeBalance" value="0">
 
-                <!-- Items Section full width -->
-                <div class="p-1 border bg-white mt-1" style="border-radius:3px;">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <div class="section-title mb-0" style="font-size:0.7rem;">Items</div>
-                        <div class="d-flex gap-1">
-                            <button type="button" class="btn btn-outline-success py-0 px-1" data-bs-toggle="modal" data-bs-target="#quickAddProductModal" style="font-size:0.7rem; height:20px; line-height:18px;">
-                                <i class="fas fa-plus me-1"></i>Quick Add
-                            </button>
-                            <button type="button" class="btn btn-primary py-0 px-1" id="btnAdd" style="font-size:0.7rem; height:20px; line-height:18px;">+Row</button>
+                <!-- 2-COLUMN RESPONSIVE POS LAYOUT -->
+                <div class="row g-2 align-items-stretch">
+                    <!-- LEFT MAIN AREA: Items Grid Table (col-lg-8 col-xl-9) -->
+                    <div class="col-lg-8 col-xl-9">
+                        <div class="card-panel d-flex flex-column h-100 p-2 bg-white" style="border-radius:6px;">
+                            <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="section-title mb-0" style="font-size:0.8rem;">Order Items (<span id="itemsRowCount">0</span>)</div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold" data-bs-toggle="offcanvas" data-bs-target="#quickProductsOffcanvas" style="font-size:0.72rem;">
+                                        <i class="fas fa-th me-1"></i>Quick Products Panel
+                                    </button>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <button type="button" class="btn btn-outline-success btn-sm py-1 px-3 rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#quickAddProductModal" style="font-size:0.75rem;">
+                                        <i class="fas fa-bolt text-warning me-1"></i>Create Product
+                                    </button>
+                                    <button type="button" class="btn btn-primary btn-sm py-1 px-3 rounded-pill fw-bold" id="btnAdd" style="font-size:0.75rem;">
+                                        <i class="fas fa-plus me-1"></i>Add Row
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive flex-grow-1" style="overflow-x: auto; overflow-y: visible;">
+                                <table class="table table-bordered sales-table mb-0" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:25px;" class="text-center">#</th>
+                                            <th class="col-product" style="min-width: 180px;">PRODUCT</th>
+                                            <th class="col-stock" style="width: 70px;">STOCK</th>
+                                            <th class="col-qty" style="width: 75px;">QTY</th>
+                                            <th class="col-size" style="width: 65px;">SIZE</th>
+                                            <th class="col-color" style="width: 70px;">COLOR</th>
+                                            <th class="col-pieces" style="width: 65px;">PCS</th>
+                                            <th class="col-price-p" style="width: 85px;">PRICE</th>
+                                            <th class="col-disc" style="width: 85px;">DISCOUNT</th>
+                                            <th class="col-amount" style="width: 95px;">AMOUNT</th>
+                                            <th class="col-action" style="width: 30px;">×</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="salesTableBody">
+
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="9" class="text-end fw-bold text-uppercase text-secondary" style="font-size:0.78rem;">Grid Total:</td>
+                                            <td class="text-end fw-bold text-success fs-6"><span id="totalAmount">0.00</span></td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered sales-table mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="col-product">Product</th>
-                                    <th class="col-stock">Stock</th>
-                                    <th style="width:70px;min-width:70px;">Qty</th>
-                                    <th style="width:70px;min-width:70px;" class="d-none">Loose</th>
-                                    <th class="col-size">Size</th>
-                                    <th class="col-color">Color</th>
-                                    <th class="col-pieces boxes-col">Pcs</th>
-                                    <th class="col-price-p price-pc-header">Price</th>
-                                    <th class="col-disc">Disc</th>
-                                    <th class="col-disc-amt">D.Amt</th>
-                                    <th class="col-amount">Amount</th>
-                                    <th class="col-action">×</th>
-                                </tr>
-                            </thead>
-                            <tbody id="salesTableBody">
-
-                            </tbody>
-                            <tfoot>
-                                <tr>
-                                    <td colspan="9" class="text-end fw-bold" style="font-size:0.76rem;">Total:</td>
-                                    <td class="text-end fw-bold" style="font-size:0.76rem;"><span id="totalAmount">0.00</span></td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-
-                {{-- Totals + Receipts --}}
-                <div class="row g-2 mt-2 align-items-stretch">
-                    <!-- LEFT SIDE: Receipt Vouchers -->
-                    <div class="col-lg-7" id="receiptVouchersSection">
-                        <div class="card border-0 shadow-sm h-100 rounded-3">
-                            <div class="card-header bg-light border-bottom-0 py-2 d-flex justify-content-between align-items-center">
-                                <span class="fw-bold text-secondary text-uppercase" style="font-size:0.7rem; letter-spacing:0.5px;">Receipt Vouchers</span>
-                                <span class="badge bg-primary rounded-pill" style="font-size:0.75rem;">Total: <span id="receiptsTotalBadge">0.00</span></span>
+                    <!-- RIGHT PANEL: Summary & Payment Methods (col-lg-4 col-xl-3) -->
+                    <div class="col-lg-4 col-xl-3">
+                        <div class="d-flex flex-column h-100 gap-2">
+                            <!-- Executive Summary Card -->
+                            <div class="card-panel p-3 bg-white" style="border-radius:6px;">
+                                <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+                                    <span class="fw-bold text-dark" style="font-size:0.85rem;"><i class="fas fa-calculator text-primary me-1"></i>Summary</span>
+                                    <span class="badge bg-primary rounded-pill px-2 py-1" style="font-size:0.7rem;">Live</span>
+                                </div>
+                                
+                                <div class="summary-row">
+                                    <span class="text-muted">Total Amount</span>
+                                    <span class="fw-bold text-dark" id="tGross">0.00</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span class="text-muted">Line Discount</span>
+                                    <span class="fw-bold text-danger" id="tLineDisc">0.00</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span class="fw-bold text-dark">Net Total</span>
+                                    <span class="summary-val-net" id="tSub">0.00</span>
+                                </div>
+                                <div class="summary-row">
+                                    <span class="text-muted">Total Paid</span>
+                                    <span class="fw-bold text-success" id="receiptsTotalBadge">0.00</span>
+                                </div>
+                                <div class="summary-row pt-1">
+                                    <span class="fw-bold text-danger">Change</span>
+                                    <span class="summary-val-change" id="walkinChange">-0.00</span>
+                                </div>
                             </div>
-                            <div class="card-body p-2 bg-white">
-                                <div id="rvWrapper">
-                                    <div class="d-flex gap-2 align-items-center mb-2 rv-row">
-                                        <select class="form-select form-select-sm rv-account bg-light" name="receipt_account_id[]" style="max-width: 280px; border-radius: 4px;">
-                                            <option value="" disabled>Select account</option>
+
+                            <!-- Payment Methods Card -->
+                            <div class="card-panel p-3 bg-white flex-grow-1 d-flex flex-column" style="border-radius:6px;">
+                                <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+                                    <span class="fw-bold text-dark" style="font-size:0.82rem;"><i class="fas fa-wallet text-success me-1"></i>Payment Methods</span>
+                                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 fw-bold" id="btnAddRV" style="font-size:0.7rem;"><i class="fas fa-plus me-1"></i>Add Account</button>
+                                </div>
+
+                                <div id="rvWrapper" class="mb-2">
+                                    <div class="d-flex gap-1 align-items-center mb-2 rv-row">
+                                        <select class="form-select form-select-sm rv-account bg-light fw-bold" name="receipt_account_id[]" style="font-size:0.75rem;">
                                             @foreach ($accounts as $acc)
-                                                <option value="{{ $acc->id }}" {{ str_contains(strtolower($acc->title), 'cash') ? 'selected' : '' }}>{{ $acc->title }}</option>
+                                                <option value="{{ $acc->id }}" {{ str_contains(strtolower($acc->title), 'cash') || str_contains(strtolower($acc->title), 'easypaisa') ? 'selected' : '' }}>{{ $acc->title }}</option>
                                             @endforeach
                                         </select>
-                                        <input type="number" step="0.01" class="form-control form-control-sm text-end rv-amount fw-bold" name="receipt_amount[]" placeholder="0.00" style="max-width:140px; border-radius: 4px;">
-                                        <button type="button" class="btn btn-primary btn-sm px-2 rounded-2 shadow-sm" id="btnAddRV"><i class="fas fa-plus"></i> Add</button>
-                                    </div>
-                                    <div class="text-end d-none">
-                                        <span class="me-2">Receipts Total:</span>
-                                        <span class="fw-bold" id="receiptsTotal">0.00</span>
+                                        <input type="number" step="0.01" class="form-control form-control-sm text-end rv-amount fw-bold" name="receipt_amount[]" placeholder="0.00" style="width: 110px; font-size:0.75rem;">
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- RIGHT SIDE: Totals -->
-                    <div class="col-lg-5" id="totalsSection">
-                        <div class="card border-0 shadow-sm h-100 rounded-3 overflow-hidden">
-                            <!-- Walk-in View -->
-                            <div id="totalsWalkinView" class="h-100 d-none align-items-center bg-white justify-content-between p-2 gap-2 flex-nowrap" style="overflow-x: auto;">
-                                <!-- Net Total -->
-                                <div class="d-flex align-items-center bg-light px-2 py-1 border rounded gap-1 flex-shrink-0">
-                                    <span class="fw-bold text-secondary" style="font-size:0.78rem;">Net Total:</span>
-                                    <span id="walkinNetTotal" class="fw-bold text-primary mb-0" style="font-size:1rem; line-height:1;">0.00</span>
-                                </div>
-                                
-                                <!-- Discount -->
-                                <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                                    <span class="text-muted fw-semibold" style="font-size:0.78rem;">Disc (Rs):</span>
-                                    <input type="number" class="form-control form-control-sm text-end fw-bold text-danger border-danger" id="walkinDiscountRs" value="0" placeholder="0" style="width: 80px; background-color: #fef2f2; height: 26px !important; padding: 1px 4px;">
-                                </div>
-                                
-                                <!-- Payments -->
-                                <div class="d-flex align-items-center gap-1 px-2 border-start border-end" style="min-width: 320px;">
-                                    <span class="text-muted fw-semibold mb-0 flex-shrink-0" style="font-size:0.78rem;">Payments:</span>
-                                    <div id="walkinReceiptsContainer" class="flex-grow-1 w-100"></div>
-                                </div>
-                                
-                                <!-- Change -->
-                                <div class="d-flex align-items-center gap-1 px-2 flex-shrink-0">
-                                    <span class="fw-bold text-uppercase text-secondary" style="font-size:0.78rem;">Change:</span>
-                                    <span id="walkinChange" class="fw-bold text-warning mb-0" style="font-size:1.1rem; line-height:1;">0.00</span>
-                                </div>
+                                <button type="button" class="btn btn-save-complete w-100 mt-auto py-2" id="btnSaveAndComplete">
+                                    <i class="fas fa-save me-2"></i>Save & Complete (F9)
+                                </button>
                             </div>
-
-                            <!-- Customer View -->
-                            <div id="totalsCustomerView" class="h-100 flex-column bg-light">
-                                <div class="p-2 d-flex flex-column gap-1" style="font-size:0.8rem;">
-                                    <div class="d-flex justify-content-between px-2">
-                                        <span class="text-muted">Total Qty</span>
-                                        <span class="fw-semibold text-dark" id="tQty">0</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between px-2">
-                                        <span class="text-muted">Invoice Gross</span>
-                                        <span class="fw-semibold text-dark" id="tGross">0.00</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between px-2">
-                                        <span class="text-muted">Line Discount</span>
-                                        <span class="fw-semibold text-danger" id="tLineDisc">0.00</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between px-2 py-1 bg-white border rounded shadow-sm my-1">
-                                        <span class="fw-bold">Sub-Total</span>
-                                        <span class="fw-bold text-primary" id="tSub">0.00</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center px-2">
-                                        <span class="text-muted">Add. Discount %</span>
-                                        <input type="number" class="form-control form-control-sm text-end p-1" id="discountPercent" value="0" style="width:80px; height:24px;">
-                                    </div>
-                                    <div class="d-flex justify-content-between px-2">
-                                        <span class="text-muted">Add. Discount Rs</span>
-                                        <span class="fw-semibold text-danger" id="tOrderDisc">0.00</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between px-2 py-1 bg-white border border-primary border-opacity-25 rounded shadow-sm my-1">
-                                        <span class="fw-bold text-primary">Current Bill</span>
-                                        <span class="fw-bold text-primary" id="tCurrentBill">0.00</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between px-2">
-                                        <span class="text-muted">Previous Balance</span>
-                                        <span class="fw-semibold text-danger" id="tPrev">0.00</span>
-                                    </div>
-                                </div>
-                                <div class="mt-auto p-2 bg-dark text-white d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:1px;">Payable / Total</span>
-                                    <span class="fs-5 fw-bold" id="tPayable">0.00</span>
-                                </div>
-                            </div>
-
-                            {{-- hidden mirrors for backend --}}
-                            <input type="hidden" name="subTotal1" id="subTotal1" value="0">
-                            <input type="hidden" name="total_subtotal" id="subTotal2" value="0">
-                            <input type="hidden" name="total_extra_cost" id="discountAmount" value="0">
-                            <input type="hidden" name="total_net" id="totalBalance" value="0">
-                            <input type="hidden" name="cash" value="0">
-                            <input type="hidden" name="card" value="0">
-                            <input type="hidden" name="change" id="backendChange" value="0">
                         </div>
                     </div>
                 </div>
 
-                {{-- Buttons --}}
-                <div class="d-flex flex-wrap gap-1 justify-content-center py-1 px-2 mt-1 border-top">
-                    <button type="button" class="btn btn-action-primary bg-primary border-primary" id="btnSave"><i class="fas fa-bookmark me-1"></i>Booking</button>
-                    <button type="button" class="btn btn-action-primary bg-success border-success" id="btnPosted" disabled><i class="fas fa-check-circle me-1"></i>Sale</button>
-                    <button type="button" class="btn btn-action-secondary" id="btnPrint"><i class="fas fa-print me-1"></i>A4</button>
-                    <button type="button" class="btn btn-action-secondary" id="btnEstimate"><i class="fas fa-file-invoice me-1"></i>Est</button>
-                    <button type="button" class="btn btn-action-secondary" id="btnPrint2"><i class="fas fa-receipt me-1"></i>Thermal</button>
-                    <button type="button" class="btn btn-action-secondary" id="btnDcThermal"><i class="fas fa-truck me-1"></i>DC</button>
+                <!-- BOTTOM SUMMARY STRIP -->
+                <div class="bottom-summary-strip">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted fw-semibold" style="font-size:0.8rem;">Net Total</span>
+                        <span class="fs-5 fw-bold text-primary" id="walkinNetTotal">0.00</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted fw-semibold" style="font-size:0.8rem;">Discount (Rs.)</span>
+                        <div class="input-group input-group-sm" style="width: 130px;">
+                            <input type="number" class="form-control text-end fw-bold text-danger" id="walkinDiscountRs" value="0" placeholder="0">
+                            <span class="input-group-text bg-light text-muted">%</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted fw-semibold" style="font-size:0.8rem;">Payments</span>
+                        <span class="fs-6 fw-bold text-success" id="bottomPaymentsTotal">0.00</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted fw-semibold" style="font-size:0.8rem;">Change</span>
+                        <span class="fs-6 fw-bold text-danger" id="bottomChangeVal">-0.00</span>
+                    </div>
+
+                    <button type="button" class="btn btn-save-complete" id="btnSaveAndComplete2">
+                        <i class="fas fa-save me-2"></i>Save & Complete (F9)
+                    </button>
                 </div>
+
+                {{-- ACTION BUTTONS ROW --}}
+                <div class="d-flex flex-wrap gap-2 justify-content-center py-2 px-3 mt-2 border-top bg-white rounded-3 shadow-sm">
+                    <button type="button" class="btn btn-outline-primary btn-sm px-3 fw-bold" id="btnSave"><i class="fas fa-bookmark me-1"></i>Booking</button>
+                    <button type="button" class="btn btn-primary btn-sm px-4 fw-bold" id="btnPosted" disabled><i class="fas fa-shopping-cart me-1"></i>Sale</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-3 fw-bold" id="btnPrint"><i class="fas fa-print me-1"></i>A4 Print</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-3 fw-bold" id="btnEstimate"><i class="fas fa-file-invoice me-1"></i>Estimate</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-3 fw-bold" id="btnPrint2"><i class="fas fa-receipt me-1"></i>Thermal Print</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm px-3 fw-bold" id="btnDcThermal"><i class="fas fa-truck me-1"></i>DC</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Products Offcanvas Drawer -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="quickProductsOffcanvas" style="width: 360px;">
+        <div class="offcanvas-header bg-light py-2 border-bottom">
+            <h6 class="offcanvas-title fw-bold text-dark mb-0"><i class="fas fa-th text-primary me-2"></i>Quick Products Panel</h6>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-2">
+            <div class="input-group input-group-sm mb-2">
+                <input type="text" class="form-control" id="sidebarProductSearch" placeholder="Search product by name, barcode or SKU...">
+                <button class="btn btn-primary px-2" type="button"><i class="fas fa-search"></i></button>
+            </div>
+            <div class="overflow-auto pe-1" id="sidebarProductContainer" style="max-height: calc(100vh - 120px);">
+                @if(isset($recentProducts) && count($recentProducts) > 0)
+                    @foreach($recentProducts as $prod)
+                        <div class="pos-product-card">
+                            <div class="pos-product-img">
+                                <i class="fas fa-box text-secondary fs-5"></i>
+                            </div>
+                            <div class="pos-product-info">
+                                <div class="pos-product-name" title="{{ $prod->item_name }}">{{ $prod->item_name }}</div>
+                                <div class="pos-product-sub">
+                                    <span class="badge-stock-green">{{ $prod->total_pieces ?? 0 }} Pcs</span> Stock
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="pos-product-price">{{ number_format($prod->retail_price ?? 0, 2) }}</div>
+                                <button type="button" class="pos-product-add-btn add-product-direct-btn" data-id="{{ $prod->id }}" title="Add to Grid"><i class="fas fa-plus"></i></button>
+                            </div>
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+        </div>
+    </div>
             </form>
         </div>
     </div>

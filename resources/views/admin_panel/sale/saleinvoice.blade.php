@@ -364,22 +364,38 @@
                         </td>
 
                         <td class="text-center" style="vertical-align: middle;">
-                            <div style="font-weight: bold; color: #2c3e50;">
-
-                                @if ($sizeMode == 'by_pieces')
-                                    {{ $totalPieces }} Pcs
-                                @else
-                                    @if ($boxes > 0 && $loosePieces > 0)
-                                        {{ $boxes }} {{ $sizeMode == 'by_cartons' ? 'Carton' : 'Box' }} +
-                                        {{ $loosePieces }} Pc
-                                    @elseif ($boxes > 0)
-                                        {{ $boxes }} {{ $sizeMode == 'by_cartons' ? 'Carton' : 'Box' }}
+                            @if (in_array($sizeMode, ['by_kg', 'by_gm', 'by_feet', 'by_meter']))
+                                @php
+                                    $uomLabel = match($sizeMode) {
+                                        'by_kg' => 'Kg',
+                                        'by_gm' => 'Gm',
+                                        'by_feet' => 'Ft',
+                                        'by_meter' => 'Meter',
+                                        default => '',
+                                    };
+                                    $qtyVal = (float)($item['qty'] ?? $totalPieces);
+                                    $displayQty = ($qtyVal == (int)$qtyVal) ? (int)$qtyVal : number_format($qtyVal, 2);
+                                @endphp
+                                <div style="font-weight: bold; color: #2c3e50;">
+                                    {{ $displayQty }} {{ $uomLabel }}
+                                </div>
+                            @else
+                                <div style="font-weight: bold; color: #2c3e50;">
+                                    @if ($sizeMode == 'by_pieces')
+                                        {{ $totalPieces }} Pcs
                                     @else
-                                        {{ $loosePieces }} Pcs
+                                        @if ($boxes > 0 && $loosePieces > 0)
+                                            {{ $boxes }} {{ $sizeMode == 'by_cartons' ? 'Carton' : 'Box' }} +
+                                            {{ $loosePieces }} Pc
+                                        @elseif ($boxes > 0)
+                                            {{ $boxes }} {{ $sizeMode == 'by_cartons' ? 'Carton' : 'Box' }}
+                                        @else
+                                            {{ $loosePieces }} Pcs
+                                        @endif
                                     @endif
-                                @endif
-                            </div>
-                            <small class="text-muted" style="font-size: 10px;">({{ $totalPieces }} pcs)</small>
+                                </div>
+                                <small class="text-muted" style="font-size: 10px;">({{ $totalPieces }} pcs)</small>
+                            @endif
                         </td>
 
                         <td class="text-center" style="vertical-align: middle;">
