@@ -284,19 +284,18 @@
                                             <table class="table table-bordered table-sm align-middle mb-1" id="variantsTable">
                                                 <thead class="table-light">
                                                     <tr>
-                                                        <th class="text-uppercase text-muted" style="min-width: 160px; font-size: 11px;">Variant Name</th>
-                                                        <th class="text-uppercase text-muted" style="width: 90px; font-size: 11px;">Size</th>
-                                                        <th class="text-uppercase text-muted" style="width: 95px; font-size: 11px;">Color</th>
-                                                        <th class="text-uppercase text-muted" style="width: 85px; font-size: 11px;">Unit</th>
-                                                        <th class="text-uppercase text-muted" style="width: 85px; font-size: 11px;">Conv Factor</th>
-                                                        <th style="width: 80px; font-size: 11px;" class="text-uppercase text-muted">Stock</th>
-                                                        <th style="width: 95px; font-size: 11px;" class="text-uppercase text-muted">Sale Price</th>
-                                                        <th style="width: 95px; font-size: 11px;" class="text-uppercase text-muted">Wholesale</th>
-                                                        <th style="width: 95px; font-size: 11px;" class="text-uppercase text-muted">Purch Price</th>
-                                                        <th style="width: 95px; font-size: 11px;" class="text-uppercase text-muted">Piece Wt (g)</th>
-                                                        <th style="width: 65px; font-size: 11px;" class="text-uppercase text-muted">Alert</th>
-                                                        <th style="width: 110px; font-size: 11px;" class="text-uppercase text-muted">Barcode</th>
-                                                        <th style="width: 55px; text-align:center; font-size: 11px;" class="text-uppercase text-muted">Action</th>
+                                                        <th class="text-uppercase text-muted p-1" style="min-width: 140px; font-size: 10px;">Variant Name</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 80px; font-size: 10px;">Size</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 80px; font-size: 10px;">Color</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 75px; font-size: 10px;">Unit</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 85px; font-size: 10px;">Conv Factor</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 105px; font-size: 10px;">Piece Wt (g)</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 10px;">Sale Price</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 10px;">Wholesale</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 10px;">Purch Price</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 55px; font-size: 10px;">Alert</th>
+                                                        <th class="text-uppercase text-muted p-1" style="width: 100px; font-size: 10px;">Barcode</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 50px; font-size: 10px;">Action</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="variantsBody">
@@ -638,14 +637,14 @@
 
             // Sync base variant name with product name
             const productNameInput = document.querySelector('input[name="product_name"]');
-            productNameInput.addEventListener('input', function() {
-                if (variantMode === 'weight') {
+            if (productNameInput) {
+                productNameInput.addEventListener('input', function() {
                     const baseInput = document.querySelector('input.base-name-input');
                     if (baseInput && !manualNames[baseInput.dataset.vid]) {
                         baseInput.value = this.value;
                     }
-                }
-            });
+                });
+            }
 
             function addBaseVariantRow() {
                 const tr = document.createElement('tr');
@@ -653,13 +652,14 @@
                 const baseUnitName = unitDropdown ? unitDropdown.options[unitDropdown.selectedIndex].text : 'Kg';
                 const vid = 'base_' + Date.now();
                 tr.innerHTML = `
-                    <td>
+                    <td class="p-1">
                         <input type="text" class="form-control-pro form-control-sm base-name-input fw-bold" name="variant_name[]" value="${productName}" placeholder="Name" data-vid="${vid}">
                         <input type="hidden" name="variant_is_base[]" value="1">
+                        <input type="hidden" name="variant_stock[]" value="0">
                     </td>
-                    <td><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" placeholder="Size"></td>
-                    <td><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" placeholder="Color"></td>
-                    <td>
+                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" placeholder="Size"></td>
+                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" placeholder="Color"></td>
+                    <td class="p-1">
                         <select class="form-select form-select-sm fw-bold text-primary px-1" name="variant_unit[]" style="font-size:11px;">
                             <option value="Kg" ${baseUnitName.includes('Kg')?'selected':''}>Kg</option>
                             <option value="Pcs" ${baseUnitName.includes('Pcs')||baseUnitName.includes('Pieces')?'selected':''}>Pcs</option>
@@ -670,30 +670,33 @@
                             <option value="Dozen">Dzn</option>
                         </select>
                     </td>
-                    <td>
-                        <input type="number" class="form-control-pro form-control-sm conv-factor-input text-center" name="variant_conv_factor[]" step="0.000001" value="1" readonly title="Base Unit Factor = 1">
+                    <td class="p-1">
+                        <input type="number" class="form-control-pro form-control-sm conv-factor-input text-center" name="variant_conv_factor[]" step="any" value="1" readonly title="Base Unit Factor = 1">
                     </td>
-                    <td><input type="number" class="form-control-pro form-control-sm" name="variant_stock[]" value="0" placeholder="0"></td>
-                    <td><input type="number" class="form-control-pro form-control-sm base-sale-input" name="variant_sale_price[]" step="0.01" placeholder="0.00" required></td>
-                    <td><input type="number" class="form-control-pro form-control-sm" name="variant_wholesale_price[]" step="0.01" placeholder="0.00" value="0"></td>
-                    <td><input type="number" class="form-control-pro form-control-sm base-purch-input" name="variant_purchase_price[]" step="0.01" placeholder="0.00" required></td>
-                    <td>
+                    <td class="p-1">
                         <div class="input-group input-group-sm">
-                            <input type="number" class="form-control-pro form-control-sm" name="variant_weight_per_piece[]" step="0.01" placeholder="0.00" value="0">
+                            <input type="number" class="form-control-pro form-control-sm" name="variant_weight_per_piece[]" step="any" placeholder="0.00" value="0">
                             <span class="input-group-text bg-light text-muted p-1" style="font-size:10px;">g</span>
                         </div>
                     </td>
-                    <td><input type="number" class="form-control-pro form-control-sm" name="variant_alert_qty[]" value="0" placeholder="0"></td>
-                    <td><input type="text" class="form-control-pro form-control-sm" name="variant_barcode[]" value="${generateRandomBarcode()}"></td>
-                    <td class="text-center">
+                    <td class="p-1"><input type="number" class="form-control-pro form-control-sm base-sale-input" name="variant_sale_price[]" step="any" placeholder="0.00" required></td>
+                    <td class="p-1"><input type="number" class="form-control-pro form-control-sm" name="variant_wholesale_price[]" step="any" placeholder="0.00" value="0"></td>
+                    <td class="p-1"><input type="number" class="form-control-pro form-control-sm base-purch-input" name="variant_purchase_price[]" step="any" placeholder="0.00" required></td>
+                    <td class="p-1"><input type="number" class="form-control-pro form-control-sm" name="variant_alert_qty[]" value="0" placeholder="0"></td>
+                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_barcode[]" value="${generateRandomBarcode()}"></td>
+                    <td class="p-1 text-center">
                         <span class="badge bg-primary px-2 py-1">Base</span>
                     </td>
                 `;
                 variantsBody.appendChild(tr);
 
-                // Listen to base price changes to update suggestions
-                tr.querySelector('.base-sale-input').addEventListener('input', updatePriceSuggestions);
-                tr.querySelector('.base-purch-input').addEventListener('input', updatePriceSuggestions);
+                const baseSaleInp = tr.querySelector('.base-sale-input');
+                const basePurchInp = tr.querySelector('.base-purch-input');
+                const baseWholesaleInp = tr.querySelector('input[name="variant_wholesale_price[]"]');
+
+                if (baseSaleInp) baseSaleInp.addEventListener('input', updatePriceSuggestions);
+                if (basePurchInp) basePurchInp.addEventListener('input', updatePriceSuggestions);
+                if (baseWholesaleInp) baseWholesaleInp.addEventListener('input', updatePriceSuggestions);
                 
                 tr.querySelector('.base-name-input').addEventListener('input', function() {
                     manualNames[vid] = true;
@@ -701,24 +704,39 @@
             }
 
             function updatePriceSuggestions() {
-                if (variantMode !== 'weight') return;
-                
-                const baseSale = parseFloat(document.querySelector('.base-sale-input')?.value || 0);
-                const basePurch = parseFloat(document.querySelector('.base-purch-input')?.value || 0);
+                const baseRow = variantsBody.querySelector('tr');
+                if (!baseRow) return;
 
-                const rows = variantsBody.querySelectorAll('tr.weight-variant-row');
-                rows.forEach(row => {
+                const baseSale = parseFloat(baseRow.querySelector('.base-sale-input')?.value || 0);
+                const basePurch = parseFloat(baseRow.querySelector('.base-purch-input')?.value || 0);
+                const baseWholesale = parseFloat(baseRow.querySelector('input[name="variant_wholesale_price[]"]')?.value || 0);
+
+                const rows = variantsBody.querySelectorAll('tr');
+                rows.forEach((row, index) => {
+                    if (index === 0) return;
+                    
                     const vid = row.dataset.vid;
-                    const factor = parseFloat(row.querySelector('.conv-factor-input').value || 1);
+                    const factorInput = row.querySelector('.conv-factor-input');
+                    const factor = parseFloat(factorInput?.value || 0);
                     
                     const saleInp = row.querySelector('.sale-price-input');
                     const purchInp = row.querySelector('.purch-price-input');
+                    const wholesaleInp = row.querySelector('input[name="variant_wholesale_price[]"]');
+                    const pieceWtInp = row.querySelector('input[name="variant_weight_per_piece[]"]');
 
-                    if (!manualPrices[vid + '_sale']) {
-                        saleInp.value = (baseSale * factor).toFixed(2);
-                    }
-                    if (!manualPrices[vid + '_purch']) {
-                        purchInp.value = (basePurch * factor).toFixed(2);
+                    if (factor > 0) {
+                        if (saleInp && (!vid || !manualPrices[vid + '_sale'])) {
+                            saleInp.value = (baseSale * factor).toFixed(2);
+                        }
+                        if (purchInp && (!vid || !manualPrices[vid + '_purch'])) {
+                            purchInp.value = (basePurch * factor).toFixed(2);
+                        }
+                        if (wholesaleInp && (!vid || !manualPrices[vid + '_wholesale'])) {
+                            wholesaleInp.value = (baseWholesale * factor).toFixed(2);
+                        }
+                        if (pieceWtInp && (!vid || !manualPrices[vid + '_weight'])) {
+                            pieceWtInp.value = (factor < 10) ? (factor * 1000).toFixed(1).replace(/\.0$/, '') : factor;
+                        }
                     }
                 });
             }
@@ -726,28 +744,35 @@
             function addVariantRow(weightGrams = null) {
                 const tr = document.createElement('tr');
                 const vid = 'var_' + Date.now();
+                tr.dataset.vid = vid;
                 
                 let factor = 1;
                 let suggestedName = productNameInput.value || '';
                 if (weightGrams) {
-                    factor = parseFloat((weightGrams / 1000).toFixed(6));
+                    factor = parseFloat(weightGrams) > 10 ? parseFloat((weightGrams / 1000).toFixed(6)) : parseFloat(weightGrams);
                     suggestedName += ` - ${weightGrams}g`;
                 }
                 
-                const baseSale = parseFloat(document.querySelector('.base-sale-input')?.value || 0);
-                const basePurch = parseFloat(document.querySelector('.base-purch-input')?.value || 0);
+                const baseRow = variantsBody.querySelector('tr');
+                const baseSale = parseFloat(baseRow?.querySelector('.base-sale-input')?.value || 0);
+                const basePurch = parseFloat(baseRow?.querySelector('.base-purch-input')?.value || 0);
+                const baseWholesale = parseFloat(baseRow?.querySelector('input[name="variant_wholesale_price[]"]')?.value || 0);
+
                 const suggSale = (baseSale * factor).toFixed(2);
                 const suggPurch = (basePurch * factor).toFixed(2);
+                const suggWholesale = (baseWholesale * factor).toFixed(2);
+                const initPieceWt = weightGrams || (factor < 10 ? (factor * 1000).toFixed(1).replace(/\.0$/, '') : factor);
                 const randBarcode = generateRandomBarcode();
 
                 tr.innerHTML = `
-                    <td>
+                    <td class="p-1">
                         <input type="text" class="form-control-pro form-control-sm var-name-input" name="variant_name[]" value="${suggestedName}" placeholder="Name">
                         <input type="hidden" name="variant_is_base[]" value="0">
+                        <input type="hidden" name="variant_stock[]" value="0">
                     </td>
-                    <td><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" placeholder="Size (XL, 10x12)"></td>
-                    <td><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" placeholder="Color"></td>
-                    <td>
+                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" placeholder="Size (XL, 10x12)"></td>
+                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" placeholder="Color"></td>
+                    <td class="p-1">
                         <select class="form-select form-select-sm px-1 fw-bold text-dark" name="variant_unit[]" style="font-size:11px;">
                             <option value="Pcs" selected>Pcs</option>
                             <option value="Kg">Kg</option>
@@ -758,36 +783,55 @@
                             <option value="Dozen">Dzn</option>
                         </select>
                     </td>
-                    <td>
-                        <input type="number" class="form-control-pro form-control-sm conv-factor-input text-center" name="variant_conv_factor[]" step="0.000001" value="${factor}" required title="Conv Factor">
+                    <td class="p-1">
+                        <input type="number" class="form-control-pro form-control-sm conv-factor-input text-center" name="variant_conv_factor[]" step="any" value="${factor}" required title="Conv Factor">
                     </td>
-                    <td><input type="number" class="form-control-pro form-control-sm" name="variant_stock[]" value="0" placeholder="0"></td>
-                    <td><input type="number" class="form-control-pro form-control-sm sale-price-input" name="variant_sale_price[]" step="0.01" value="${suggSale}" placeholder="0.00" required></td>
-                    <td><input type="number" class="form-control-pro form-control-sm" name="variant_wholesale_price[]" step="0.01" placeholder="0.00" value="0"></td>
-                    <td><input type="number" class="form-control-pro form-control-sm purch-price-input" name="variant_purchase_price[]" step="0.01" value="${suggPurch}" placeholder="0.00" required></td>
-                    <td>
+                    <td class="p-1">
                         <div class="input-group input-group-sm">
-                            <input type="number" class="form-control-pro form-control-sm" name="variant_weight_per_piece[]" step="0.01" placeholder="0.00" value="${weightGrams || 0}">
+                            <input type="number" class="form-control-pro form-control-sm" name="variant_weight_per_piece[]" step="any" placeholder="0.00" value="${initPieceWt}">
                             <span class="input-group-text bg-light text-muted p-1" style="font-size:10px;">g</span>
                         </div>
                     </td>
-                    <td><input type="number" class="form-control-pro form-control-sm" name="variant_alert_qty[]" value="0" placeholder="0"></td>
-                    <td><input type="text" class="form-control-pro form-control-sm" name="variant_barcode[]" value="${randBarcode}"></td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-sm btn-outline-danger remove-var-btn px-2 py-1" title="Remove"><i class="fas fa-trash"></i></button>
+                    <td class="p-1"><input type="number" class="form-control-pro form-control-sm sale-price-input" name="variant_sale_price[]" step="any" value="${suggSale}" placeholder="0.00" required></td>
+                    <td class="p-1"><input type="number" class="form-control-pro form-control-sm" name="variant_wholesale_price[]" step="any" placeholder="0.00" value="${suggWholesale}"></td>
+                    <td class="p-1"><input type="number" class="form-control-pro form-control-sm purch-price-input" name="variant_purchase_price[]" step="any" value="${suggPurch}" placeholder="0.00" required></td>
+                    <td class="p-1"><input type="number" class="form-control-pro form-control-sm" name="variant_alert_qty[]" value="0" placeholder="0"></td>
+                    <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_barcode[]" value="${randBarcode}"></td>
+                    <td class="p-1 text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-var-btn p-1 px-2" title="Remove"><i class="fas fa-trash"></i></button>
                     </td>
                 `;
                 variantsBody.appendChild(tr);
 
-                // Track manual overrides
-                tr.querySelector('.sale-price-input').addEventListener('input', function() {
-                    manualPrices[vid + '_sale'] = true;
-                });
-                tr.querySelector('.purch-price-input').addEventListener('input', function() {
-                    manualPrices[vid + '_purch'] = true;
-                });
+                const saleInput = tr.querySelector('.sale-price-input');
+                const purchInput = tr.querySelector('.purch-price-input');
+                const wholesaleInput = tr.querySelector('input[name="variant_wholesale_price[]"]');
                 const convInput = tr.querySelector('.conv-factor-input');
-                if (convInput) convInput.addEventListener('input', updatePriceSuggestions);
+                const pieceWtInput = tr.querySelector('input[name="variant_weight_per_piece[]"]');
+
+                if (saleInput) saleInput.addEventListener('input', () => { manualPrices[vid + '_sale'] = true; });
+                if (purchInput) purchInput.addEventListener('input', () => { manualPrices[vid + '_purch'] = true; });
+                if (wholesaleInput) wholesaleInput.addEventListener('input', () => { manualPrices[vid + '_wholesale'] = true; });
+
+                if (convInput) {
+                    convInput.addEventListener('input', function() {
+                        const f = parseFloat(this.value) || 0;
+                        if (pieceWtInput && f > 0) {
+                            pieceWtInput.value = (f < 10) ? (f * 1000).toFixed(1).replace(/\.0$/, '') : f;
+                        }
+                        updatePriceSuggestions();
+                    });
+                }
+                if (pieceWtInput) {
+                    pieceWtInput.addEventListener('input', function() {
+                        const wt = parseFloat(this.value) || 0;
+                        if (convInput && wt > 0) {
+                            const f = (wt < 10) ? wt : (wt / 1000);
+                            convInput.value = f;
+                            updatePriceSuggestions();
+                        }
+                    });
+                }
             }
 
             function toggleFactorColumns() {
