@@ -89,7 +89,7 @@
         }
 
         .welcome-badge-date {
-            display: inline-flex;
+            display:  inline-flex;
             align-items: center;
             gap: 0.5rem;
             background: rgba(255, 255, 255, 0.18);
@@ -685,7 +685,7 @@
                                     <div class="progress mb-3" style="height: 6px; border-radius: 3px; background-color: #e2e8f0; overflow: hidden;">
                                         <div class="progress-bar bg-success" role="progressbar" style="width: 100%;"></div>
                                     </div>
-                                    
+
                                     <div class="d-flex justify-content-between mb-1" style="font-size: 0.85rem; color: #475569;">
                                         <span>Cost of Goods Sold (COGS)</span>
                                         <span class="fw-bold">Rs {{ number_format($totalCostThisMonth, 0) }}</span>
