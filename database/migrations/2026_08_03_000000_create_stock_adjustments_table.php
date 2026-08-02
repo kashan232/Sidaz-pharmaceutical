@@ -11,20 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('stock_adjustments', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('warehouse_id')->constrained('warehouses')->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
-            $table->string('variant_key')->nullable();
-            $table->string('variant_name')->nullable();
-            $table->enum('type', ['add', 'subtract', 'set'])->default('add');
-            $table->decimal('qty', 12, 2)->default(0);
-            $table->decimal('old_stock', 12, 2)->default(0);
-            $table->decimal('new_stock', 12, 2)->default(0);
-            $table->text('reason')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('stock_adjustments')) {
+            Schema::create('stock_adjustments', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+                $table->foreignId('warehouse_id')->constrained('warehouses')->cascadeOnDelete();
+                $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+                $table->string('variant_key')->nullable();
+                $table->string('variant_name')->nullable();
+                $table->enum('type', ['add', 'subtract', 'set'])->default('add');
+                $table->decimal('qty', 12, 2)->default(0);
+                $table->decimal('old_stock', 12, 2)->default(0);
+                $table->decimal('new_stock', 12, 2)->default(0);
+                $table->text('reason')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**
