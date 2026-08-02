@@ -374,8 +374,9 @@ class PurchaseController extends Controller
         if (! $hasGatepass) {
             $movRows = [];
             foreach ($purchase->items as $item) {
-                // Determine conversion factor for weight products
+                // Determine conversion factor and unit for weight products
                 $convFactor = 1;
+                $unit = strtolower($item->unit ?? '');
                 if (!empty($item->color)) {
                     $itemColor = $item->color;
                     $b64Decoded = base64_decode($itemColor, true);
@@ -383,12 +384,21 @@ class PurchaseController extends Controller
                     if (!is_array($json)) {
                         $json = json_decode($itemColor, true);
                     }
-                    if (is_array($json) && isset($json['conv_factor'])) {
-                        $convFactor = (float) $json['conv_factor'];
+                    if (is_array($json)) {
+                        if (isset($json['conv_factor']) && (float)$json['conv_factor'] > 0) {
+                            $convFactor = (float) $json['conv_factor'];
+                        }
+                        if (isset($json['unit'])) {
+                            $unit = strtolower($json['unit']);
+                        }
                     }
                 }
-                
-                $baseQty = $item->qty * $convFactor;
+
+                if ($unit === 'gm' || $unit === 'g' || $unit === 'gram' || $unit === 'grams') {
+                    $baseQty = ((float) $item->qty) / 1000.0;
+                } else {
+                    $baseQty = ((float) $item->qty) * $convFactor;
+                }
 
                 // movements (+)
                 $movRows[] = [

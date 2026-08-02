@@ -150,7 +150,7 @@
     <!-- STOCK -->
     <td class="col-stock">
       <input type="text" class="form-control stock text-center input-readonly" readonly tabindex="-1">
-      <select class="warehouse d-none" name="warehouse_id[]"></select>
+      <input type="hidden" class="warehouse" name="warehouse_id[]" value="{{ auth()->user()->warehouse_id ?? 1 }}">
       <input type="hidden" class="variant-stock-value">
     </td>
 
@@ -289,72 +289,55 @@
     }
 
     function loadWarehousesForProduct($row, productId, preSelectId = null) {
-        var $whSelect = $row.find('.warehouse');
-        $whSelect.html('<option value="">Loading...</option>');
-        $row.find('.stock').val('');
+        var $whInput = $row.find('.warehouse');
+        if (!$whInput.val()) {
+            $whInput.val("{{ auth()->user()->warehouse_id ?? 1 }}");
+        }
+
+        const variantStockVal = $row.find('.variant-stock-value').val();
+        if (variantStockVal !== '' && variantStockVal !== undefined) {
+            $row.find('.stock').val(variantStockVal);
+            return;
+        }
 
         $.get('{{ route('warehouses.get') }}', {
                 product_id: productId
             })
             .done(function(warehouses) {
-                var validWarehouses = (Array.isArray(warehouses) ? warehouses : []).filter(function(w) {
-                    return w.stock > 0;
-                });
+                var targetWhId = preSelectId || $whInput.val() || "{{ auth()->user()->warehouse_id ?? 1 }}";
+                var validWarehouses = Array.isArray(warehouses) ? warehouses : [];
+                var matched = validWarehouses.find(function(w) { return w.warehouse_id == targetWhId; });
+                if (!matched && validWarehouses.length > 0) {
+                    matched = validWarehouses[0];
+                }
 
-                if (validWarehouses.length > 0) {
-                    var options = '<option value="">Select Warehouse</option>';
-                    validWarehouses.forEach(function(w) {
-                        const isSel = (preSelectId && preSelectId == w.warehouse_id) ? 'selected' : '';
+                if (matched) {
+                    $whInput.val(matched.warehouse_id);
+                    let disp;
+                    const ppb = parseFloat(matched.ppb) || 1;
 
-                        // Display Stock Logic
-                        let disp;
-                        const ppb = parseFloat(w.ppb) || 1;
-
-                        if ((w.size_mode === 'by_cartons' || w.size_mode === 'by_size') && ppb > 1) {
-                            const boxes = Math.floor(w.boxes || 0);
-                            const loose = w.stock % ppb;
-                            disp = loose > 0 ? `${boxes}.${loose}` : boxes;
-                        } else if (w.size_mode === 'by_kg') {
-                            const s = parseFloat(w.stock) || 0;
-                            if (s > 0 && s < 1) {
-                                const gm = (s * 1000).toFixed(1);
-                                disp = `${s.toFixed(2)} Kg (${gm} Gm)`;
-                            } else {
-                                disp = `${s.toFixed(2)} Kg`;
-                            }
+                    if ((matched.size_mode === 'by_cartons' || matched.size_mode === 'by_size') && ppb > 1) {
+                        const boxes = Math.floor(matched.boxes || 0);
+                        const loose = matched.stock % ppb;
+                        disp = loose > 0 ? `${boxes}.${loose}` : boxes;
+                    } else if (matched.size_mode === 'by_kg') {
+                        const s = parseFloat(matched.stock) || 0;
+                        if (s > 0 && s < 1) {
+                            const gm = (s * 1000).toFixed(1);
+                            disp = `${s.toFixed(2)} Kg (${gm} Gm)`;
                         } else {
-                            disp = w.stock;
+                            disp = `${s.toFixed(2)} Kg`;
                         }
-
-                        options +=
-                            `<option value="${w.warehouse_id}" data-stock="${w.stock}" data-ppb="${disp}" data-size-mode="${w.size_mode}" ${isSel}>${w.warehouse_name} (Stock: ${disp})</option>`;
-                    });
-                    $whSelect.html(options);
-
-                    // Auto-select first warehouse and display stock
-                    if (preSelectId) {
-                        $whSelect.trigger('change');
-                    } else if (validWarehouses.length >= 1) {
-                        $whSelect.val(validWarehouses[0].warehouse_id).trigger('change');
-                    }
-
-                    // Show stock in the visible stock field
-                    const variantStockVal = $row.find('.variant-stock-value').val();
-                    if (variantStockVal !== '' && variantStockVal !== undefined) {
-                        $row.find('.stock').val(variantStockVal);
                     } else {
-                        const selectedOpt = $whSelect.find(':selected');
-                        const stockDisp = selectedOpt.data('ppb') || 0;
-                        $row.find('.stock').val(stockDisp);
+                        disp = matched.stock;
                     }
-                } else {
-                    $whSelect.html('<option value="">Out of Stock</option>');
-                    $row.find('.stock').val('0');
+                    if (!$row.find('.stock').val()) {
+                        $row.find('.stock').val(disp);
+                    }
                 }
             })
             .fail(function(xhr) {
                 console.error('Warehouse fetch error:', xhr);
-                $whSelect.html('<option value="">Error</option>');
             });
     }
 
@@ -383,26 +366,12 @@
             baseQty = rawQty / 12;
         }
 
-        // Calculate Pcs display for Grid (e.g. 1500 Gm -> 2273 Pcs if conv_factor = 0.00066)
         let pcsDisplay = baseQty;
         if (sizeMode === 'by_kg' || sizeMode === 'by_gm') {
-            let convFactor = 0;
-            try {
-                const vDataRaw = $row.find('.variant-data-hidden').val();
-                if (vDataRaw) {
-                    const vd = JSON.parse(atob(vDataRaw));
-                    if (vd && vd.conv_factor && parseFloat(vd.conv_factor) > 0) {
-                        convFactor = parseFloat(vd.conv_factor);
-                    }
-                }
-            } catch (e) {}
-
-            if (convFactor > 0) {
-                pcsDisplay = Math.round(baseQty / convFactor);
-            } else if (weightPerPiece > 0) {
-                pcsDisplay = Math.round(baseQty / (weightPerPiece / 1000));
+            if (unitMode === 'gm') {
+                pcsDisplay = baseQty;
             } else {
-                pcsDisplay = baseQty.toFixed(3);
+                pcsDisplay = rawQty;
             }
         } else if (sizeMode === 'by_feet' || sizeMode === 'by_meter') {
             pcsDisplay = baseQty.toFixed(3);
@@ -766,26 +735,30 @@
             const $prod = $row.find('.product');
             const $cartonQtyInput = $row.find('.carton-qty');
             const $loosePcsInput = $row.find('.loose-pcs-input');
+            const hiddenPid = $row.find('.product-id-hidden').val();
+            const prodVal = $prod.val();
 
             if (!$wh.val()) {
-                ok = false;
-                if (!firstMessage) {
-                    firstMessage = 'Please select Warehouse for row ' + (rowIndex + 1);
-                    firstEl = $wh;
-                }
-                markInvalid($wh);
+                $wh.val("{{ auth()->user()->warehouse_id ?? 1 }}");
             }
 
-            if (!$prod.val() && !$row.find('.product-id-hidden').val()) {
+            // If this row has no product selected:
+            if (!prodVal && !hiddenPid) {
+                // If there are other items in the table, remove this unselected row automatically
+                if ($('#salesTableBody tr').length > 1) {
+                    $row.remove();
+                    return;
+                }
                 ok = false;
                 if (!firstMessage) {
-                    firstMessage = 'Please select Item for row ' + (rowIndex + 1);
+                    firstMessage = 'Bara-e-karam sale mein item select karein (Row ' + (rowIndex + 1) + ')';
                     firstEl = $prod;
                 }
                 markInvalid($prod);
+                return;
             }
 
-            const qtyVal = (parseInt($cartonQtyInput.val()) || 0) + (parseInt($loosePcsInput.val()) || 0);
+            const qtyVal = (parseFloat($cartonQtyInput.val()) || 0) + (parseFloat($loosePcsInput.val()) || 0);
             if (qtyVal <= 0) {
                 ok = false;
                 if (!firstMessage) {

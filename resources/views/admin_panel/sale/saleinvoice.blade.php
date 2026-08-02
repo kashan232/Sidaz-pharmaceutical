@@ -364,7 +364,19 @@
                         </td>
 
                         <td class="text-center" style="vertical-align: middle;">
-                            @if (in_array($sizeMode, ['by_kg', 'by_gm', 'by_feet', 'by_meter']))
+                            @php
+                                $variantUnit = strtolower($item['variant_unit'] ?? (is_array($item['color'] ?? null) ? ($item['color']['unit'] ?? '') : ''));
+                                $weightGrams = (float)($item['weight_per_piece'] ?? (is_array($item['color'] ?? null) ? ($item['color']['weight_per_piece'] ?? 0) : 0));
+                            @endphp
+
+                            @if ($variantUnit === 'pcs' || $variantUnit === 'piece' || $variantUnit === 'pieces')
+                                <div style="font-weight: bold; color: #2c3e50;">
+                                    {{ $totalPieces }} Pcs
+                                    @if ($weightGrams > 0)
+                                        <small class="d-block text-muted" style="font-size: 10px;">({{ $weightGrams == (int)$weightGrams ? (int)$weightGrams : $weightGrams }}g)</small>
+                                    @endif
+                                </div>
+                            @elseif (in_array($sizeMode, ['by_kg', 'by_gm', 'by_feet', 'by_meter']))
                                 @php
                                     $uomLabel = match($sizeMode) {
                                         'by_kg' => 'Kg',
@@ -373,8 +385,8 @@
                                         'by_meter' => 'Meter',
                                         default => '',
                                     };
-                                    $qtyVal = (float)($item['qty'] ?? $totalPieces);
-                                    $displayQty = ($qtyVal == (int)$qtyVal) ? (int)$qtyVal : number_format($qtyVal, 2);
+                                    $qtyVal = (float)($item['qty_box'] ?? $item['qty'] ?? $totalPieces);
+                                    $displayQty = ($qtyVal == (int)$qtyVal) ? (int)$qtyVal : number_format($qtyVal, 3);
                                 @endphp
                                 <div style="font-weight: bold; color: #2c3e50;">
                                     {{ $displayQty }} {{ $uomLabel }}

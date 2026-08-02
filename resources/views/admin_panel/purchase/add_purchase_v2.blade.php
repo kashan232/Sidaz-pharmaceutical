@@ -929,7 +929,7 @@
                         <input type="hidden" name="color[]" class="hidden-variant-data" value="">
                     </td>
                     <td class="text-center align-middle">
-                        <span class="badge bg-light text-primary border px-2 py-1 unit-display-badge fw-bold">Pcs</span>
+                        <button type="button" class="btn btn-sm btn-outline-primary fw-bold unit-toggle-btn py-0 px-2" data-unit="Pcs" style="font-size:0.72rem;">Pcs</button>
                         <input type="hidden" name="unit[]" class="unit-input-val" value="Pcs">
                     </td>
                     <td>
@@ -993,8 +993,12 @@
                     const $row = $(this).closest('tr');
 
                     // Dynamic Unit
-                    const unitName = data.unit_name || 'Pcs';
-                    $row.find('.unit-display-badge').text(unitName);
+                    let unitName = data.unit_name || 'Pcs';
+                    if (data.size_mode === 'by_kg' || data.size_mode === 'by_gm') {
+                        unitName = 'Kg';
+                        $row.find('.unit-toggle-btn').removeClass('btn-outline-info').addClass('btn-outline-primary');
+                    }
+                    $row.find('.unit-toggle-btn').text(unitName).attr('data-unit', unitName);
                     $row.find('.unit-input-val').val(unitName);
 
                     // Snapshot Data Population
@@ -1056,16 +1060,40 @@
                 return repo.name || repo.text;
             }
 
+            $(document).on('click', '.unit-toggle-btn', function() {
+                const $btn = $(this);
+                const $row = $btn.closest('tr');
+                const sizeMode = $row.data('sizemode') || $row.find('.hidden-size-mode').val();
+
+                if (sizeMode === 'by_kg' || sizeMode === 'by_gm') {
+                    let currentUnit = $btn.attr('data-unit') || 'Kg';
+                    if (currentUnit.toLowerCase() === 'kg') {
+                        currentUnit = 'Gm';
+                        $btn.text('Gm').removeClass('btn-outline-primary').addClass('btn-outline-info');
+                    } else {
+                        currentUnit = 'Kg';
+                        $btn.text('Kg').removeClass('btn-outline-info').addClass('btn-outline-primary');
+                    }
+                    $btn.attr('data-unit', currentUnit);
+                    $row.find('.unit-input-val').val(currentUnit);
+                    recalcRow($row);
+                    recalcAll();
+                }
+            });
+
             function recalcRow($row) {
                 const qty = parseFloat($row.find('.main-qty-input').val()) || 0;
                 const price = parseFloat($row.find('.price').val()) || 0;
                 const discPct = parseFloat($row.find('.item-disc-percent').val()) || 0;
-                const sizeMode = $row.data('sizemode');
+                const sizeMode = $row.data('sizemode') || $row.find('.hidden-size-mode').val();
+                const unitVal = ($row.find('.unit-input-val').val() || '').toLowerCase();
                 const pieces_per_m2 = parseFloat($row.data('pieces_per_m2')) || 0;
 
                 let gross = 0;
                 if (sizeMode === 'by_size') {
                     gross = (pieces_per_m2 || 1) * qty * price;
+                } else if (unitVal === 'gm' || unitVal === 'g') {
+                    gross = (qty / 1000.0) * price;
                 } else {
                     gross = qty * price;
                 }

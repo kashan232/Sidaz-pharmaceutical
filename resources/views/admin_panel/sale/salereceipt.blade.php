@@ -345,8 +345,16 @@
                         $sizeMode = $item['size_mode'] ?? 'std';
                         $totalPieces = (int) $item['total_pieces'];
 
-                        $qtyDisplay = $totalPieces;
-                        if (in_array($sizeMode, ['by_kg', 'by_gm', 'by_feet', 'by_meter'])) {
+                        $variantUnit = strtolower($item['variant_unit'] ?? (is_array($item['color'] ?? null) ? ($item['color']['unit'] ?? '') : ''));
+                        $weightGrams = (float)($item['weight_per_piece'] ?? (is_array($item['color'] ?? null) ? ($item['color']['weight_per_piece'] ?? 0) : 0));
+
+                        $qtyDisplay = $totalPieces . ' Pcs';
+                        if ($variantUnit === 'pcs' || $variantUnit === 'piece' || $variantUnit === 'pieces') {
+                            $qtyDisplay = $totalPieces . ' Pcs';
+                            if ($weightGrams > 0) {
+                                $qtyDisplay .= ' (' . ($weightGrams == (int)$weightGrams ? (int)$weightGrams : $weightGrams) . 'g)';
+                            }
+                        } elseif (in_array($sizeMode, ['by_kg', 'by_gm', 'by_feet', 'by_meter'])) {
                             $uomLabel = match($sizeMode) {
                                 'by_kg' => 'Kg',
                                 'by_gm' => 'Gm',
@@ -354,8 +362,8 @@
                                 'by_meter' => 'Mtr',
                                 default => '',
                             };
-                            $qtyVal = (float)($item['qty'] ?? $totalPieces);
-                            $qtyDisplay = ($qtyVal == (int)$qtyVal ? (int)$qtyVal : number_format($qtyVal, 2)) . ' ' . $uomLabel;
+                            $qtyVal = (float)($item['qty_box'] ?? $item['qty'] ?? $totalPieces);
+                            $qtyDisplay = ($qtyVal == (int)$qtyVal ? (int)$qtyVal : number_format($qtyVal, 3)) . ' ' . $uomLabel;
                         } elseif ($sizeMode == 'by_cartons' || $sizeMode == 'by_size') {
                             $piecesPerBox = (int)($item['pieces_per_box'] ?? 1);
                             if ($piecesPerBox <= 0) $piecesPerBox = 1;

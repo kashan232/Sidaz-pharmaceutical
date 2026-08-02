@@ -1,319 +1,575 @@
 @extends('admin_panel.layout.app')
 @section('content')
-    <style>
-        div.dataTables_wrapper div.dataTables_length select {
-            width: 75px !important
+
+<style>
+    /* ── LAYOUT RESET: make sure page uses full width cleanly ── */
+    .erp-page .container-fluid { max-width: 100%; }
+    /* ── ERP Product Page – Premium Design System ── */
+    :root {
+        --erp-primary:    #4f46e5;
+        --erp-primary-lt: #eef2ff;
+        --erp-success:    #059669;
+        --erp-success-lt: #ecfdf5;
+        --erp-warning:    #d97706;
+        --erp-warning-lt: #fffbeb;
+        --erp-danger:     #dc2626;
+        --erp-danger-lt:  #fef2f2;
+        --erp-info:       #0284c7;
+        --erp-info-lt:    #e0f2fe;
+        --erp-border:     #e2e8f0;
+        --erp-bg:         #f8fafc;
+        --erp-card-bg:    #ffffff;
+        --erp-text:       #1e293b;
+        --erp-muted:      #64748b;
+        --erp-radius:     12px;
+        --erp-shadow:     0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+        --erp-shadow-md:  0 4px 24px rgba(0,0,0,.08);
+    }
+
+    /* Page wrapper */
+    .erp-page { background: var(--erp-bg); min-height: calc(100vh - 80px); padding: 24px 0; }
+
+    /* ── Stats Cards ── */
+    .stat-card {
+        background: var(--erp-card-bg);
+        border-radius: var(--erp-radius);
+        border: 1px solid var(--erp-border);
+        box-shadow: var(--erp-shadow);
+        padding: 20px 22px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--erp-shadow-md); }
+    .stat-icon {
+        width: 48px; height: 48px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px; flex-shrink: 0;
+    }
+    .stat-card .stat-label { font-size: .75rem; font-weight: 600; color: var(--erp-muted); text-transform: uppercase; letter-spacing: .5px; }
+    .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--erp-text); line-height: 1.2; }
+    .stat-card .stat-sub   { font-size: .72rem; color: var(--erp-muted); margin-top: 2px; }
+
+    /* ── Main Card ── */
+    .erp-card {
+        background: var(--erp-card-bg);
+        border-radius: var(--erp-radius);
+        border: 1px solid var(--erp-border);
+        box-shadow: var(--erp-shadow);
+        overflow: hidden;
+    }
+    .erp-card-header {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--erp-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .erp-card-header .page-title { font-size: 1rem; font-weight: 700; color: var(--erp-text); margin: 0; }
+    .erp-card-header .page-sub   { font-size: .76rem; color: var(--erp-muted); margin: 0; }
+    /* ── Header action buttons group ── */
+    .erp-hdr-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;           /* <-- space between every button */
+    }
+
+    /* ── Filter Panel ── */
+    .filter-panel {
+        background: var(--erp-bg);
+        border-bottom: 1px solid var(--erp-border);
+        padding: 16px 24px;
+    }
+    .filter-panel .filter-heading {
+        font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+        color: var(--erp-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+    }
+    .filter-panel label.form-label {
+        font-size: .72rem; font-weight: 600; color: var(--erp-muted);
+        text-transform: uppercase; letter-spacing: .4px; margin-bottom: 5px;
+    }
+    .filter-panel .form-control,
+    .filter-panel .form-select {
+        border: 1px solid var(--erp-border);
+        border-radius: 8px;
+        font-size: .83rem;
+        color: var(--erp-text);
+        background: #fff;
+        height: 36px;
+        padding: 0 10px;
+        transition: border-color .15s, box-shadow .15s;
+    }
+    .filter-panel .form-control:focus,
+    .filter-panel .form-select:focus {
+        border-color: var(--erp-primary);
+        box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+        outline: none;
+    }
+    .filter-panel .search-wrap { position: relative; }
+    .filter-panel .search-wrap .search-icon {
+        position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+        color: var(--erp-muted); font-size: 13px; pointer-events: none;
+    }
+    .filter-panel .search-wrap .form-control { padding-left: 30px; }
+
+    /* Filter action buttons */
+    .btn-erp-filter {
+        background: var(--erp-primary); color: #fff; border: none;
+        border-radius: 8px; height: 36px; padding: 0 16px;
+        font-size: .83rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
+        transition: background .15s, transform .1s;
+    }
+    .btn-erp-filter:hover { background: #4338ca; color: #fff; transform: translateY(-1px); }
+    .btn-erp-clear {
+        background: #fff; color: var(--erp-muted); border: 1px solid var(--erp-border);
+        border-radius: 8px; height: 36px; padding: 0 14px;
+        font-size: .83rem; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
+        transition: all .15s; text-decoration: none;
+    }
+    .btn-erp-clear:hover { border-color: var(--erp-danger); color: var(--erp-danger); background: var(--erp-danger-lt); }
+
+    /* Active filter badges */
+    .active-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .filter-chip {
+        background: var(--erp-primary-lt); color: var(--erp-primary);
+        border: 1px solid #c7d2fe; border-radius: 20px;
+        padding: 2px 10px; font-size: .72rem; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 4px;
+    }
+
+    /* ── Bulk Edit Bar ── */
+    .bulk-bar {
+        background: #fff; border-bottom: 1px solid var(--erp-border);
+        padding: 10px 24px; display: flex; align-items: center;
+        justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    }
+    .bulk-bar .bulk-label { font-size: .78rem; font-weight: 700; color: var(--erp-muted); text-transform: uppercase; letter-spacing: .4px; }
+    .bulk-toggle {
+        display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+        padding: 5px 10px; border-radius: 6px; border: 1px solid var(--erp-border);
+        background: #fff; font-size: .8rem; font-weight: 500; color: var(--erp-text);
+        transition: all .15s; user-select: none;
+    }
+    .bulk-toggle input[type="checkbox"] { width: 14px; height: 14px; margin: 0; cursor: pointer; accent-color: var(--erp-primary); }
+    .bulk-toggle:has(input:checked) { background: var(--erp-primary-lt); border-color: var(--erp-primary); color: var(--erp-primary); }
+    .btn-bulk-save {
+        background: var(--erp-primary); color: #fff; border: none;
+        border-radius: 8px; padding: 7px 18px; font-size: .83rem; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 6px; transition: all .15s;
+    }
+    .btn-bulk-save:hover { background: #4338ca; transform: translateY(-1px); }
+
+    /* ── Table ── */
+    .erp-table-wrap { padding: 0; overflow-x: auto; }
+    #productTable {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: .82rem;
+        table-layout: auto;
+    }
+    #productTable thead th {
+        background: #f8fafc !important;
+        color: #475569 !important;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: .67rem;
+        letter-spacing: .5px;
+        padding: 10px 12px;
+        border-bottom: 2px solid var(--erp-border) !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        white-space: nowrap;
+        position: sticky; top: 0; z-index: 2;
+    }
+    #productTable tbody td {
+        padding: 8px 12px;
+        border: none !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        color: var(--erp-text);
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+    /* Allow item-details cell to wrap */
+    #productTable tbody td.td-item-details { white-space: normal; min-width: 180px; max-width: 260px; }
+    #productTable tbody tr { transition: background .12s ease; }
+    #productTable tbody tr:hover { background: #f8fafc !important; }
+    #productTable tbody tr.row-inactive { opacity: .6; background: #fafafa; }
+
+    /* Image cell */
+    .product-img {
+        width: 38px; height: 38px; object-fit: cover;
+        border-radius: 7px; border: 1px solid var(--erp-border);
+        transition: transform .2s ease;
+        cursor: pointer; display: block;
+    }
+    .product-img:hover { transform: scale(1.4); z-index: 10; position: relative; box-shadow: var(--erp-shadow-md); }
+    .no-img-badge {
+        width: 38px; height: 38px; border-radius: 7px;
+        background: #f1f5f9; border: 1px dashed #cbd5e1;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; color: #94a3b8;
+    }
+
+    /* Item details cell */
+    .item-name { font-weight: 600; color: var(--erp-text); margin-bottom: 3px; font-size: .84rem; line-height: 1.3; }
+    .item-meta { font-size: .7rem; color: var(--erp-muted); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 2px; }
+    .item-meta .meta-chip {
+        background: #f1f5f9; border-radius: 4px; padding: 1px 5px;
+        font-size: .67rem; font-weight: 500; color: #475569;
+        display: inline-flex; align-items: center; gap: 3px;
+    }
+    .item-code { font-family: 'Courier New', monospace; background: #f8fafc; border: 1px solid var(--erp-border); border-radius: 4px; padding: 1px 5px; font-size: .7rem; color: #334155; }
+
+    /* Stock badge */
+    .stock-badge {
+        display: inline-flex; align-items: center; gap: 3px;
+        background: var(--erp-success-lt); color: var(--erp-success);
+        border: 1px solid #a7f3d0; border-radius: 5px;
+        padding: 2px 7px; font-size: .75rem; font-weight: 600;
+        white-space: nowrap;
+    }
+    .stock-badge.low  { background: var(--erp-danger-lt); color: var(--erp-danger); border-color: #fecaca; }
+    .stock-badge.zero { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+    .stock-unit { font-weight: 400; font-size: .66rem; opacity: .8; }
+
+    /* Price cells */
+    .price-purchase { color: var(--erp-muted); font-weight: 500; font-size: .81rem; white-space: nowrap; }
+    .price-sale     { color: var(--erp-success); font-weight: 700; font-size: .83rem; white-space: nowrap; }
+
+    /* Status badge */
+    .status-active {
+        background: var(--erp-success-lt); color: var(--erp-success);
+        border: 1px solid #a7f3d0; border-radius: 20px;
+        padding: 2px 9px; font-size: .7rem; font-weight: 700;
+        letter-spacing: .2px; white-space: nowrap;
+    }
+    .status-inactive {
+        background: #f1f5f9; color: #64748b;
+        border: 1px solid #cbd5e1; border-radius: 20px;
+        padding: 2px 9px; font-size: .7rem; font-weight: 700;
+        white-space: nowrap;
+    }
+
+    /* Action buttons – single row, compact */
+    .action-group {
+        display: flex; align-items: center; gap: 3px;
+        flex-wrap: nowrap;  /* NEVER wrap */
+        justify-content: flex-start;
+    }
+    .btn-act {
+        border-radius: 5px; padding: 3px 8px; font-size: .72rem;
+        font-weight: 600; display: inline-flex; align-items: center; gap: 3px;
+        border: 1px solid transparent; transition: all .12s; cursor: pointer;
+        line-height: 1.5; white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-act-view    { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; }
+    .btn-act-view:hover    { background: #0284c7; color: #fff; }
+    .btn-act-edit    { background: var(--erp-primary-lt); color: var(--erp-primary); border-color: #c7d2fe; }
+    .btn-act-edit:hover    { background: var(--erp-primary); color: #fff; }
+    .btn-act-barcode { background: var(--erp-success-lt); color: var(--erp-success); border-color: #a7f3d0; }
+    .btn-act-barcode:hover { background: var(--erp-success); color: #fff; }
+    .btn-act-deact   { background: var(--erp-danger-lt); color: var(--erp-danger); border-color: #fecaca; }
+    .btn-act-deact:hover   { background: var(--erp-danger); color: #fff; }
+    .btn-act-act     { background: var(--erp-success-lt); color: var(--erp-success); border-color: #a7f3d0; }
+    .btn-act-act:hover     { background: var(--erp-success); color: #fff; }
+
+    /* ── Header action buttons ── */
+    .btn-hdr {
+        border-radius: 8px; padding: 7px 14px; font-size: .8rem; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 6px; transition: all .15s;
+        border: 1px solid transparent;
+    }
+    .btn-hdr-outline { background: #fff; color: var(--erp-muted); border-color: var(--erp-border); }
+    .btn-hdr-outline:hover { border-color: #94a3b8; color: var(--erp-text); background: var(--erp-bg); }
+    .btn-hdr-success { background: var(--erp-success); color: #fff; border-color: var(--erp-success); }
+    .btn-hdr-success:hover { background: #047857; border-color: #047857; color: #fff; transform: translateY(-1px); }
+    .btn-hdr-warning { background: var(--erp-warning-lt); color: var(--erp-warning); border-color: #fde68a; }
+    .btn-hdr-warning:hover { background: var(--erp-warning); color: #fff; border-color: var(--erp-warning); }
+    .btn-hdr-primary { background: var(--erp-primary); color: #fff; border-color: var(--erp-primary); }
+    .btn-hdr-primary:hover { background: #4338ca; border-color: #4338ca; color: #fff; transform: translateY(-1px); }
+
+    /* ── Pagination ── */
+    .erp-pagination { padding: 12px 20px; border-top: 1px solid var(--erp-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .erp-pagination .showing { font-size: .76rem; color: var(--erp-muted); }
+    .erp-pagination .page-link { border-radius: 6px !important; border-color: var(--erp-border) !important; color: var(--erp-text) !important; font-size: .78rem; padding: 4px 10px; }
+    .erp-pagination .page-item.active .page-link { background: var(--erp-primary) !important; border-color: var(--erp-primary) !important; color: #fff !important; }
+
+    /* ── Actions column – force min-width so buttons never wrap ── */
+    #productTable th:last-child,
+    #productTable td:last-child { min-width: 200px; }
+
+    /* ── Select checkbox ── */
+    input[type="checkbox"].row-check { width: 15px; height: 15px; accent-color: var(--erp-primary); cursor: pointer; }
+
+    /* ── DataTable override ── */
+    div.dataTables_wrapper div.dataTables_length select { width: 75px !important; }
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate { display: none !important; }
+    .dataTables_wrapper { overflow-x: visible !important; }
+
+    /* ═══════════════════════════════════════════════════
+       FILTER ROW  – pure flexbox (no Bootstrap grid)
+    ═══════════════════════════════════════════════════ */
+    .filter-panel {
+        padding: 14px 20px;
+        background: var(--erp-bg);
+        border-bottom: 1px solid var(--erp-border);
+    }
+    .filter-panel .filter-heading { margin-bottom: 10px; }
+
+    .erp-filter-row {
+        display: flex;
+        align-items: flex-end;
+        flex-wrap: wrap;          /* wraps on small screens */
+        gap: 10px;
+        width: 100%;
+    }
+    .erp-filter-field {
+        display: flex;
+        flex-direction: column;   /* label ABOVE input */
+        flex: 1 1 160px;          /* grow/shrink, basis 160px */
+        min-width: 140px;
+        max-width: 240px;
+        box-sizing: border-box;
+    }
+    .erp-filter-search { flex: 1 1 200px; max-width: 300px; }
+    .erp-filter-btns   { flex: 0 0 auto;  max-width: none; min-width: 0; }
+
+    .erp-flabel {
+        display: block;
+        font-size: .69rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--erp-muted);
+        margin-bottom: 5px;
+        white-space: nowrap;
+    }
+    .erp-finput {
+        display: block;
+        width: 100%;
+        height: 35px;
+        padding: 0 10px;
+        border: 1px solid var(--erp-border);
+        border-radius: 7px;
+        font-size: .82rem;
+        color: var(--erp-text);
+        background: #fff;
+        outline: none;
+        transition: border-color .15s, box-shadow .15s;
+        box-sizing: border-box;
+        -webkit-appearance: auto;
+        appearance: auto;
+    }
+    .erp-finput:focus {
+        border-color: var(--erp-primary);
+        box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+    }
+    .search-wrap { position: relative; }
+    .search-wrap .search-icon {
+        position: absolute; left: 10px; top: 50%;
+        transform: translateY(-50%);
+        color: var(--erp-muted); font-size: 12px; pointer-events: none;
+        z-index: 1;
+    }
+    .search-wrap .erp-finput { padding-left: 30px; }
+
+    /* ── Bulk bar ── */
+    .bulk-bar { padding: 8px 20px; }
+    .bulk-toggle { padding: 4px 9px; font-size: .76rem; }
+
+    /* ── Stat cards ── */
+    .stat-card { padding: 14px 16px; gap: 12px; }
+    .stat-icon { width: 40px; height: 40px; font-size: 17px; border-radius: 8px; }
+    .stat-card .stat-value { font-size: 1.3rem; }
+
+    /* ════════════════════════════════════════════════════
+       MOBILE RESPONSIVE  ≤ 768px
+    ════════════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+
+        /* Page spacing */
+        .erp-page { padding: 10px 0; }
+        .container-fluid { padding-left: 8px !important; padding-right: 8px !important; }
+
+        /* Stats: 2-col grid */
+        .stat-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+        .stat-card { padding: 10px 12px; gap: 8px; }
+        .stat-icon { width: 32px; height: 32px; font-size: 14px; }
+        .stat-card .stat-value { font-size: 1.1rem; }
+        .stat-card .stat-label { font-size: .62rem; }
+        .stat-card .stat-sub   { display: none; }
+
+        /* Card header: stack title + buttons vertically */
+        .erp-card-header { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 14px; }
+        .erp-hdr-actions { width: 100%; }
+        .btn-hdr {
+            flex: 1 1 auto;
+            text-align: center;
+            justify-content: center;
+            font-size: .72rem;
+            padding: 5px 8px;
         }
 
-        /* Bulk Edit Checkbox & Label Alignment */
-        .bulk-edit-controls-card .form-check-inline {
-            display: inline-flex !important;
-            align-items: center !important;
-            margin-right: 1.5rem !important;
-            margin-left: 0 !important;
-            padding-left: 0 !important;
-            cursor: pointer;
-        }
-        .bulk-edit-controls-card .form-check-input {
-            margin: 0 !important;
-            cursor: pointer;
-            width: 1rem;
-            height: 1rem;
-        }
-        .bulk-edit-controls-card .form-check-label {
-            cursor: pointer;
-            user-select: none;
-            line-height: 1 !important;
-            margin-bottom: 0 !important;
-            margin-left: 6px !important;
-            padding-left: 0 !important;
-        }
+        /* Filter panel: each field full-width */
+        .filter-panel { padding: 10px 14px; }
+        .erp-filter-row { gap: 8px; }
+        .erp-filter-field,
+        .erp-filter-search { flex: 1 1 100%; max-width: 100%; }
+        .erp-filter-btns { flex: 1 1 100%; }
+        .erp-filter-btns > div { width: 100%; gap: 8px; }
+        .btn-erp-filter,
+        .btn-erp-clear { flex: 1; text-align: center; justify-content: center; }
 
-        /* Fine Styling Refinements */
-        .card {
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
-            overflow: hidden;
-            border: 1px solid #e2e8f0 !important;
+        /* TABLE: horizontal scroll, never collapse */
+        .erp-table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 0;
         }
-        .card-header {
-            background-color: #ffffff !important;
-            border-bottom: 1px solid #f1f5f9 !important;
-            padding: 1rem 1.5rem !important;
-        }
-        .card-header h5 {
-            color: #1e293b;
-            font-size: 1.15rem;
-        }
-
-        /* Filter inputs */
-        #filterForm input, #filterForm select {
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-            padding: 0.35rem 0.5rem;
-            font-size: 0.85rem;
-        }
-        #filterForm input:focus, #filterForm select:focus {
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-        }
-
-        /* Table custom appearance */
         #productTable {
-            border-collapse: collapse !important;
-            margin-top: 1rem !important;
-            margin-bottom: 1rem !important;
-            border: 1px solid #cbd5e1 !important;
+            min-width: 680px !important;  /* forces scroll, never collapses */
+            font-size: .78rem;
         }
-        #productTable thead th {
-            background-color: #f8fafc !important;
-            color: #475569 !important;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.72rem;
-            letter-spacing: 0.5px;
-            padding: 12px 14px;
-            border: 1px solid #cbd5e1 !important;
-            border-bottom: 2px solid #94a3b8 !important;
-        }
-        #productTable tbody td {
+        #productTable thead th { padding: 8px 8px; font-size: .62rem; }
+        #productTable tbody td { padding: 7px 8px; }
+
+        /* Action buttons: tighter on mobile */
+        .action-group { gap: 2px; }
+        .btn-act { padding: 3px 6px; font-size: .68rem; }
+        #productTable th:last-child,
+        #productTable td:last-child { min-width: 160px; }
+
+        /* Item details: allow wrap on small screen */
+        .item-name { font-size: .78rem; }
+        .item-meta { gap: 3px; }
+        .meta-chip { font-size: .62rem; }
+
+        /* Pagination */
+        .erp-pagination {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
             padding: 10px 14px;
-            border: 1px solid #e2e8f0 !important;
-            font-size: 0.88rem;
-            color: #334155;
-            vertical-align: middle;
         }
-        #productTable tbody tr {
-            transition: background-color 0.15s ease;
-        }
-        #productTable tbody tr:hover {
-            background-color: #f8fafc !important;
-        }
+        .erp-pagination nav { width: 100%; }
+        .erp-pagination .page-link { padding: 3px 8px; font-size: .72rem; }
+    }
 
-        /* Zoom-in thumbnail preview */
-        #productTable img.rounded {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            cursor: pointer;
-        }
-        #productTable img.rounded:hover {
-            transform: scale(1.2);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-            z-index: 10;
-            position: relative;
-        }
+    /* ════════════════════════════════════════════════════
+       EXTRA SMALL  ≤ 480px
+    ════════════════════════════════════════════════════ */
+    @media (max-width: 480px) {
+        .stat-grid { grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
+        .stat-card .stat-value { font-size: 1rem; }
+        .erp-hdr-actions { flex-wrap: wrap; }
+        .btn-hdr { min-width: 0; font-size: .68rem; }
+        #productTable { min-width: 620px !important; }
+        .btn-act { padding: 2px 5px; font-size: .64rem; }
+    }
 
-        /* Status & Alert Badges */
-        .badge.bg-success {
-            background-color: #ecfdf5 !important;
-            color: #065f46 !important;
-            border: 1px solid #a7f3d0 !important;
-        }
-        .badge.bg-danger {
-            background-color: #fef2f2 !important;
-            color: #991b1b !important;
-            border: 1px solid #fecaca !important;
-        }
-        .badge.bg-danger-subtle {
-            background-color: #fef2f2 !important;
-            color: #b91c1c !important;
-            border: 1px solid #fee2e2 !important;
-        }
-        .badge.bg-light {
-            background-color: #f8fafc !important;
-            color: #64748b !important;
-            border: 1px solid #e2e8f0 !important;
-        }
+    /* ── Number row highlight ── */
+    #productTable tbody tr td:first-child { color: var(--erp-muted); font-size: .72rem; }
+</style>
 
-        /* Clean action buttons styling */
-        .btn-sm {
-            border-radius: 6px;
-            padding: 0.3rem 0.6rem;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        .btn-warning {
-            background-color: #fffbeb !important;
-            color: #d97706 !important;
-            border-color: #fde68a !important;
-        }
-        .btn-warning:hover {
-            background-color: #fef3c7 !important;
-            color: #b45309 !important;
-            border-color: #fcd34d !important;
-        }
-        .btn-outline-primary {
-            color: #4f46e5 !important;
-            border-color: #c7d2fe !important;
-        }
-        .btn-outline-primary:hover {
-            background-color: #4f46e5 !important;
-            color: #ffffff !important;
-            border-color: #4f46e5 !important;
-        }
-        .btn-outline-success {
-            color: #10b981 !important;
-            border-color: #a7f3d0 !important;
-        }
-        .btn-outline-success:hover {
-            background-color: #10b981 !important;
-            color: #ffffff !important;
-            border-color: #10b981 !important;
-        }
-        .btn-outline-danger {
-            color: #ef4444 !important;
-            border-color: #fecaca !important;
-        }
-        .btn-outline-danger:hover {
-            background-color: #ef4444 !important;
-            color: #ffffff !important;
-            border-color: #ef4444 !important;
-        }
-    </style>
+<div class="erp-page">
+<div class="container-fluid px-3">
 
-
-
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    {{-- ── Stats Row ── --}}
+    <div class="stat-grid mb-4" style="display:grid; grid-template-columns: repeat(4,1fr); gap:16px;">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#eef2ff; color:#4f46e5;"><i class="fas fa-box-open"></i></div>
             <div>
-                <h5 class="mb-0 fw-bold">📦 Product List</h5>
-                <small class="text-muted">Manage all products here</small>
+                <div class="stat-label">Total Products</div>
+                <div class="stat-value">{{ $products->total() }}</div>
+                <div class="stat-sub">in catalog</div>
             </div>
-            <div class="d-flex justify-content-between align-items-end gap-2 flex-wrap">
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#ecfdf5; color:#059669;"><i class="fas fa-check-circle"></i></div>
+            <div>
+                <div class="stat-label">Active</div>
+                <div class="stat-value">{{ $products->getCollection()->where('is_active',1)->count() }}</div>
+                <div class="stat-sub">on this page</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#fef2f2; color:#dc2626;"><i class="fas fa-times-circle"></i></div>
+            <div>
+                <div class="stat-label">Inactive</div>
+                <div class="stat-value">{{ $products->getCollection()->where('is_active',0)->count() }}</div>
+                <div class="stat-sub">on this page</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#fffbeb; color:#d97706;"><i class="fas fa-filter"></i></div>
+            <div>
+                <div class="stat-label">Filtered Results</div>
+                <div class="stat-value">{{ $products->total() }}</div>
+                <div class="stat-sub">
+                    @if(request()->hasAny(['search','category_id','brand_id','status']))
+                        <span style="color:#d97706; font-weight:700;">Filters active</span>
+                    @else
+                        all products
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
 
-                {{-- Import / Export Buttons --}}
-                <a href="{{ route('products.template') }}"
-                   class="btn btn-outline-secondary btn-sm"
-                   title="Download blank CSV template">
-                    <i class="las la-file-csv"></i> Template
+    {{-- ── Main Card ── --}}
+    <div class="erp-card">
+
+        {{-- Card Header --}}
+        <div class="erp-card-header">
+            <div>
+                <p class="page-title"><i class="fas fa-box me-2" style="color:var(--erp-primary);"></i>Product Catalog</p>
+                <p class="page-sub">Manage, filter and bulk-edit your entire product inventory</p>
+            </div>
+            <div class="erp-hdr-actions">
+                <a href="{{ route('products.template') }}" class="btn-hdr btn-hdr-outline" title="Download blank CSV template">
+                    <i class="fas fa-file-csv"></i> Template
                 </a>
-
-                <a href="{{ route('products.export') }}"
-                   class="btn btn-success btn-sm"
-                   title="Export all products to CSV">
-                    <i class="las la-file-download"></i> Export CSV
+                <a href="{{ route('products.export') }}" class="btn-hdr btn-hdr-success" title="Export all products to CSV">
+                    <i class="fas fa-file-download"></i> Export CSV
                 </a>
-
                 @if (auth()->user()->can('products.create') || auth()->user()->email === 'admin@admin.com')
-                    <button type="button" class="btn btn-warning btn-sm" id="openImportModalBtn"
-                            title="Import products from CSV">
-                        <i class="las la-file-upload"></i> Import CSV
+                    <button type="button" class="btn-hdr btn-hdr-warning" id="openImportModalBtn">
+                        <i class="fas fa-file-upload"></i> Import CSV
                     </button>
-                    <a href="create_prodcut" class="btn btn-primary btn-sm">
-                        <i class="las la-plus"></i> Add Product
+                    <a href="create_prodcut" class="btn-hdr btn-hdr-primary">
+                        <i class="fas fa-plus"></i> Add Product
                     </a>
                 @endif
-
             </div>
         </div>
 
-    {{-- ══════════════════════════════════════════════════════════
-         IMPORT MODAL  (Bootstrap 4 compatible)
-    ══════════════════════════════════════════════════════════ --}}
-    <div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-labelledby="importModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-            <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
 
-                {{-- Header --}}
-                <div class="modal-header" style="background: linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; border-bottom: none;">
-                    <div>
-                        <h5 class="modal-title fw-bold" id="importModalLabel">
-                            <i class="las la-file-upload me-2"></i>Import Products from CSV
-                        </h5>
-                        <small style="color: rgba(255,255,255,0.85);">New products will be created. Existing ones (matched by Barcode or Item Code) will be updated.</small>
+        {{-- ── Filter Panel ── --}}
+        <div class="filter-panel">
+            <div class="filter-heading"><i class="fas fa-sliders-h"></i> Filters &amp; Search</div>
+            <form method="GET" action="{{ route('product') }}" id="filterForm">
+                <div class="erp-filter-row">
+
+                    {{-- Search --}}
+                    <div class="erp-filter-field erp-filter-search">
+                        <label class="erp-flabel">Search</label>
+                        <div class="search-wrap">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" name="search" value="{{ request('search') }}"
+                                class="erp-finput" placeholder="Item name, code, barcode…">
+                        </div>
                     </div>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; text-shadow: none;">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
 
-                {{-- Body --}}
-                <div class="modal-body p-4 bg-light">
-                    <form action="{{ route('products.import.validate') }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        
-                        @if(session('error'))
-                            <div class="alert alert-danger mb-4 shadow-sm"><i class="las la-exclamation-circle"></i> {{ session('error') }}</div>
-                        @endif
-
-                        {{-- Instructions --}}
-                        <div class="alert alert-info d-flex gap-2 align-items-start mb-4" style="font-size:0.85rem;">
-                            <i class="las la-info-circle fs-5 mt-1 flex-shrink-0"></i>
-                            <div>
-                                <strong>How to use:</strong><br>
-                                1. Download the <a href="{{ route('products.template') }}" class="alert-link">CSV Template</a> first.<br>
-                                2. Fill in your data in Excel and save as <strong>CSV</strong>.<br>
-                                3. Upload here to validate and preview the changes.<br>
-                                4. Confirm the preview to actually import the data.
-                            </div>
-                        </div>
-
-                        <div class="form-group mb-3">
-                            <label class="fw-bold">Import Mode</label>
-                            <select name="import_mode" class="form-select form-control" required>
-                                <option value="create">Create (Add new products & variants)</option>
-                                <option value="update_only">Update Only (Update existing variants only)</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="autoCreate" name="auto_create" value="1" checked>
-                                <label class="form-check-label fw-bold ms-2" for="autoCreate">Auto-create missing Category & Brand</label>
-                            </div>
-                            <small class="text-muted ms-4 d-block">If disabled, missing master data will throw validation errors.</small>
-                        </div>
-
-                        {{-- File Input --}}
-                        <div class="form-group mb-4">
-                            <label class="fw-bold">Upload CSV File</label>
-                            <input type="file" name="csv_file" class="form-control p-1" accept=".csv,.txt" required>
-                            <small class="text-muted">Max 5 MB</small>
-                        </div>
-
-                        <div class="d-flex justify-content-end gap-2 mt-4">
-                            <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary px-4"><i class="las la-arrow-right"></i> Next: Validate & Preview</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-            </div>
-        </div>
-    </div>
-
-    {{-- Import JS --}}
-    <script>
-    $(document).ready(function () {
-        // ── Open modal via jQuery (Bootstrap 4) ──
-        $('#openImportModalBtn').on('click', function () {
-            $('#importModal').modal('show');
-        });
-    });
-    </script>
-
-        <div class="card-body">
-            @if (session()->has('success'))
-                <div class="alert alert-success alert-dismissible fade show">
-                    ✅ {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-
-            {{-- ── FILTER BAR ── --}}
-            <form method="GET" action="{{ route('product') }}" id="filterForm" class="mb-3">
-                <div class="row g-2 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold mb-1" style="font-size:0.78rem;">🔍 Search</label>
-                        <input type="text" name="search" value="{{ request('search') }}"
-                            class="form-control form-control-sm"
-                            placeholder="Item name or code...">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold mb-1" style="font-size:0.78rem;">📂 Category</label>
-                        <select name="category_id" class="form-select form-select-sm">
+                    {{-- Category --}}
+                    <div class="erp-filter-field">
+                        <label class="erp-flabel">Category</label>
+                        <select name="category_id" class="erp-finput">
                             <option value="">All Categories</option>
                             @foreach ($categories as $cat)
                                 <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>
@@ -322,9 +578,11 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold mb-1" style="font-size:0.78rem;">🏷 Brand</label>
-                        <select name="brand_id" class="form-select form-select-sm">
+
+                    {{-- Brand --}}
+                    <div class="erp-filter-field">
+                        <label class="erp-flabel">Brand</label>
+                        <select name="brand_id" class="erp-finput">
                             <option value="">All Brands</option>
                             @foreach ($brands as $brand)
                                 <option value="{{ $brand->id }}" {{ request('brand_id') == $brand->id ? 'selected' : '' }}>
@@ -333,851 +591,494 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold mb-1" style="font-size:0.78rem;">⚡ Status</label>
-                        <select name="status" class="form-select form-select-sm">
+
+                    {{-- Status --}}
+                    <div class="erp-filter-field" style="min-width:120px;">
+                        <label class="erp-flabel">Status</label>
+                        <select name="status" class="erp-finput">
                             <option value="">All Status</option>
-                            <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
-                            <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                            <option value="active"   {{ request('status') === 'active'   ? 'selected' : '' }}>✅ Active</option>
+                            <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>⛔ Inactive</option>
                         </select>
                     </div>
-                    <div class="col-md-2 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary btn-sm w-100">
-                            <i class="bi bi-funnel"></i> Filter
-                        </button>
-                        <a href="{{ route('product') }}" class="btn btn-outline-secondary btn-sm w-100">
-                            ✕ Clear
-                        </a>
+
+                    {{-- Buttons --}}
+                    <div class="erp-filter-field erp-filter-btns">
+                        <label class="erp-flabel">&nbsp;</label>
+                        <div style="display:flex; gap:6px;">
+                            <button type="submit" class="btn-erp-filter">
+                                <i class="fas fa-search"></i> Apply Filters
+                            </button>
+                            <a href="{{ route('product') }}" class="btn-erp-clear">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
                     </div>
+
                 </div>
+
+                {{-- Active filter chips --}}
                 @if(request()->hasAny(['search','category_id','brand_id','status']))
-                    <div class="mt-2">
-                        <small class="text-muted">
-                            Showing <strong>{{ $products->total() }}</strong> result(s)
-                            @if(request('search')) for "<strong>{{ request('search') }}</strong>" @endif
-                        </small>
-                    </div>
+                <div class="active-filters" style="margin-top:10px;">
+                    <span style="font-size:.72rem; font-weight:600; color:var(--erp-muted);">Active:</span>
+                    @if(request('search'))
+                        <span class="filter-chip"><i class="fas fa-search" style="font-size:.6rem;"></i> "{{ request('search') }}"</span>
+                    @endif
+                    @if(request('category_id'))
+                        <span class="filter-chip"><i class="fas fa-list" style="font-size:.6rem;"></i> {{ $categories->firstWhere('id', request('category_id'))->name ?? 'Category' }}</span>
+                    @endif
+                    @if(request('brand_id'))
+                        <span class="filter-chip"><i class="fas fa-trademark" style="font-size:.6rem;"></i> {{ $brands->firstWhere('id', request('brand_id'))->name ?? 'Brand' }}</span>
+                    @endif
+                    @if(request('status'))
+                        <span class="filter-chip"><i class="fas fa-circle" style="font-size:.6rem;"></i> {{ ucfirst(request('status')) }}</span>
+                    @endif
+                    <span style="font-size:.72rem; color:var(--erp-muted);">— <strong>{{ $products->total() }}</strong> result(s)</span>
+                </div>
                 @endif
             </form>
+        </div>
 
-            {{-- Bulk Edit Checkboxes Controls Panel --}}
-            <div class="bulk-edit-controls-card p-3 mb-3 border rounded bg-light d-flex align-items-center justify-content-between flex-wrap gap-3 shadow-sm" style="border-radius:10px;">
-                <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <span class="fw-bold text-secondary" style="font-size:0.85rem;"><i class="las la-edit fs-5"></i> Bulk Edit Columns:</span>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input bulk-column-toggle" type="checkbox" id="toggleCategory" data-target="category">
-                        <label class="form-check-label fw-semibold text-dark mb-0" for="toggleCategory" style="font-size:0.85rem; cursor:pointer;">Category</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input bulk-column-toggle" type="checkbox" id="toggleTradePrice" data-target="trade-price">
-                        <label class="form-check-label fw-semibold text-dark mb-0" for="toggleTradePrice" style="font-size:0.85rem; cursor:pointer;">Purchase Price</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input bulk-column-toggle" type="checkbox" id="toggleRetailPrice" data-target="retail-price">
-                        <label class="form-check-label fw-semibold text-dark mb-0" for="toggleRetailPrice" style="font-size:0.85rem; cursor:pointer;">Sale Price</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input bulk-column-toggle" type="checkbox" id="toggleDiscount" data-target="discount">
-                        <label class="form-check-label fw-semibold text-dark mb-0" for="toggleDiscount" style="font-size:0.85rem; cursor:pointer;">Discount</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input bulk-column-toggle" type="checkbox" id="toggleMinQty" data-target="minqty">
-                        <label class="form-check-label fw-semibold text-dark mb-0" for="toggleMinQty" style="font-size:0.85rem; cursor:pointer;">Min Qty</label>
-                    </div>
-                </div>
-                <div>
-                    <button type="submit" form="bulkEditForm" id="bulkSaveBtn" class="btn btn-primary btn-sm px-4 fw-bold d-none shadow-sm" style="border-radius:6px; background-color:#4f46e5 !important; border-color:#4f46e5 !important;">
-                        <i class="las la-save fs-5"></i> Save Changes
-                    </button>
-                </div>
-            </div>
+        {{-- ── Success Alert ── --}}
+        @if (session()->has('success'))
+        <div class="mx-4 mt-3 alert d-flex align-items-center gap-2" style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; color:#065f46; font-size:.85rem; padding:10px 14px;">
+            <i class="fas fa-check-circle" style="color:#059669; font-size:16px;"></i>
+            {{ session('success') }}
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" style="font-size:.6rem;"></button>
+        </div>
+        @endif
 
-            <form id="bulkEditForm" method="POST" action="{{ route('products.bulk-update') }}">
-                @csrf
-                <div class="table-responsive">
-                    <table id="productTable" class="table table-striped table-bordered align-middle nowrap" style="width:100%">
 
-                    <thead class="table-light">
+        {{-- ── Table ── --}}
+        <div class="erp-table-wrap table-responsive">
+
+                <table id="productTable" class="table table-hover align-middle nowrap" style="width:100%">
+                    <thead>
                         <tr>
-                            <th><input type="checkbox" id="selectAll"></th>
-                            <th>#</th>
-                            <th>Image</th>
+                            <th style="width:36px;"><input type="checkbox" id="selectAll" class="row-check"></th>
+                            <th style="width:40px;">#</th>
+                            <th style="width:52px;">Image</th>
                             <th>Item Details</th>
                             <th>Stock</th>
                             <th>Purchase Price</th>
                             <th>Sale Price</th>
-                            <th>Status</th>
-                            <th class="text-center">Action</th>
+                            <th style="width:90px;">Status</th>
+                            <th class="text-center" style="width:180px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($products as $key => $product)
-                            <tr id="product-row-{{ $product->id }}" class="{{ $product->is_active ? '' : 'table-secondary opacity-75' }}">
-                                <td><input type="checkbox" class="selectProduct" value="{{ $product->id }}"></td>
-                                <td>{{ $key + 1 }}</td>
+                            @php
+                                $stockPieces = (float) ($product->warehouse_stocks_sum_total_pieces ?? 0);
+                                $ppb = $product->pieces_per_box > 0 ? $product->pieces_per_box : 1;
+                                if (($product->size_mode === 'by_cartons' || $product->size_mode === 'by_size') && $ppb > 1) {
+                                    $boxes = floor($stockPieces / $ppb);
+                                    $loose = $stockPieces % $ppb;
+                                    $stockDisplay = $loose > 0 ? "{$boxes}.{$loose}" : "{$boxes}";
+                                    $stockUnit    = $loose > 0 ? 'Box.Loose' : 'Boxes';
+                                } else {
+                                    $stockDisplay = $stockPieces;
+                                    $stockUnit    = 'Pcs';
+                                }
+                                $stockClass = $stockPieces == 0 ? 'zero' : (($product->alert_carton_quantity && $stockPieces <= $product->alert_carton_quantity) ? 'low' : '');
+
+                                if ($product->size_mode === 'by_size') {
+                                    $m2 = ($product->height * $product->width) / 10000;
+                                    $tradePrice  = $m2 * (float)$product->purchase_price_per_m2;
+                                    $retailPrice = $m2 * (float)$product->price_per_m2;
+                                } else {
+                                    $tradePrice  = (float)$product->purchase_price_per_piece;
+                                    $retailPrice = (float)$product->sale_price_per_piece ?: (float)$product->sale_price_per_box;
+                                }
+                            @endphp
+                            <tr id="product-row-{{ $product->id }}" class="{{ $product->is_active ? '' : 'row-inactive' }}">
+                                <td><input type="checkbox" class="selectProduct row-check" value="{{ $product->id }}"></td>
+                                <td style="color:var(--erp-muted); font-size:.72rem;">{{ $products->firstItem() + $key }}</td>
                                 <td>
                                     @if ($product->image)
-                                        <img src="{{ asset('uploads/products/' . $product->image) }}" alt="Product"
-                                            width="50" height="50" class="rounded border">
+                                        <img src="{{ asset('uploads/products/' . $product->image) }}"
+                                            alt="{{ $product->item_name }}" class="product-img">
                                     @else
-                                        <span class="badge bg-secondary">No Img</span>
+                                        <div class="no-img-badge"><i class="fas fa-image"></i></div>
                                     @endif
                                 </td>
-                                <td>
-                                    <strong>{{ $product->item_name }}</strong><br>
-                                    <small class="text-muted">{{ $product->item_code }} | {{ $product->category_relation->name ?? '-' }} | {{ $product->brand->name ?? '-' }}</small>
+                                <td class="td-item-details">
+                                    <div class="item-name">{{ $product->item_name }}</div>
+                                    <div class="item-meta">
+                                        <span class="item-code">{{ $product->item_code }}</span>
+                                        @if($product->category_relation)
+                                            <span class="meta-chip"><i class="fas fa-list" style="font-size:.6rem;"></i> {{ $product->category_relation->name }}</span>
+                                        @endif
+                                        @if($product->brand)
+                                            <span class="meta-chip"><i class="fas fa-trademark" style="font-size:.6rem;"></i> {{ $product->brand->name }}</span>
+                                        @endif
+                                    </div>
                                 </td>
-                                @php
-                                    $stockPieces = (float) ($product->warehouse_stocks_sum_total_pieces ?? 0);
-                                    $ppb = $product->pieces_per_box > 0 ? $product->pieces_per_box : 1;
-                                    if (($product->size_mode === 'by_cartons' || $product->size_mode === 'by_size') && $ppb > 1) {
-                                        $boxes = floor($stockPieces / $ppb);
-                                        $loose = $stockPieces % $ppb;
-                                        $stockDisplay = $loose > 0 ? "{$boxes}.{$loose} <small class='text-muted'>(Box.Loose)</small>" : "{$boxes} <small class='text-muted'>Boxes</small>";
-                                    } else {
-                                        $stockDisplay = "{$stockPieces} <small class='text-muted'>Pcs</small>";
-                                    }
-                                    $tradePrice = 0;
-                                    $retailPrice = 0;
-                                    if ($product->size_mode === 'by_size') {
-                                        $m2PerPiece = ($product->height * $product->width) / 10000;
-                                        $tradePrice = $m2PerPiece * (float)$product->purchase_price_per_m2;
-                                        $retailPrice = $m2PerPiece * (float)$product->price_per_m2;
-                                    } else {
-                                        $tradePrice = (float)$product->purchase_price_per_piece;
-                                        $retailPrice = (float)$product->sale_price_per_piece ?: (float)$product->sale_price_per_box;
-                                    }
-                                @endphp
                                 <td>
-                                    <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.85rem;">{!! $stockDisplay !!}</span>
+                                    <span class="stock-badge {{ $stockClass }}">
+                                        <i class="fas fa-cubes" style="font-size:.65rem;"></i>
+                                        {{ $stockDisplay }}
+                                        <span class="stock-unit">{{ $stockUnit }}</span>
+                                    </span>
                                 </td>
-                                <td class="text-secondary">Rs. {{ number_format($tradePrice, 2) }}</td>
-                                <td class="fw-bold text-success">Rs. {{ number_format($retailPrice, 2) }}</td>
-                                <td class="text-center">
+                                <td class="price-purchase">Rs. {{ number_format($tradePrice, 2) }}</td>
+                                <td class="price-sale">Rs. {{ number_format($retailPrice, 2) }}</td>
+                                <td>
                                     @if($product->is_active)
-                                        <span class="badge bg-success" id="status-badge-{{ $product->id }}">Active</span>
+                                        <span class="status-active" id="status-badge-{{ $product->id }}">Active</span>
                                     @else
-                                        <span class="badge bg-danger" id="status-badge-{{ $product->id }}">Inactive</span>
+                                        <span class="status-inactive" id="status-badge-{{ $product->id }}">Inactive</span>
                                     @endif
                                 </td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-info viewProductBtn text-white"
-                                        data-id="{{ $product->id }}" title="View Detail">
-                                        👁 View
-                                    </button>
-
-                                    @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
-                                        <a href="{{ route('products.edit', $product->id) }}"
-                                            class="btn btn-sm btn-outline-primary">
-                                            ✏ Edit
-                                        </a>
-                                    @endif
-
-                                    <a href="{{ route('generate-barcode-image', $product->id) }}"
-                                        class="btn btn-sm btn-outline-success">
-                                        🏷 Barcode
-                                    </a>
-
-                                    @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
-                                        <button type="button"
-                                            class="btn btn-sm {{ $product->is_active ? 'btn-outline-danger' : 'btn-outline-success' }} toggle-active-btn"
-                                            data-id="{{ $product->id }}"
-                                            data-active="{{ $product->is_active ? '1' : '0' }}"
-                                            data-name="{{ $product->item_name }}"
-                                            title="{{ $product->is_active ? 'Deactivate' : 'Activate' }}">
-                                            {{ $product->is_active ? '🔴' : '🟢' }}
+                                <td>
+                                    <div class="action-group">
+                                        <button type="button" class="btn-act btn-act-view viewProductBtn"
+                                            data-id="{{ $product->id }}" title="View Details">
+                                            <i class="fas fa-eye"></i> View
                                         </button>
-                                    @endif
+                                        @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
+                                            <a href="{{ route('products.edit', $product->id) }}"
+                                                class="btn-act btn-act-edit" title="Edit Product">
+                                                <i class="fas fa-pencil-alt"></i> Edit
+                                            </a>
+                                        @endif
+                                        <a href="{{ route('generate-barcode-image', $product->id) }}"
+                                            class="btn-act btn-act-barcode" title="Generate Barcode">
+                                            <i class="fas fa-barcode"></i>
+                                        </a>
+                                        @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
+                                            <button type="button"
+                                                class="btn-act {{ $product->is_active ? 'btn-act-deact' : 'btn-act-act' }} toggle-active-btn"
+                                                data-id="{{ $product->id }}"
+                                                data-active="{{ $product->is_active ? '1' : '0' }}"
+                                                data-name="{{ $product->item_name }}"
+                                                title="{{ $product->is_active ? 'Deactivate' : 'Activate' }}">
+                                                <i class="fas {{ $product->is_active ? 'fa-ban' : 'fa-check' }}"></i>
+                                            </button>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
-            </div>
-            </form>
-            <div class="mt-3 d-flex justify-content-between align-items-center">
-                <small class="text-muted">Showing {{ $products->firstItem() }}–{{ $products->lastItem() }} of {{ $products->total() }} products</small>
-                {{ $products->links() }}
-            </div>
+        </div>{{-- /erp-table-wrap --}}
+
+
+        {{-- ── Pagination ── --}}
+        <div class="erp-pagination">
+            <span class="showing">
+                Showing <strong>{{ $products->firstItem() }}–{{ $products->lastItem() }}</strong>
+                of <strong>{{ $products->total() }}</strong> products
+            </span>
+            {{ $products->appends(request()->query())->links() }}
         </div>
-    </div>
 
-    {{-- add product modal --}}
+    </div>{{-- /erp-card --}}
+</div>{{-- /container-fluid --}}
+</div>{{-- /erp-page --}}
 
-    <div class="modal fade bd-example-modal-lg" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Product</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+{{-- ══════════════════════════════════════════════════════════════
+     IMPORT MODAL
+══════════════════════════════════════════════════════════════ --}}
+<div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
+            <div class="modal-header" style="background: linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; border-bottom: none;">
+                <div>
+                    <h5 class="modal-title fw-bold" id="importModalLabel">
+                        <i class="fas fa-file-upload me-2"></i>Import Products from CSV
+                    </h5>
+                    <small style="color: rgba(255,255,255,0.85);">New products will be created. Existing ones (matched by Barcode or Item Code) will be updated.</small>
                 </div>
-                <div class="modal-body">
-                    <p class="text-danger">Please use the main "Add Product" page for the new per-m² flow.</p>
-                </div>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity:.8; text-shadow:none;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-        </div>
-    </div>
-
-
-
-    <!-- Variant View Modal -->
-    <div class="modal fade" id="productViewModal" tabindex="-1" aria-labelledby="productViewModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header border-bottom bg-white">
-                    <div>
-                        <h5 class="modal-title fw-bold text-dark mb-0" id="productViewModalLabel">
-                            <span id="view_item_name">Product</span>
-                        </h5>
-                        <small class="text-muted" id="view_item_subtext">CODE</small>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div id="modalLoadingSpinner" class="text-center py-5 d-none">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
+            <div class="modal-body p-4" style="background:#f8fafc;">
+                <form action="{{ route('products.import.validate') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    @if(session('error'))
+                        <div class="alert alert-danger mb-4"><i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}</div>
+                    @endif
+                    <div class="alert alert-info d-flex gap-2 align-items-start mb-4" style="font-size:.85rem;">
+                        <i class="fas fa-info-circle fs-5 mt-1 flex-shrink-0"></i>
+                        <div>
+                            <strong>How to use:</strong><br>
+                            1. Download the <a href="{{ route('products.template') }}" class="alert-link">CSV Template</a> first.<br>
+                            2. Fill in your data in Excel and save as <strong>CSV</strong>.<br>
+                            3. Upload here to validate and preview the changes.<br>
+                            4. Confirm the preview to actually import the data.
                         </div>
                     </div>
-                    <div id="modalContentRow" class="table-responsive">
-                        <table class="table table-hover align-middle mb-0 text-center" style="font-size: 0.9rem;">
-                            <thead class="table-light text-secondary small text-uppercase">
-                                <tr>
-                                    <th class="text-start ps-3">Variant Name</th>
-                                    <th>Size</th>
-                                    <th>Color</th>
-                                    <th>Stock</th>
-                                    <th>Sale Price</th>
-                                    <th>Purch Price</th>
-                                    <th>Alert</th>
-                                    <th class="text-end pe-3">Barcode</th>
-                                </tr>
-                            </thead>
-                            <tbody id="variantTableBody">
-                            </tbody>
-                        </table>
+                    <div class="form-group mb-3">
+                        <label class="fw-bold">Import Mode</label>
+                        <select name="import_mode" class="form-select form-control" required>
+                            <option value="create">Create (Add new products &amp; variants)</option>
+                            <option value="update_only">Update Only (Update existing variants only)</option>
+                        </select>
                     </div>
-                </div>
-                <div class="modal-footer bg-white py-2">
-                    <button type="button" class="btn btn-secondary btn-sm px-4" data-dismiss="modal">Close</button>
-                </div>
+                    <div class="form-group mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="autoCreate" name="auto_create" value="1" checked>
+                            <label class="form-check-label fw-bold ms-2" for="autoCreate">Auto-create missing Category &amp; Brand</label>
+                        </div>
+                        <small class="text-muted ms-4 d-block">If disabled, missing master data will throw validation errors.</small>
+                    </div>
+                    <div class="form-group mb-4">
+                        <label class="fw-bold">Upload CSV File</label>
+                        <input type="file" name="csv_file" class="form-control p-1" accept=".csv,.txt" required>
+                        <small class="text-muted">Max 5 MB</small>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary px-4"><i class="fas fa-arrow-right me-1"></i> Next: Validate &amp; Preview</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════
+     PRODUCT VIEW MODAL
+══════════════════════════════════════════════════════════════ --}}
+<div class="modal fade" id="productViewModal" tabindex="-1" aria-labelledby="productViewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px; overflow:hidden;">
+            <div class="modal-header border-bottom bg-white px-4 py-3">
+                <div>
+                    <h5 class="modal-title fw-bold text-dark mb-0" id="productViewModalLabel">
+                        <span id="view_item_name">Product</span>
+                    </h5>
+                    <small class="text-muted" id="view_item_subtext">CODE</small>
+                </div>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="modalLoadingSpinner" class="text-center py-5 d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="text-muted small mt-2">Fetching product details…</p>
+                </div>
+                <div id="modalContentRow" class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 text-center" style="font-size:.88rem;">
+                        <thead style="background:#f8fafc;">
+                            <tr>
+                                <th class="text-start ps-4" style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Variant Name</th>
+                                <th style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Size</th>
+                                <th style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Color</th>
+                                <th style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Stock</th>
+                                <th style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Sale Price</th>
+                                <th style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Purch Price</th>
+                                <th style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Alert</th>
+                                <th class="text-end pe-4" style="font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#475569;">Barcode</th>
+                            </tr>
+                        </thead>
+                        <tbody id="variantTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-white py-2 px-4">
+                <button type="button" class="btn btn-secondary btn-sm px-4" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-    {{-- View Modal JS --}}
-    <script>
-        $(document).on('click', '.viewProductBtn', function() {
-            let productId = $(this).data('id');
-            $('#modalContentRow').addClass('d-none');
-            $('#modalLoadingSpinner').removeClass('d-none');
-            $('#productViewModal').modal('show');
 
-            $.ajax({
-                url: "/productview/" + productId,
-                type: "GET",
-                success: function(product) {
-                    $('#modalLoadingSpinner').addClass('d-none');
-                    $('#modalContentRow').removeClass('d-none');
 
-                    $('#view_item_name').text(product.item_name ?? 'Unknown');
-                    $('#view_item_subtext').text((product.item_code ?? '') + ' | ' + (product.category_relation?.name ?? '') + ' | ' + (product.brand?.name ?? ''));
-
-                    let tbody = $('#variantTableBody');
-                    tbody.empty();
-
-                    let colorList = ['-'];
-                    let variants = [];
-
-                    if (product.color) {
-                        try {
-                            let parsed = JSON.parse(product.color);
-                            if (Array.isArray(parsed) && parsed.length > 0) {
-                                if (typeof parsed[0] === 'object') {
-                                    variants = parsed;
-                                } else {
-                                    colorList = parsed;
-                                }
-                            } else if (typeof parsed === 'string') {
-                                colorList = [parsed];
-                            }
-                        } catch (e) { colorList = [product.color]; }
-                    }
-
-                    let sizeStr = '-';
-                    if (product.size_mode === 'by_size') {
-                        sizeStr = (product.height || 0) + ' x ' + (product.width || 0) + ' cm';
-                    }
-
-                    let stock = product.calculated_total_stock_qty ?? 0;
-                    let alertQtyDefault = (product.alert_carton_quantity != null) ? product.alert_carton_quantity + ' ' : '-';
-                    let salePrice = product.size_mode === 'by_size' ? product.price_per_m2 : (product.sale_price_per_piece || product.sale_price_per_box || 0);
-                    let purchPrice = product.size_mode === 'by_size' ? product.purchase_price_per_m2 : (product.purchase_price_per_piece || 0);
-                    let priceLabel = product.size_mode === 'by_size' ? '/m²' : '/pc';
-
-                    if (variants.length > 0) {
-                        variants.forEach((v, index) => {
-                            let barcode = v.barcode || (product.barcode_path ?? product.item_code);
-                            let colorBadge = (v.color && v.color !== '-') ? `<span class="badge bg-secondary">${v.color}</span>` : '<span class="text-muted">-</span>';
-                            let isLow = v.stock > 0 && v.alert != null && v.stock <= v.alert;
-                            let stockBadge = `<span class="badge ${isLow ? 'bg-danger' : 'bg-success'} bg-opacity-10 text-${isLow ? 'danger' : 'success'} border border-${isLow ? 'danger' : 'success'}-subtle px-2 py-1">${v.stock}</span>`;
-                            let alertQty = (v.alert != null && v.alert != 0) ? v.alert + '' : '-';
-
-                            tbody.append(`
-                                <tr>
-                                    <td class="text-start ps-3 fw-semibold">${v.name || product.item_name}</td>
-                                    <td>${v.size || '-'}</td>
-                                    <td>${colorBadge}</td>
-                                    <td>${stockBadge}</td>
-                                    <td class="fw-bold text-success">Rs. ${parseFloat(v.sale_price||0).toFixed(2)} <small class="text-muted fw-normal">${priceLabel}</small></td>
-                                    <td class="text-muted">Rs. ${parseFloat(v.purch_price||0).toFixed(2)} <small>${priceLabel}</small></td>
-                                    <td><span class="badge bg-light text-danger border">${alertQty}</span></td>
-                                    <td class="text-end pe-3"><code class="bg-light px-2 py-1 rounded border text-dark small">${barcode}</code></td>
-                                </tr>
-                            `);
-                        });
-                    } else {
-                        colorList.forEach((color, index) => {
-                            let barcode = (product.barcode_path ?? product.item_code ?? '') + (index > 0 ? '-' + String(index + 1).padStart(2, '0') : '');
-                            let colorBadge = (color && color !== '-') ? `<span class="badge bg-secondary">${color}</span>` : '<span class="text-muted">-</span>';
-                            let isLow = stock > 0 && product.alert_carton_quantity != null && stock <= product.alert_carton_quantity;
-                            let stockBadge = `<span class="badge ${isLow ? 'bg-danger' : 'bg-success'} bg-opacity-10 text-${isLow ? 'danger' : 'success'} border border-${isLow ? 'danger' : 'success'}-subtle px-2 py-1">${stock}</span>`;
-
-                            tbody.append(`
-                                <tr>
-                                    <td class="text-start ps-3 fw-semibold">${product.item_name}</td>
-                                    <td>${sizeStr}</td>
-                                    <td>${colorBadge}</td>
-                                    <td>${stockBadge}</td>
-                                    <td class="fw-bold text-success">Rs. ${parseFloat(salePrice||0).toFixed(2)} <small class="text-muted fw-normal">${priceLabel}</small></td>
-                                    <td class="text-muted">Rs. ${parseFloat(purchPrice||0).toFixed(2)} <small>${priceLabel}</small></td>
-                                    <td><span class="badge bg-light text-danger border">${alertQtyDefault}</span></td>
-                                    <td class="text-end pe-3"><code class="bg-light px-2 py-1 rounded border text-dark small">${barcode}</code></td>
-                                </tr>
-                            `);
-                        });
-                    }
-                },
-                error: function() {
-                    $('#modalLoadingSpinner').addClass('d-none');
-                    Swal.fire('Error', 'Could not fetch product details.', 'error');
-                }
-            });
-        });
-    </script>
-
-    {{-- Toggle Active JS --}}
-    <script>
-        $(document).on('click', '.toggle-active-btn', function () {
-            const btn = $(this);
-            const productId = btn.data('id');
-            const isActive = btn.data('active') == '1';
-            const productName = btn.data('name');
-            const actionText = isActive ? 'Deactivate' : 'Activate';
-            const actionIcon = isActive ? 'warning' : 'success';
-
-            Swal.fire({
-                title: actionText + ' Product?',
-                html: `<b>${productName}</b><br><small class="text-muted">${isActive ? 'Product will be hidden from Sale/Purchase forms.' : 'Product will be visible in Sale/Purchase forms.'}</small>`,
-                icon: actionIcon,
-                showCancelButton: true,
-                confirmButtonText: 'Yes, ' + actionText,
-                confirmButtonColor: isActive ? '#dc3545' : '#28a745',
-                cancelButtonText: 'Cancel',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `/product/${productId}/toggle-active`,
-                        type: 'POST',
-                        data: { _token: '{{ csrf_token() }}' },
-                        success: function (res) {
-                            if (res.success) {
-                                const row = $(`#product-row-${productId}`);
-                                const badge = $(`#status-badge-${productId}`);
-
-                                if (res.is_active) {
-                                    // Activated
-                                    row.removeClass('table-secondary opacity-75');
-                                    badge.removeClass('bg-danger').addClass('bg-success').text('Active');
-                                    btn.removeClass('btn-outline-success').addClass('btn-outline-danger')
-                                       .text('🔴 Deactivate').data('active', '1')
-                                       .attr('title', 'Deactivate Product');
-                                } else {
-                                    // Deactivated
-                                    row.addClass('table-secondary opacity-75');
-                                    badge.removeClass('bg-success').addClass('bg-danger').text('Inactive');
-                                    btn.removeClass('btn-outline-danger').addClass('btn-outline-success')
-                                       .text('🟢 Activate').data('active', '0')
-                                       .attr('title', 'Activate Product');
-                                }
-
-                                Swal.fire({
-                                    toast: true,
-                                    position: 'top-end',
-                                    icon: 'success',
-                                    title: res.message,
-                                    showConfirmButton: false,
-                                    timer: 2500,
-                                    timerProgressBar: true,
-                                });
-                            }
-                        },
-                        error: function () {
-                            Swal.fire('Error', 'Could not update product status.', 'error');
-                        }
-                    });
-                }
-            });
-        });
-    </script>
-
-    {{-- product model --}}
-    <script>
-        $(document).on('click', '.viewProductBtn', function() {
-            let productId = $(this).data('id');
-
-            // 1. Reset & Loading State
-            $('#modalContentRow').addClass('d-none');
-            $('#modalLoadingSpinner').removeClass('d-none');
-            $('#productViewModal').modal('show');
-
-            $.ajax({
-                url: "/productview/" + productId,
-                type: "GET",
-                success: function(product) {
-
-                    // 2. Hide Spinner, Show Content
-                    $('#modalLoadingSpinner').addClass('d-none');
-                    $('#modalContentRow').removeClass('d-none');
-
-                    // --- Basic ---
-                    $('#view_item_name').text(product.item_name ?? 'Unknown Product');
-                    $('#view_item_code').text(product.item_code ?? 'N/A');
-                    $('#view_cat_sub').text((product.category_relation?.name ?? '') + (product
-                        .sub_category_relation ? ' • ' + product.sub_category_relation.name : ''
-                    ));
-                    $('#view_brand_model').text((product.brand?.name ?? '-') + (product.model ? ' / ' +
-                        product.model : ''));
-
-                    $('#view_created_at').text(product.created_at ? new Date(product.created_at)
-                        .toLocaleDateString() : '-');
-
-                    // --- Image ---
-                    if (product.image) {
-                        $('#view_image_preview').attr('src', '/uploads/products/' + product.image)
-                            .removeClass('d-none');
-                        $('#view_image_placeholder').addClass('d-none');
-                    } else {
-                        $('#view_image_preview').addClass('d-none');
-                        $('#view_image_placeholder').removeClass('d-none');
-                    }
-
-                    // --- Colors ---
-                    if (product.color) {
-                        try {
-                            let colors = JSON.parse(product.color);
-                            $('#view_color').text(Array.isArray(colors) ? colors.join(', ') : colors);
-                        } catch (e) {
-                            $('#view_color').text(product.color);
-                        }
-                    } else {
-                        $('#view_color').text('-');
-                    }
-
-                    // --- Mode & Layout Switching ---
-                    let mode = product.size_mode ?? 'by_size';
-
-                    // Defaults
-                    $('#sec_by_size, #sec_packing, #sec_by_piece').addClass('d-none');
-
-                    let calcBoxes = product.calculated_boxes_quantity ?? 0;
-                    let calcLoose = product.calculated_loose_pieces ?? 0;
-                    let calcTotal = product.calculated_total_stock_qty ?? 0;
-
-                    let salePrice = 0;
-                    let purchPrice = 0;
-                    let estSaleVal = 0;
-                    let estPurchVal = 0;
-
-                    if (mode === 'by_size') {
-                        $('#view_size_mode_badge').text('By Size').removeClass('bg-info bg-warning')
-                            .addClass('bg-light text-primary border-primary');
-                        $('#sec_by_size').removeClass('d-none');
-
-                        // Fill Size Data
-                        $('#view_dimensions').text((product.height ?? 0) + ' x ' + (product.width ??
-                            0));
-                        let m2Piece = ((product.height * product.width) / 10000).toFixed(4);
-                        $('#view_m2_piece').text(m2Piece);
-                        $('#view_boxes_qty_size').text(calcBoxes); // Box count for Size mode
-                        $('#view_pcs_box_size').text(product.pieces_per_box ?? 0);
-                        $('#view_total_m2').text(parseFloat(product.total_m2 ?? 0).toFixed(2));
-
-                        // Stock
-                        $('#view_total_stock_qty').text(calcTotal);
-
-                        // Price Labels
-                        $('#lbl_price_unit').text('Price per m²');
-                        $('#lbl_purch_unit').text('Cost per m²');
-                        salePrice = product.price_per_m2;
-                        purchPrice = product.purchase_price_per_m2;
-
-                        estSaleVal = (product.total_m2 ?? 0) * calcBoxes * salePrice;
-                        estPurchVal = (product.total_m2 ?? 0) * calcBoxes * purchPrice;
-
-                    } else if (mode === 'by_cartons') {
-                        $('#view_size_mode_badge').text('By Box').removeClass(
-                            'bg-light text-primary border-primary bg-warning').addClass(
-                            'bg-info text-white border-0');
-                        $('#sec_packing').removeClass('d-none');
-
-                        $('#view_boxes_qty').text(calcBoxes);
-                        $('#view_loose_pcs').text(calcLoose);
-                        $('#view_pcs_box').text(product.pieces_per_box ?? '-');
-
-                        // Stock
-                        $('#view_total_stock_qty').text(calcTotal);
-
-                        // Price Labels
-                        $('#lbl_price_unit').text('Price per Box');
-                        $('#lbl_purch_unit').text('Cost per Piece');
-                        salePrice = product.sale_price_per_box;
-                        purchPrice = product.purchase_price_per_piece;
-
-                        // Calc Value
-                        // Sale Value: Boxes * SalePricePerBox + Loose * (SalePricePerBox/PcsPerBox)
-                        let ppb = product.pieces_per_box > 0 ? product.pieces_per_box : 1;
-                        let pricePerPieceScale = salePrice / ppb;
-                        estSaleVal = calcTotal * pricePerPieceScale;
-                        estPurchVal = calcTotal * purchPrice;
-
-                    } else { // by_pieces
-                        $('#view_size_mode_badge').text('By Piece').removeClass(
-                            'bg-light text-primary border-primary bg-info text-white').addClass(
-                            'bg-warning text-dark border-0');
-                        $('#sec_by_piece').removeClass('d-none');
-
-                        // Stock
-                        $('#view_total_stock_qty').text(calcTotal);
-
-                        // Price Labels
-                        $('#lbl_price_unit').text('Price per Piece');
-                        $('#lbl_purch_unit').text('Cost per Piece');
-                        salePrice = product.sale_price_per_box;
-                        purchPrice = product.purchase_price_per_piece;
-
-                        estSaleVal = calcTotal * salePrice;
-                        estPurchVal = calcTotal * purchPrice;
-                    }
-
-                    // Format Financials
-                    $('#view_price_unit').text('Rs. ' + parseFloat(salePrice || 0).toFixed(2));
-                    $('#view_purch_unit').text('Rs. ' + parseFloat(purchPrice || 0).toFixed(2));
-                    $('#view_purchase_discount').text((product.purchase_discount_percent ?? 0) + '%');
-                    $('#view_sale_discount').text((product.sale_discount_percent ?? 0) + '%');
-                    $('#view_sale_total').text('Rs. ' + parseFloat(estSaleVal || 0).toLocaleString(
-                        'en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        }));
-                    $('#view_purch_total').text('Rs. ' + parseFloat(estPurchVal || 0).toLocaleString(
-                        'en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        }));
-
-                    $('#view_alert_quantity').text(product.alert_carton_quantity !== null && product.alert_carton_quantity !== undefined ? product.alert_carton_quantity + ' Ctns' : 'Not Set');
-
-                    $('#productViewModal').modal('show');
-                },
-                error: function() {
-                    $('#modalLoadingSpinner').addClass('d-none');
-                    Swal.fire('Error', 'Could not fetch details', 'error');
-                }
-            });
-        });
-    </script>
-
-
-    <script>
-        $(document).ready(function() {
-
-            // Select/Deselect all checkboxes
-            $('#selectAll').click(function() {
-                $('.selectProduct').prop('checked', this.checked);
-            });
-
-            // On "Create Discount" click
-            $('#createDiscountBtn').click(function() {
-                var selected = [];
-                $('.selectProduct:checked').each(function() {
-                    selected.push($(this).val());
-                });
-
-                if (selected.length === 0) {
-                    Swal.fire({
-                        icon: "error",
-                        title: "Oops...",
-                        text: "Please select at least one product!",
-
-                    });
-                    return;
-                }
-
-                // Redirect with product IDs as query param
-                window.location.href = "{{ route('discount.create') }}" + "?products=" + selected.join(
-                    ',');
-            });
-        });
-    </script>
-
-    <script>
-        $(document).ready(function() {
-
-            function debounce(func, delay) {
-                let timer;
-                return function(...args) {
-                    clearTimeout(timer);
-                    timer = setTimeout(() => func.apply(this, args), delay);
-                }
-            }
-
-            // DataTable: no built-in search (we use server-side filter bar)
-            let table = $('#productTable').DataTable({
-                responsive: true,
-                paging: false,
-                ordering: true,
-                info: false,
-                order: [[1, 'asc']],
-                dom: 'rt',  // only table rows, no search/filter UI
-                columnDefs: [{
-                    targets: [0, 11],
-                    orderable: false,
-                    searchable: false
-                }]
-            });
-
-            // Column toggling logic
-            $('.bulk-column-toggle').on('change', function() {
-                let target = $(this).data('target');
-                let isChecked = $(this).is(':checked');
-
-                if (isChecked) {
-                    $(`.${target}-view-mode`).addClass('d-none');
-                    $(`.${target}-edit-mode`).removeClass('d-none');
-                    $(`.${target}-edit-mode input, .${target}-edit-mode select`).removeAttr('disabled');
-                } else {
-                    $(`.${target}-view-mode`).removeClass('d-none');
-                    $(`.${target}-edit-mode`).addClass('d-none');
-                    $(`.${target}-edit-mode input, .${target}-edit-mode select`).attr('disabled', 'disabled');
-                }
-
-                // Show/hide Bulk Save Button
-                if ($('.bulk-column-toggle:checked').length > 0) {
-                    $('#bulkSaveBtn').removeClass('d-none');
-                } else {
-                    $('#bulkSaveBtn').addClass('d-none');
-                }
-            });
-
-            // AJAX form submission
-            $('#bulkEditForm').on('submit', function(e) {
-                e.preventDefault();
-                let form = $(this);
-                let btn = $('#bulkSaveBtn');
-                let originalHtml = btn.html();
-
-                btn.html('<i class="las la-spinner la-spin"></i> Saving...').prop('disabled', true);
-
-                $.ajax({
-                    url: form.attr('action'),
-                    method: 'POST',
-                    data: form.serialize(),
-                    success: function(response) {
-                        if (response.status === 'success') {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Success',
-                                text: response.message,
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                window.location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: response.message || 'Something went wrong.'
-                            });
-                            btn.html(originalHtml).prop('disabled', false);
-                        }
-                    },
-                    error: function(xhr) {
-                        let errors = xhr.responseJSON;
-                        let msg = errors && errors.message ? errors.message : 'Server error occurred.';
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: msg
-                        });
-                        btn.html(originalHtml).prop('disabled', false);
-                    }
-                });
-            });
-
-        });
-    </script>
-
-    {{-- Toggle Active JS --}}
-    <script>
-        $(document).on('click', '.toggle-active-btn', function () {
-            const btn = $(this);
-            const productId = btn.data('id');
-            const isActive = btn.data('active') == '1';
-            const productName = btn.data('name');
-            const actionText = isActive ? 'Deactivate' : 'Activate';
-            const actionIcon = isActive ? 'warning' : 'success';
-
-            Swal.fire({
-                title: actionText + ' Product?',
-                html: `<b>${productName}</b><br><small class="text-muted">${isActive ? 'Product will be hidden from Sale/Purchase forms.' : 'Product will be visible in Sale/Purchase forms.'}</small>`,
-                icon: actionIcon,
-                showCancelButton: true,
-                confirmButtonText: 'Yes, ' + actionText,
-                confirmButtonColor: isActive ? '#dc3545' : '#28a745',
-                cancelButtonText: 'Cancel',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: `/product/${productId}/toggle-active`,
-                        type: 'POST',
-                        data: { _token: '{{ csrf_token() }}' },
-                        success: function (res) {
-                            if (res.success) {
-                                const row = $(`#product-row-${productId}`);
-                                const badge = $(`#status-badge-${productId}`);
-
-                                if (res.is_active) {
-                                    row.removeClass('table-secondary opacity-75');
-                                    badge.removeClass('bg-danger').addClass('bg-success').text('Active');
-                                    btn.removeClass('btn-outline-success').addClass('btn-outline-danger')
-                                       .text('🔴').data('active', '1')
-                                       .attr('title', 'Deactivate Product');
-                                } else {
-                                    row.addClass('table-secondary opacity-75');
-                                    badge.removeClass('bg-success').addClass('bg-danger').text('Inactive');
-                                    btn.removeClass('btn-outline-danger').addClass('btn-outline-success')
-                                       .text('🟢').data('active', '0')
-                                       .attr('title', 'Activate Product');
-                                }
-
-                                Swal.fire({
-                                    toast: true,
-                                    position: 'top-end',
-                                    icon: 'success',
-                                    title: res.message,
-                                    showConfirmButton: false,
-                                    timer: 2500,
-                                    timerProgressBar: true,
-                                });
-                            }
-                        },
-                        error: function () {
-                            Swal.fire('Error', 'Could not update product status.', 'error');
-                        }
-                    });
-                }
-            });
-        });
-    </script>
-
-    <!-- DataTables CSS -->
 @endsection
-<script src="{{ asset('assets/js/jquery.min.js') }}"></script>
 
+@section('js')
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        let cartonQuantityInput = document.getElementById("carton_quantity");
-        let piecesPerCartonInput = document.getElementById("pieces_per_carton");
-        let initialStockInput = document.getElementById("initial_stock");
+$(document).ready(function () {
 
-        if (cartonQuantityInput && piecesPerCartonInput && initialStockInput) {
-            function updateInitialStock() {
-                let cartonQuantity = parseInt(cartonQuantityInput.value) || 0;
-                let piecesPerCarton = parseInt(piecesPerCartonInput.value) || 0;
-                initialStockInput.value = cartonQuantity * piecesPerCarton;
+    // ── Open Import Modal ──
+    $('#openImportModalBtn').on('click', function () {
+        $('#importModal').modal('show');
+    });
+
+    // ── Select All ──
+    $('#selectAll').click(function() {
+        $('.selectProduct').prop('checked', this.checked);
+    });
+
+    // ── DataTable init ── (responsive:false – we use CSS horizontal scroll instead)
+    let table = $('#productTable').DataTable({
+        responsive: false,
+        paging:     false,
+        ordering:   true,
+        info:       false,
+        order:      [[3, 'asc']],
+        dom:        'rt',
+        scrollX:    false,
+        columnDefs: [{ targets: [0, 8], orderable: false, searchable: false }]
+    });   // DataTable closes here
+
+    // ── Select All ──
+    $('#selectAll').click(function() {
+        $('.selectProduct').prop('checked', this.checked);
+    });
+
+    // ── View Product Modal ──
+    $(document).on('click', '.viewProductBtn', function() {
+        let productId = $(this).data('id');
+        $('#modalContentRow').addClass('d-none');
+        $('#modalLoadingSpinner').removeClass('d-none');
+        $('#productViewModal').modal('show');
+
+        $.ajax({
+            url:  "/productview/" + productId,
+            type: "GET",
+            success: function(product) {
+                $('#modalLoadingSpinner').addClass('d-none');
+                $('#modalContentRow').removeClass('d-none');
+
+                $('#view_item_name').text(product.item_name ?? 'Unknown');
+                $('#view_item_subtext').text(
+                    (product.item_code ?? '') + ' | ' +
+                    (product.category_relation?.name ?? '') + ' | ' +
+                    (product.brand?.name ?? '')
+                );
+
+                let tbody = $('#variantTableBody');
+                tbody.empty();
+
+                let colorList = ['-'];
+                let variants  = [];
+                if (product.color) {
+                    try {
+                        let parsed = JSON.parse(product.color);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            if (typeof parsed[0] === 'object') variants = parsed;
+                            else colorList = parsed;
+                        } else if (typeof parsed === 'string') colorList = [parsed];
+                    } catch (e) { colorList = [product.color]; }
+                }
+
+                let sizeStr = '-';
+                if (product.size_mode === 'by_size')
+                    sizeStr = (product.height || 0) + ' x ' + (product.width || 0) + ' cm';
+
+                let stock     = product.calculated_total_stock_qty ?? 0;
+                let alertDef  = product.alert_carton_quantity != null ? product.alert_carton_quantity + '' : '-';
+                let salePrice = product.size_mode === 'by_size' ? product.price_per_m2 : (product.sale_price_per_piece || product.sale_price_per_box || 0);
+                let purchPrice= product.size_mode === 'by_size' ? product.purchase_price_per_m2 : (product.purchase_price_per_piece || 0);
+                let priceLabel= product.size_mode === 'by_size' ? '/m²' : '/pc';
+
+                function stockBadgeHtml(qty, alert) {
+                    let isLow = qty > 0 && alert != null && qty <= alert;
+                    let cls   = qty == 0 ? 'background:#fef3c7;color:#b45309;border:1px solid #fde68a;' : (isLow ? 'background:#fef2f2;color:#dc2626;border:1px solid #fecaca;' : 'background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;');
+                    return `<span style="${cls} border-radius:6px; padding:3px 8px; font-size:.78rem; font-weight:600;">${qty}</span>`;
+                }
+
+                if (variants.length > 0) {
+                    variants.forEach(v => {
+                        let barcode   = v.barcode || (product.barcode_path ?? product.item_code);
+                        let colorBadge = (v.color && v.color !== '-') ? `<span style="background:#e2e8f0;border-radius:4px;padding:2px 6px;font-size:.72rem;">${v.color}</span>` : '<span style="color:#94a3b8;">—</span>';
+                        let alertQty  = (v.alert != null && v.alert != 0) ? v.alert : '-';
+                        tbody.append(`<tr>
+                            <td class="text-start ps-4 fw-semibold">${v.name || product.item_name}</td>
+                            <td>${v.size || '-'}</td>
+                            <td>${colorBadge}</td>
+                            <td>${stockBadgeHtml(v.stock, v.alert)}</td>
+                            <td class="fw-bold" style="color:#059669;">Rs. ${parseFloat(v.sale_price||0).toFixed(2)} <small class="fw-normal text-muted">${priceLabel}</small></td>
+                            <td class="text-muted">Rs. ${parseFloat(v.purch_price||0).toFixed(2)} <small>${priceLabel}</small></td>
+                            <td><span style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:2px 6px;font-size:.72rem;">${alertQty}</span></td>
+                            <td class="text-end pe-4"><code style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:2px 6px;font-size:.75rem;">${barcode}</code></td>
+                        </tr>`);
+                    });
+                } else {
+                    colorList.forEach((color, index) => {
+                        let barcode   = (product.barcode_path ?? product.item_code ?? '') + (index > 0 ? '-' + String(index+1).padStart(2,'0') : '');
+                        let colorBadge = (color && color !== '-') ? `<span style="background:#e2e8f0;border-radius:4px;padding:2px 6px;font-size:.72rem;">${color}</span>` : '<span style="color:#94a3b8;">—</span>';
+                        tbody.append(`<tr>
+                            <td class="text-start ps-4 fw-semibold">${product.item_name}</td>
+                            <td>${sizeStr}</td>
+                            <td>${colorBadge}</td>
+                            <td>${stockBadgeHtml(stock, product.alert_carton_quantity)}</td>
+                            <td class="fw-bold" style="color:#059669;">Rs. ${parseFloat(salePrice||0).toFixed(2)} <small class="fw-normal text-muted">${priceLabel}</small></td>
+                            <td class="text-muted">Rs. ${parseFloat(purchPrice||0).toFixed(2)} <small>${priceLabel}</small></td>
+                            <td><span style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:2px 6px;font-size:.72rem;">${alertDef}</span></td>
+                            <td class="text-end pe-4"><code style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:2px 6px;font-size:.75rem;">${barcode}</code></td>
+                        </tr>`);
+                    });
+                }
+            },
+            error: function() {
+                $('#modalLoadingSpinner').addClass('d-none');
+                Swal.fire('Error', 'Could not fetch product details.', 'error');
             }
+        });
+    });
 
-            cartonQuantityInput.addEventListener("input", updateInitialStock);
-            piecesPerCartonInput.addEventListener("input", updateInitialStock);
+    // ── Toggle Active ──
+    $(document).on('click', '.toggle-active-btn', function () {
+        const btn        = $(this);
+        const productId  = btn.data('id');
+        const isActive   = btn.data('active') == '1';
+        const name       = btn.data('name');
+        const actionText = isActive ? 'Deactivate' : 'Activate';
+
+        Swal.fire({
+            title: actionText + ' Product?',
+            html:  `<b>${name}</b><br><small class="text-muted">${isActive ? 'Product will be hidden from Sale/Purchase forms.' : 'Product will be visible in Sale/Purchase forms.'}</small>`,
+            icon:  isActive ? 'warning' : 'success',
+            showCancelButton:    true,
+            confirmButtonText:   'Yes, ' + actionText,
+            confirmButtonColor:  isActive ? '#dc2626' : '#059669',
+            cancelButtonText:    'Cancel',
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            $.ajax({
+                url:  `/product/${productId}/toggle-active`,
+                type: 'POST',
+                data: { _token: '{{ csrf_token() }}' },
+                success: function (res) {
+                    if (!res.success) return;
+                    const row   = $(`#product-row-${productId}`);
+                    const badge = $(`#status-badge-${productId}`);
+                    if (res.is_active) {
+                        row.removeClass('row-inactive');
+                        badge.attr('class', 'status-active').text('Active');
+                        btn.removeClass('btn-act-act').addClass('btn-act-deact')
+                           .attr('title','Deactivate').html('<i class="fas fa-ban"></i>')
+                           .data('active','1');
+                    } else {
+                        row.addClass('row-inactive');
+                        badge.attr('class', 'status-inactive').text('Inactive');
+                        btn.removeClass('btn-act-deact').addClass('btn-act-act')
+                           .attr('title','Activate').html('<i class="fas fa-check"></i>')
+                           .data('active','0');
+                    }
+                    Swal.fire({ toast:true, position:'top-end', icon:'success', title:res.message, showConfirmButton:false, timer:2500, timerProgressBar:true });
+                },
+                error: () => Swal.fire('Error', 'Could not update product status.', 'error')
+            });
+        });
+    });
+
+    // ── Subcategory fetch helpers ──
+    $('#categorySelect').change(function() {
+        var id = $(this).val();
+        $('#subCategorySelect').html('<option value="">Loading...</option>');
+        if (id) {
+            $.get("/get-subcategories/" + id, { category_id: id }, function(data) {
+                $('#subCategorySelect').html('<option value="">Select Sub-Category</option>');
+                $.each(data, function(k, sub) {
+                    $('#subCategorySelect').append('<option value="' + sub.id + '">' + sub.name + '</option>');
+                });
+            }).fail(() => alert('Error fetching subcategories.'));
+        } else {
+            $('#subCategorySelect').html('<option value="">Select Sub-Category</option>');
         }
     });
 
-
-    $(document).ready(function() {
-        // Add Product Modal: Fetch Subcategories on Category Change
-        $('#categorySelect').change(function() {
-            var categoryId = $(this).val();
-
-            $('#subCategorySelect').html('<option value="">Loading...</option>');
-
-            if (categoryId) {
-                $.ajax({
-                    url: "/get-subcategories/" + categoryId,
-
-                    type: "GET",
-                    data: {
-                        category_id: categoryId
-                    },
-                    success: function(data) {
-                        $('#subCategorySelect').html(
-                            '<option value="">Select Sub-Category</option>');
-                        $.each(data, function(key, subCategory) {
-                            $('#subCategorySelect').append('<option value="' +
-                                subCategory.id + '">' +
-                                subCategory.name + '</option>');
-                        });
-                    },
-                    error: function() {
-                        alert('Error fetching subcategories.');
-                    }
-                });
-            } else {
-                $('#subCategorySelect').html('<option value="">Select Sub-Category</option>');
-            }
-        });
-
-        // Edit Product Modal: Fetch Subcategories when Category is Changed
-        $('#edit_category').change(function() {
-            var categoryId = $(this).val();
-            $('#edit_sub_category').html('<option value="">Loading...</option>');
-
-            if (categoryId) {
-                $.ajax({
-                    url: "/get-subcategories/" + categoryId,
-
-                    type: "GET",
-                    data: {
-                        category_id: categoryId
-                    },
-                    success: function(data) {
-                        $('#edit_sub_category').html(
-                            '<option value="">Select Sub-Category</option>');
-                        $.each(data, function(key, subCategory) {
-                            $('#edit_sub_category').append('<option value="' +
-                                subCategory.sub_category_name + '">' +
-                                subCategory.sub_category_name + '</option>');
-                        });
-                    },
-                    error: function() {
-                        alert('Error fetching subcategories.');
-                    }
-                });
-            } else {
-                $('#edit_sub_category').html('<option value="">Select Sub-Category</option>');
-            }
-        });
-    });
+});  // ── end $(document).ready ──
 </script>
+@endsection

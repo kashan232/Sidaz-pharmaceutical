@@ -182,15 +182,14 @@ class ProductController extends Controller
                     $initial = (float) ($v['stock'] ?? 0);
                     $vBalance = 0;
 
-                    if (isset($v['conv_factor'])) {
-                        // Weight Unit: Calculate purely based on Product's central total Kg divided by variant's conversion factor
+                    if (isset($v['conv_factor']) && $p->size_mode === 'by_kg') {
+                        // Weight Unit: Calculate integer pieces based on total Kg divided by conversion factor
                         $factor = (float) $v['conv_factor'];
                         $factor = $factor > 0 ? $factor : 1;
-                        $rawCalc = $stockPieces / $factor;
-                        if (abs($rawCalc - round($rawCalc)) < 0.0001) {
-                            $vBalance = (int) round($rawCalc);
+                        if ($factor == 1) {
+                            $vBalance = max(0, $stockPieces);
                         } else {
-                            $vBalance = round($rawCalc, 3);
+                            $vBalance = (int) floor(max(0, $stockPieces) / $factor);
                         }
                     } else {
                         // Calculate Purchased variant qty
@@ -241,12 +240,17 @@ class ProductController extends Controller
                     if (isset($v['conv_factor']) && $p->size_mode === 'by_kg') {
                         $factor = (float) $v['conv_factor'];
                         if ($factor == 1) {
-                            if ($vBalance < 1 && $vBalance > 0) {
-                                $gmVal = round($vBalance * 1000, 1);
+                            if ($vBalance < 0.001) {
+                                $vStockDisplay = "0 Kg (0 Gm)";
+                            } elseif ($vBalance < 1 && $vBalance > 0) {
+                                $gmVal = (int) round($vBalance * 1000);
                                 $vStockDisplay = "{$vBalance} Kg ({$gmVal} Gm)";
                             } else {
                                 $vStockDisplay = "{$vBalance} Kg";
                             }
+                        } else {
+                            $pcsCount = (int) floor($vBalance);
+                            $vStockDisplay = "{$pcsCount}";
                         }
                     } elseif (($p->size_mode === 'by_cartons' || $p->size_mode === 'by_size') && $ppb > 1) {
                         $vBoxes = floor($vBalance / $ppb);

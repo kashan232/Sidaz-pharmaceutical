@@ -163,11 +163,56 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        /* Select2 Style tweaks */
-        .select2-container--default .select2-selection--multiple {
-            border-radius: var(--radius-md) !important;
-            border-color: var(--border-color) !important;
-            padding: 2px 6px !important;
+        /* Clean modern styling for variants table */
+        #variantsTable input[type=number]::-webkit-inner-spin-button, 
+        #variantsTable input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        #variantsTable input[type=number] {
+            -moz-appearance: textfield;
+        }
+        #variantsTable .form-control-pro, 
+        #variantsTable .form-select {
+            height: 30px;
+            padding: 2px 6px;
+            font-size: 12px;
+            border-radius: 4px;
+            border: 1px solid #ced4da;
+            background-color: #ffffff;
+            box-shadow: none;
+        }
+        #variantsTable .form-control-pro:focus, 
+        #variantsTable .form-select:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+        }
+        #variantsTable .input-group-sm > .form-control-pro {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        #variantsTable .input-group-sm > .input-group-text {
+            height: 30px;
+            font-size: 11px;
+            padding: 0 5px;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            border-color: #ced4da;
+            background-color: #f8fafc;
+            color: #64748b;
+        }
+        #variantsTable th {
+            background-color: #f1f5f9 !important;
+            color: #334155;
+            font-weight: 600;
+            font-size: 11px !important;
+            padding: 6px 4px !important;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        #variantsTable td {
+            padding: 4px 3px !important;
+            vertical-align: middle;
         }
     </style>
 
@@ -288,8 +333,8 @@
                                                         <th class="text-uppercase text-muted p-1" style="width: 80px; font-size: 10px;">Size</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 80px; font-size: 10px;">Color</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 75px; font-size: 10px;">Unit</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 85px; font-size: 10px;">Conv Factor</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 105px; font-size: 10px;">Piece Wt (g)</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center" style="width: 90px; font-size: 10px;">Initial Stock</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center piece-wt-col" style="width: 105px; font-size: 10px;">Piece Wt (g)</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 10px;">Sale Price</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 10px;">Wholesale</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 10px;">Purch Price</th>
@@ -655,7 +700,7 @@
                     <td class="p-1">
                         <input type="text" class="form-control-pro form-control-sm base-name-input fw-bold" name="variant_name[]" value="${productName}" placeholder="Name" data-vid="${vid}">
                         <input type="hidden" name="variant_is_base[]" value="1">
-                        <input type="hidden" name="variant_stock[]" value="0">
+                        <input type="hidden" name="variant_conv_factor[]" class="conv-factor-input" value="1">
                     </td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" placeholder="Size"></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" placeholder="Color"></td>
@@ -671,11 +716,11 @@
                         </select>
                     </td>
                     <td class="p-1">
-                        <input type="number" class="form-control-pro form-control-sm conv-factor-input text-center" name="variant_conv_factor[]" step="any" value="1" readonly title="Base Unit Factor = 1">
+                        <input type="number" class="form-control-pro form-control-sm text-center fw-bold text-primary" name="variant_stock[]" step="any" value="0" placeholder="0" title="Initial Stock">
                     </td>
-                    <td class="p-1">
+                    <td class="p-1 piece-wt-col">
                         <div class="input-group input-group-sm">
-                            <input type="number" class="form-control-pro form-control-sm" name="variant_weight_per_piece[]" step="any" placeholder="0.00" value="0">
+                            <input type="number" class="form-control-pro form-control-sm" name="variant_weight_per_piece[]" step="any" placeholder="0.00" value="1000" readonly>
                             <span class="input-group-text bg-light text-muted p-1" style="font-size:10px;">g</span>
                         </div>
                     </td>
@@ -701,9 +746,12 @@
                 tr.querySelector('.base-name-input').addEventListener('input', function() {
                     manualNames[vid] = true;
                 });
+                toggleFactorColumns();
             }
 
             function updatePriceSuggestions() {
+                if (variantMode === 'pcs') return; // Do not auto-overwrite prices in Pcs mode
+
                 const baseRow = variantsBody.querySelector('tr');
                 if (!baseRow) return;
 
@@ -758,9 +806,16 @@
                 const basePurch = parseFloat(baseRow?.querySelector('.base-purch-input')?.value || 0);
                 const baseWholesale = parseFloat(baseRow?.querySelector('input[name="variant_wholesale_price[]"]')?.value || 0);
 
-                const suggSale = (baseSale * factor).toFixed(2);
-                const suggPurch = (basePurch * factor).toFixed(2);
-                const suggWholesale = (baseWholesale * factor).toFixed(2);
+                let suggSale = '';
+                let suggPurch = '';
+                let suggWholesale = '';
+
+                if (variantMode === 'weight') {
+                    suggSale = (baseSale * factor).toFixed(2);
+                    suggPurch = (basePurch * factor).toFixed(2);
+                    suggWholesale = (baseWholesale * factor).toFixed(2);
+                }
+
                 const initPieceWt = weightGrams || (factor < 10 ? (factor * 1000).toFixed(1).replace(/\.0$/, '') : factor);
                 const randBarcode = generateRandomBarcode();
 
@@ -768,7 +823,7 @@
                     <td class="p-1">
                         <input type="text" class="form-control-pro form-control-sm var-name-input" name="variant_name[]" value="${suggestedName}" placeholder="Name">
                         <input type="hidden" name="variant_is_base[]" value="0">
-                        <input type="hidden" name="variant_stock[]" value="0">
+                        <input type="hidden" name="variant_conv_factor[]" class="conv-factor-input" value="${factor}">
                     </td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" placeholder="Size (XL, 10x12)"></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" placeholder="Color"></td>
@@ -784,11 +839,11 @@
                         </select>
                     </td>
                     <td class="p-1">
-                        <input type="number" class="form-control-pro form-control-sm conv-factor-input text-center" name="variant_conv_factor[]" step="any" value="${factor}" required title="Conv Factor">
+                        <input type="number" class="form-control-pro form-control-sm text-center fw-bold text-primary" name="variant_stock[]" step="any" value="0" placeholder="0" title="Initial Stock">
                     </td>
-                    <td class="p-1">
+                    <td class="p-1 piece-wt-col">
                         <div class="input-group input-group-sm">
-                            <input type="number" class="form-control-pro form-control-sm" name="variant_weight_per_piece[]" step="any" placeholder="0.00" value="${initPieceWt}">
+                            <input type="number" class="form-control-pro form-control-sm" name="variant_weight_per_piece[]" step="any" placeholder="0.00" value="${initPieceWt}" readonly>
                             <span class="input-group-text bg-light text-muted p-1" style="font-size:10px;">g</span>
                         </div>
                     </td>
@@ -832,62 +887,45 @@
                         }
                     });
                 }
+                toggleFactorColumns();
             }
 
             function toggleFactorColumns() {
-                if (variantMode === 'weight') return; // Handled by applyVariantModeUI
                 if (!unitDropdown) return;
                 const mode = unitDropdown.value;
-                const showFactor = (mode === 'by_kg' || mode === 'by_meter');
+                const showPieceWt = (mode === 'by_kg');
                 
-                const headers = document.querySelectorAll('.factor-header');
-                headers.forEach(h => {
-                    if (showFactor) {
-                        h.classList.remove('d-none');
-                        h.textContent = (mode === 'by_kg') ? 'Piece Weight (g)' : 'Piece Length (m)';
-                    } else {
-                        h.classList.add('d-none');
-                    }
-                });
-                
-                const cols = document.querySelectorAll('.factor-col');
+                const cols = document.querySelectorAll('.piece-wt-col');
                 cols.forEach(c => {
-                    if (showFactor) {
+                    if (showPieceWt) {
                         c.classList.remove('d-none');
                     } else {
                         c.classList.add('d-none');
-                        const inp = c.querySelector('input');
-                        if (inp) inp.value = '0';
                     }
                 });
             }
 
             if (unitDropdown) {
-                $(unitDropdown).on('change', updateVariantMode);
+                $(unitDropdown).on('change', function() {
+                    updateVariantMode();
+                    toggleFactorColumns();
+                });
                 // Initialize mode on load
                 updateVariantMode();
+                toggleFactorColumns();
             }
 
             enableVariantsBtn.addEventListener('click', function() {
                 if (variantsBody.children.length === 0) {
                     addBaseVariantRow();
+                } else {
+                    addVariantRow();
                 }
-                addVariantRow();
             });
 
-            // Make the button behave as Add Variant instead of Remove when in Weight Mode and already open
-            // We just override the text if in weight mode
-            setInterval(() => {
-                if (!variantsContainer.classList.contains('d-none')) {
-                    if (variantMode === 'weight') {
-                        enableVariantsBtn.innerHTML = '+ Add Variant';
-                        enableVariantsBtn.classList.replace('btn-outline-danger', 'btn-outline-primary');
-                    } else {
-                        enableVariantsBtn.innerHTML = '- Remove Variants';
-                        enableVariantsBtn.classList.replace('btn-outline-primary', 'btn-outline-danger');
-                    }
-                }
-            }, 100);
+            // Always ensure the button reads + Add Variant Row
+            enableVariantsBtn.innerHTML = '<i class="fas fa-plus me-1"></i>Add Variant Row';
+            enableVariantsBtn.className = 'btn btn-sm btn-primary';
 
             variantsBody.addEventListener('click', function(e) {
                 const addBtn = e.target.closest('.add-var-btn');

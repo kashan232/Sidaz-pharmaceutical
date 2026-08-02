@@ -121,11 +121,36 @@ class POSController extends Controller
                         }
                     }
 
-                    $vBalance = max(0, $initial + $purchased - $sold + $returnedQty - $pReturned);
-                    $totalStockPieces += $vBalance;
+                    if (isset($v['conv_factor']) && $p->size_mode === 'by_kg') {
+                        $factor = (float) $v['conv_factor'];
+                        $factor = $factor > 0 ? $factor : 1;
+                        if ($factor == 1) {
+                            $vBalance = max(0, $totalStockPieces);
+                        } else {
+                            $vBalance = (int) floor(max(0, $totalStockPieces) / $factor);
+                        }
+                    } else {
+                        $vBalance = max(0, $initial + $purchased - $sold + $returnedQty - $pReturned);
+                        $totalStockPieces += $vBalance;
+                    }
 
                     $vStockDisplay = $vBalance;
-                    if (($p->size_mode === 'by_cartons' || $p->size_mode === 'by_size') && $ppb > 1) {
+                    if (isset($v['conv_factor']) && $p->size_mode === 'by_kg') {
+                        $factor = (float) $v['conv_factor'];
+                        if ($factor == 1) {
+                            if ($vBalance < 0.001) {
+                                $vStockDisplay = "0 Kg (0 Gm)";
+                            } elseif ($vBalance < 1 && $vBalance > 0) {
+                                $gmVal = (int) round($vBalance * 1000);
+                                $vStockDisplay = "{$vBalance} Kg ({$gmVal} Gm)";
+                            } else {
+                                $vStockDisplay = "{$vBalance} Kg";
+                            }
+                        } else {
+                            $pcsCount = (int) floor($vBalance);
+                            $vStockDisplay = "{$pcsCount}";
+                        }
+                    } elseif (($p->size_mode === 'by_cartons' || $p->size_mode === 'by_size') && $ppb > 1) {
                         $vBoxes = floor($vBalance / $ppb);
                         $vLoose = $vBalance % $ppb;
                         $vStockDisplay = $vLoose > 0 ? "$vBoxes.$vLoose" : $vBoxes;

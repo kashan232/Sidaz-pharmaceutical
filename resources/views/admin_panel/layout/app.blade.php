@@ -539,9 +539,9 @@
                                             </div>
                                         @endcanany
                                         <!-- Accounts -->
-                                        @canany(['warehouse.view', 'warehouse.stock.view', 'stock.transfer.view'])
+                                        @canany(['warehouse.view', 'warehouse.stock.view', 'stock.transfer.view', 'stock.adjust.view'])
                                             <div class="col-group col-md-3">
-                                                <p class="category-heading">Accounts</p>
+                                                <p class="category-heading">Inventory Management</p>
                                                 <ul class="submenu-item">
                                                     @can('warehouse.view')
                                                         <li><a href="{{ url('warehouse') }}"><i class="fas fa-warehouse"></i>
@@ -555,6 +555,10 @@
                                                         <li><a href="{{ url('stock_transfers') }}"><i
                                                                     class="fas fa-exchange-alt"></i> Stock Transfer</a></li>
                                                     @endcan
+                                                    @canany(['stock.adjust.view', 'stock.adjust.create'])
+                                                        <li><a href="{{ route('stock_adjustments.index') }}"><i
+                                                                    class="fas fa-sliders-h"></i> Stock Adjustment</a></li>
+                                                    @endcanany
                                                 </ul>
                                             </div>
                                         @endcanany

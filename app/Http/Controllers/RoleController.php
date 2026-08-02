@@ -15,8 +15,11 @@ class RoleController extends Controller
     {
         $roles = Role::orderBy('name',"ASC")->get();
         
-        // Ensure purchase_pos.create permission exists automatically (so no live migration is needed)
+        // Ensure purchase_pos.create & stock.adjust permissions exist automatically (so no live migration is needed)
         Permission::firstOrCreate(['name' => 'purchase_pos.create']);
+        foreach (['stock.adjust.view', 'stock.adjust.create', 'stock.adjust.edit', 'stock.adjust.delete'] as $permName) {
+            Permission::firstOrCreate(['name' => $permName]);
+        }
         
         $allPermissions  = Permission::all();
         return view('admin_panel.roles.role', compact(['roles', 'allPermissions']));

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\Warehouse;
+use App\Models\Unit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -30,39 +32,73 @@ class ReportingController extends Controller
 
     public function item_stock_report()
     {
+        $user = auth()->user();
         $categories = Category::orderBy('name')->get();
+        $units      = Unit::orderBy('name')->get();
 
-        return view('admin_panel.reporting.item_stock_report', compact('categories'));
+        // Warehouse Permission Filter: Show warehouses only if user has warehouse permission
+        if ($user && ($user->email === 'admin@admin.com' || $user->hasRole('Super Admin') || $user->hasRole('Admin') || $user->can('warehouse.view') || $user->can('warehouse.stock.view'))) {
+            $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        } else {
+            $warehouses = collect();
+        }
+
+        return view('admin_panel.reporting.item_stock_report', compact('categories', 'warehouses', 'units'));
     }
 
     // AJAX endpoint to fetch report rows
     public function fetchItemStock(Request $request)
     {
-        $productId  = $request->product_id;
-        $categoryId = $request->category_id;
+        $productId   = $request->product_id;
+        $categoryId  = $request->category_id;
+        $warehouseId = $request->warehouse_id;
+        $unitType    = $request->unit_type; // 'all', 'cartons_pcs', 'weight_kg', 'area_m2'
+        $reportMode  = $request->report_mode ?: 'summary'; // 'summary' vs 'ledger'
+        $dateFrom    = $request->date_from;
+        $dateTo      = $request->date_to;
 
-        $productsQuery = Product::with('warehouseStocks');
+        $productsQuery = Product::with(['warehouseStocks', 'unit', 'category_relation']);
+
         if ($productId && $productId !== 'all') {
             $productsQuery->where('id', $productId);
         }
         if ($categoryId && $categoryId !== 'all') {
             $productsQuery->where('category_id', $categoryId);
         }
+
+        // Unit Mode Filter
+        if ($unitType && $unitType !== 'all') {
+            if ($unitType === 'weight_kg') {
+                $productsQuery->whereIn('size_mode', ['by_kg', 'by_gm', 'by_ton']);
+            } elseif ($unitType === 'area_m2') {
+                $productsQuery->whereIn('size_mode', ['by_size', 'by_m2']);
+            } elseif ($unitType === 'cartons_pcs') {
+                $productsQuery->whereIn('size_mode', ['by_cartons', 'by_pieces', 'std']);
+            }
+        }
+
         $products = $productsQuery->orderBy('item_name')->get();
 
         $rows = [];
-        $grandTotalValue = 0;
+        $grandTotalValue   = 0;
+        $totalCurrentStock = 0;
+        $totalAdjustments  = 0;
+        $totalSoldAmount   = 0;
 
         foreach ($products as $product) {
             // Determine default purchase price per piece
             $productPurchPrice = 0;
-            if ($product->size_mode === 'by_size') {
+            if ($product->size_mode === 'by_size' || $product->size_mode === 'by_m2') {
                 $m2PerPiece         = (float) ($product->pieces_per_m2 ?? 0);
                 $purchPerM2         = (float) ($product->purchase_price_per_m2 ?? 0);
                 $productPurchPrice  = $m2PerPiece * $purchPerM2;
             } else {
                 $productPurchPrice = (float) ($product->purchase_price_per_piece ?? 0);
             }
+
+            // Determine size mode & unit display label
+            $unitName = $product->unit->name ?? 'Pcs';
+            $sizeMode = $product->size_mode ?: 'std';
 
             // Check if product has variants
             $parsedVariants = [];
@@ -77,30 +113,52 @@ class ReportingController extends Controller
 
             if (count($parsedVariants) > 0) {
                 // Fetch all sales and returns for this product to distribute
-                $salesList = DB::table('sale_items')
-                    ->where('product_id', $product->id)
-                    ->select('total_pieces', 'total', 'color')
-                    ->get();
+                $salesQuery = DB::table('sale_items')->where('product_id', $product->id);
+                if ($warehouseId && $warehouseId !== 'all') {
+                    $salesQuery->where('warehouse_id', $warehouseId);
+                }
+                if ($dateFrom) $salesQuery->whereDate('created_at', '>=', $dateFrom);
+                if ($dateTo)   $salesQuery->whereDate('created_at', '<=', $dateTo);
+                $salesList = $salesQuery->select('total_pieces', 'total', 'color')->get();
 
-                $returnsList = DB::table('sale_return_items as sri')
+                $returnsQuery = DB::table('sale_return_items as sri')
                     ->join('sale_returns as sr', 'sr.id', '=', 'sri.sale_return_id')
-                    ->where('sri.product_id', $product->id)
-                    ->select('sri.qty', 'sri.color', 'sr.sale_id')
-                    ->get();
+                    ->where('sri.product_id', $product->id);
+                if ($warehouseId && $warehouseId !== 'all') {
+                    $returnsQuery->where('sri.warehouse_id', $warehouseId);
+                }
+                if ($dateFrom) $returnsQuery->whereDate('sr.created_at', '>=', $dateFrom);
+                if ($dateTo)   $returnsQuery->whereDate('sr.created_at', '<=', $dateTo);
+                $returnsList = $returnsQuery->select('sri.qty', 'sri.color', 'sr.sale_id')->get();
 
                 // Fetch all approved/returned purchases
-                $purchasesList = DB::table('purchase_items as pi')
+                $purchasesQuery = DB::table('purchase_items as pi')
                     ->join('purchases as pur', 'pur.id', '=', 'pi.purchase_id')
                     ->where('pi.product_id', $product->id)
-                    ->whereIn('pur.status_purchase', ['approved', 'Returned', 'Partial'])
-                    ->select('pi.qty as total_pieces', 'pi.line_total', 'pi.color')
-                    ->get();
+                    ->whereIn('pur.status_purchase', ['approved', 'Returned', 'Partial']);
+                if ($warehouseId && $warehouseId !== 'all') {
+                    $purchasesQuery->where('pur.warehouse_id', $warehouseId);
+                }
+                if ($dateFrom) $purchasesQuery->whereDate('pur.created_at', '>=', $dateFrom);
+                if ($dateTo)   $purchasesQuery->whereDate('pur.created_at', '<=', $dateTo);
+                $purchasesList = $purchasesQuery->select('pi.qty as total_pieces', 'pi.line_total', 'pi.color')->get();
 
                 // Fetch all purchase returns
-                $purchaseReturnsList = DB::table('purchase_return_items as pri')
-                    ->where('pri.product_id', $product->id)
-                    ->select('pri.qty', 'pri.line_total', 'pri.color')
-                    ->get();
+                $pReturnsQuery = DB::table('purchase_return_items as pri')->where('pri.product_id', $product->id);
+                if ($dateFrom) $pReturnsQuery->whereDate('pri.created_at', '>=', $dateFrom);
+                if ($dateTo)   $pReturnsQuery->whereDate('pri.created_at', '<=', $dateTo);
+                $purchaseReturnsList = $pReturnsQuery->select('pri.qty', 'pri.line_total', 'pri.color')->get();
+
+                // Fetch Stock Adjustments
+                $adjQuery = DB::table('stock_movements')
+                    ->where('product_id', $product->id)
+                    ->where('type', 'adjustment');
+                if ($warehouseId && $warehouseId !== 'all') {
+                    $adjQuery->where('note', 'like', "%Warehouse #{$warehouseId}%");
+                }
+                if ($dateFrom) $adjQuery->whereDate('created_at', '>=', $dateFrom);
+                if ($dateTo)   $adjQuery->whereDate('created_at', '<=', $dateTo);
+                $adjList = $adjQuery->select('qty', 'note')->get();
 
                 $saleIds = $returnsList->pluck('sale_id')->unique()->toArray();
                 $saleItemsMap = [];
@@ -120,12 +178,10 @@ class ReportingController extends Controller
                     $vSize = $v['size'] ?? '-';
                     $vColor = $v['color'] ?? '-';
 
-                    // Initial stock from variant JSON
                     $initial = (float) ($v['stock'] ?? 0);
 
-                    // Calculate Purchased for this variant
-                    $purchased = 0;
-                    $purchaseAmount = 0;
+                    // Purchased for variant
+                    $purchased = 0; $purchaseAmount = 0;
                     foreach ($purchasesList as $pItem) {
                         if ($this->matchSaleItemToVariant($pItem, $v)) {
                             $purchased += (float) $pItem->total_pieces;
@@ -133,9 +189,8 @@ class ReportingController extends Controller
                         }
                     }
 
-                    // Calculate Purchase Returned for this variant
-                    $pReturned = 0;
-                    $pReturnAmount = 0;
+                    // Purchase Returned for variant
+                    $pReturned = 0; $pReturnAmount = 0;
                     foreach ($purchaseReturnsList as $prItem) {
                         if ($this->matchSaleItemToVariant($prItem, $v)) {
                             $pReturned += (float) $prItem->qty;
@@ -143,9 +198,8 @@ class ReportingController extends Controller
                         }
                     }
 
-                    // Calculate Sold for this variant
-                    $sold = 0;
-                    $saleAmount = 0;
+                    // Sold for variant
+                    $sold = 0; $saleAmount = 0;
                     foreach ($salesList as $sItem) {
                         if ($this->matchSaleItemToVariant($sItem, $v)) {
                             $sold += (float) $sItem->total_pieces;
@@ -153,7 +207,7 @@ class ReportingController extends Controller
                         }
                     }
 
-                    // Calculate Returned for this variant
+                    // Returned for variant
                     $returnedQty = 0;
                     foreach ($returnsList as $rItem) {
                         $rColor = $rItem->color;
@@ -161,17 +215,22 @@ class ReportingController extends Controller
                             $saleColors = $saleItemsMap[$rItem->sale_id] ?? [];
                             $rColor = !empty($saleColors) ? $saleColors[0] : '';
                         }
-                        $rItemCopy = (object)[
-                            'qty' => $rItem->qty,
-                            'color' => $rColor
-                        ];
+                        $rItemCopy = (object)['qty' => $rItem->qty, 'color' => $rColor];
                         if ($this->matchSaleItemToVariant($rItemCopy, $v)) {
                             $returnedQty += (float) $rItem->qty;
                         }
                     }
 
-                    // Balance = Initial + Purchased - Sold + Returned - Purchased Returned
-                    $balance = max(0, $initial + $purchased - $sold + $returnedQty - $pReturned);
+                    // Adjustments for variant
+                    $adjustments = 0;
+                    foreach ($adjList as $adjItem) {
+                        if ($this->matchAdjustmentToVariant($adjItem, $v)) {
+                            $adjustments += (float) $adjItem->qty;
+                        }
+                    }
+
+                    // Balance = Initial + Purchased - Sold + Returned - Purchased Returned + Adjustments
+                    $balance = max(0, $initial + $purchased - $sold + $returnedQty - $pReturned + $adjustments);
 
                     // Weighted Average Purchase Price
                     $vPurchPrice = (float) ($v['purch_price'] ?? $productPurchPrice);
@@ -180,24 +239,36 @@ class ReportingController extends Controller
                     $totalAmountIn = $initialAmount + $purchaseAmount;
                     $averagePrice = $totalQtyIn > 0 ? ($totalAmountIn / $totalQtyIn) : $vPurchPrice;
 
-                    // Stock value
                     $stockValue = $balance * $averagePrice;
                     $grandTotalValue += $stockValue;
+                    $totalCurrentStock += $balance;
+                    $totalAdjustments  += $adjustments;
+                    $totalSoldAmount   += $saleAmount;
 
-                    // Cartons / Loose
+                    // Cartons / Loose / Unit Formatting
                     $ppb = (float) ($product->pieces_per_box ?? 1);
                     if ($ppb > 1) {
                         $cartons = floor($balance / $ppb);
                         $loose   = $balance % $ppb;
+                        $formattedStock = "{$cartons} Box . {$loose} Pcs";
                     } else {
                         $cartons = '-';
                         $loose   = $balance;
+                        $formattedStock = "{$balance} {$unitName}";
                     }
+
+                    // Stock Status Badge
+                    $status = 'healthy';
+                    if ($balance <= 0) $status = 'out_of_stock';
+                    elseif ($product->alert_quantity && $balance < $product->alert_quantity) $status = 'low_stock';
 
                     $rows[] = [
                         'id'              => $product->id,
                         'item_code'       => $product->item_code,
                         'item_name'       => $vName . ' (' . $vSize . ' | ' . $vColor . ')',
+                        'category_name'   => $product->category_relation->name ?? 'Standard',
+                        'unit_name'       => $unitName,
+                        'size_mode'       => $sizeMode,
                         'initial_stock'   => $initial,
                         'purchased'       => $purchased,
                         'purchase_amount' => $purchaseAmount,
@@ -205,43 +276,64 @@ class ReportingController extends Controller
                         'sale_amount'     => $saleAmount,
                         'returned_qty'    => $returnedQty,
                         'purch_returned_qty' => $pReturned,
+                        'adjustments'     => $adjustments,
                         'balance'         => $balance,
+                        'formatted_stock' => $formattedStock,
                         'cartons'         => $cartons,
                         'loose'           => $loose,
                         'average_price'   => $averagePrice,
                         'stock_value'     => $stockValue,
+                        'status'          => $status,
                     ];
                 }
             } else {
-                // Product has no variants: original logic
-                $balance = (float) $product->warehouseStocks->sum('total_pieces');
+                // Product has no variants
+                if ($warehouseId && $warehouseId !== 'all') {
+                    $balance = (float) $product->warehouseStocks->where('warehouse_id', $warehouseId)->sum('total_pieces');
+                } else {
+                    $balance = (float) $product->warehouseStocks->sum('total_pieces');
+                }
 
-                // Purchased qty & amount
-                [$purchased, $purchaseAmount] = $this->getPurchasedQtyAndNetAmount($product->id);
+                [$purchased, $purchaseAmount] = $this->getPurchasedQtyAndNetAmount($product->id, ['from' => $dateFrom, 'to' => $dateTo], $warehouseId);
 
-                // Sold qty & amount (Net)
-                $saleStats = DB::table('sale_items')
-                    ->where('product_id', $product->id)
-                    ->selectRaw('COALESCE(SUM(total_pieces),0) as total_qty, COALESCE(SUM(total),0) as total_amount')
-                    ->first();
+                // Sold qty & amount
+                $saleStatsQuery = DB::table('sale_items')->where('product_id', $product->id);
+                if ($warehouseId && $warehouseId !== 'all') $saleStatsQuery->where('warehouse_id', $warehouseId);
+                if ($dateFrom) $saleStatsQuery->whereDate('created_at', '>=', $dateFrom);
+                if ($dateTo)   $saleStatsQuery->whereDate('created_at', '<=', $dateTo);
+                $saleStats = $saleStatsQuery->selectRaw('COALESCE(SUM(total_pieces),0) as total_qty, COALESCE(SUM(total),0) as total_amount')->first();
 
                 $sold       = (float) $saleStats->total_qty;
                 $saleAmount = (float) $saleStats->total_amount;
 
                 // Returned qty
-                $returnedQty = (float) DB::table('stock_movements')
+                $retQuery = DB::table('stock_movements')
                     ->where('product_id', $product->id)
                     ->whereIn('ref_type', ['SR', 'SALE_RETURN'])
-                    ->where('type', 'in')
-                    ->sum('qty');
+                    ->where('type', 'in');
+                if ($dateFrom) $retQuery->whereDate('created_at', '>=', $dateFrom);
+                if ($dateTo)   $retQuery->whereDate('created_at', '<=', $dateTo);
+                $returnedQty = (float) $retQuery->sum('qty');
 
                 // Purchase returned qty
-                $pReturned = (float) DB::table('purchase_return_items')
-                    ->where('product_id', $product->id)
-                    ->sum('qty');
+                $pRetQuery = DB::table('purchase_return_items')->where('product_id', $product->id);
+                if ($dateFrom) $pRetQuery->whereDate('created_at', '>=', $dateFrom);
+                if ($dateTo)   $pRetQuery->whereDate('created_at', '<=', $dateTo);
+                $pReturned = (float) $pRetQuery->sum('qty');
 
-                // Initial (opening) stock
-                $initial = max(0, $balance - $purchased + $sold - $returnedQty + $pReturned);
+                // Stock Adjustments
+                $adjQuery = DB::table('stock_movements')
+                    ->where('product_id', $product->id)
+                    ->where('type', 'adjustment');
+                if ($warehouseId && $warehouseId !== 'all') {
+                    $adjQuery->where('note', 'like', "%Warehouse #{$warehouseId}%");
+                }
+                if ($dateFrom) $adjQuery->whereDate('created_at', '>=', $dateFrom);
+                if ($dateTo)   $adjQuery->whereDate('created_at', '<=', $dateTo);
+                $adjustments = (float) $adjQuery->sum('qty');
+
+                // Opening stock
+                $initial = max(0, $balance - $purchased + $sold - $returnedQty + $pReturned - $adjustments);
 
                 // Weighted Average Purchase Price
                 $initialAmount  = $initial * $productPurchPrice;
@@ -249,24 +341,36 @@ class ReportingController extends Controller
                 $totalAmountIn  = $initialAmount + $purchaseAmount;
                 $averagePrice   = $totalQtyIn > 0 ? ($totalAmountIn / $totalQtyIn) : $productPurchPrice;
 
-                // Stock value
-                $stockValue       = $balance * $averagePrice;
-                $grandTotalValue += $stockValue;
+                $stockValue        = $balance * $averagePrice;
+                $grandTotalValue  += $stockValue;
+                $totalCurrentStock += $balance;
+                $totalAdjustments  += $adjustments;
+                $totalSoldAmount   += $saleAmount;
 
                 // Cartons / Loose
                 $ppb = (float) ($product->pieces_per_box ?? 1);
                 if ($ppb > 1) {
                     $cartons = floor($balance / $ppb);
                     $loose   = $balance % $ppb;
+                    $formattedStock = "{$cartons} Box . {$loose} Pcs";
                 } else {
                     $cartons = '-';
                     $loose   = $balance;
+                    $formattedStock = "{$balance} {$unitName}";
                 }
+
+                // Stock Status Badge
+                $status = 'healthy';
+                if ($balance <= 0) $status = 'out_of_stock';
+                elseif ($product->alert_quantity && $balance < $product->alert_quantity) $status = 'low_stock';
 
                 $rows[] = [
                     'id'              => $product->id,
                     'item_code'       => $product->item_code,
                     'item_name'       => $product->item_name,
+                    'category_name'   => $product->category_relation->name ?? 'Standard',
+                    'unit_name'       => $unitName,
+                    'size_mode'       => $sizeMode,
                     'initial_stock'   => $initial,
                     'purchased'       => $purchased,
                     'purchase_amount' => $purchaseAmount,
@@ -274,18 +378,68 @@ class ReportingController extends Controller
                     'sale_amount'     => $saleAmount,
                     'returned_qty'    => $returnedQty,
                     'purch_returned_qty' => $pReturned,
+                    'adjustments'     => $adjustments,
                     'balance'         => $balance,
+                    'formatted_stock' => $formattedStock,
                     'cartons'         => $cartons,
                     'loose'           => $loose,
                     'average_price'   => $averagePrice,
                     'stock_value'     => $stockValue,
+                    'status'          => $status,
                 ];
             }
         }
 
         return response()->json([
-            'data'        => $rows,
-            'grand_total' => $grandTotalValue,
+            'data'                  => $rows,
+            'grand_total'           => $grandTotalValue,
+            'total_current_stock'   => $totalCurrentStock,
+            'total_adjustments_qty' => $totalAdjustments,
+            'total_sold_amount'     => $totalSoldAmount,
+        ]);
+    }
+
+    /**
+     * AJAX endpoint to fetch full chronological movement timeline history for a product
+     */
+    public function fetchProductHistory(Request $request, $productId)
+    {
+        $product = Product::findOrFail($productId);
+
+        $movements = DB::table('stock_movements')
+            ->where('product_id', $productId)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($m) {
+                $typeBadge = 'info';
+                $typeLabel = strtoupper($m->type);
+                if ($m->type === 'in' || $m->type === 'assembly_in') {
+                    $typeBadge = 'success';
+                    $typeLabel = 'INWARD (+)';
+                } elseif ($m->type === 'out' || $m->type === 'assembly_out') {
+                    $typeBadge = 'danger';
+                    $typeLabel = 'OUTWARD (-)';
+                } elseif ($m->type === 'adjustment') {
+                    $typeBadge = 'warning';
+                    $typeLabel = 'ADJUSTMENT (' . ($m->qty >= 0 ? '+' : '') . ')';
+                }
+
+                return [
+                    'id'          => $m->id,
+                    'date'        => date('d M Y h:i A', strtotime($m->created_at)),
+                    'type'        => $typeLabel,
+                    'type_badge'  => $typeBadge,
+                    'qty'         => (float) $m->qty,
+                    'ref_type'    => $m->ref_type ?: 'GENERAL',
+                    'note'        => $m->note ?: 'N/A',
+                ];
+            });
+
+        return response()->json([
+            'success'      => true,
+            'product_name' => $product->item_name,
+            'item_code'    => $product->item_code,
+            'history'      => $movements
         ]);
     }
 
@@ -2069,15 +2223,27 @@ class ReportingController extends Controller
         ]);
     }
 
-    private function getPurchasedQtyAndNetAmount(int $productId, array $dateFilter = []): array
+    private function getPurchasedQtyAndNetAmount(int $productId, $dateFilter = [], $warehouseId = null): array
     {
         $query = DB::table('purchase_items')
             ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
             ->where('purchase_items.product_id', $productId)
             ->whereIn('purchases.status_purchase', ['approved', 'posted', 'Returned', 'Partial']);
 
-        if (!empty($dateFilter) && isset($dateFilter['before'])) {
-            $query->where('purchases.purchase_date', '<=', $dateFilter['before']);
+        if ($warehouseId && $warehouseId !== 'all') {
+            $query->where('purchases.warehouse_id', $warehouseId);
+        }
+
+        if (is_array($dateFilter) && !empty($dateFilter)) {
+            if (isset($dateFilter['before'])) {
+                $query->where('purchases.purchase_date', '<=', $dateFilter['before']);
+            }
+            if (isset($dateFilter['from']) && !empty($dateFilter['from'])) {
+                $query->whereDate('purchases.created_at', '>=', $dateFilter['from']);
+            }
+            if (isset($dateFilter['to']) && !empty($dateFilter['to'])) {
+                $query->whereDate('purchases.created_at', '<=', $dateFilter['to']);
+            }
         }
 
         $result = $query->select(DB::raw("
@@ -2137,5 +2303,34 @@ class ReportingController extends Controller
         if ($itemVSize === '') $itemVSize = '-';
 
         return $vColor === $itemVColor && $vSize === $itemVSize;
+    }
+
+    /**
+     * Match a stock adjustment note to a specific variant based on size and color.
+     */
+    private function matchAdjustmentToVariant($adjItem, $variant)
+    {
+        $note = strtolower($adjItem->note ?? '');
+        if (empty($note)) {
+            return false;
+        }
+
+        $vSize  = strtolower(trim($variant['size'] ?? '-'));
+        $vColor = strtolower(trim($variant['color'] ?? '-'));
+        $vName  = strtolower(trim($variant['name'] ?? ''));
+
+        $sizeMatch = true;
+        if ($vSize !== '-' && !empty($vSize)) {
+            $pattern = '/\b' . preg_quote($vSize, '/') . '\b/i';
+            $sizeMatch = preg_match($pattern, $note) === 1;
+        }
+
+        $colorMatch = true;
+        if ($vColor !== '-' && !empty($vColor)) {
+            $pattern = '/\b' . preg_quote($vColor, '/') . '\b/i';
+            $colorMatch = preg_match($pattern, $note) === 1;
+        }
+
+        return $sizeMatch && $colorMatch;
     }
 }

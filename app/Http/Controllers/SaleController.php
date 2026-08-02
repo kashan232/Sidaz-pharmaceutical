@@ -1008,7 +1008,7 @@ class SaleController extends Controller
             'product_id' => 'required|array|min:1',
             'product_id.*' => 'nullable|exists:products,id',
             'qty' => 'required|array|min:1',
-            'warehouse_id' => 'required|array',
+            'warehouse_id' => 'nullable|array',
         ];
 
         if ($isWalkin) {
@@ -1111,7 +1111,8 @@ class SaleController extends Controller
             // Looking at invoice blade: $item['qty'] is boxes.
             // Let's assume input 'qty' is BOXES.
 
-            $warehouses = $request->warehouse_id;
+            $defaultWhId = auth()->user()->warehouse_id ?? 1;
+            $warehouses = $request->warehouse_id ?? [];
             $discounts = $request->item_disc ?? [];
 
             $manualItemsForLedger = [];
@@ -1225,7 +1226,7 @@ class SaleController extends Controller
                 $saleItem->sale_id = $sale->id;
                 $saleItem->product_id = $isManual ? null : $pid;
                 $saleItem->color = $request->color[$index] ?? null;
-                $saleItem->warehouse_id = $warehouses[$index] ?? 1;
+                $saleItem->warehouse_id = !empty($warehouses[$index]) ? $warehouses[$index] : $defaultWhId;
                 $saleItem->product_name = $productName; // Store name snapshot
 
                 $saleItem->qty = $storedQtyBox; // Store as Box equivalent for consistency
@@ -1709,41 +1710,65 @@ class SaleController extends Controller
                 continue;
             }
 
+            $targetWhId = $item->warehouse_id ?: (auth()->user()->warehouse_id ?? 1);
             $stock = WarehouseStock::where('product_id', $item->product_id)
-                ->where('warehouse_id', $item->warehouse_id)
+                ->where('warehouse_id', $targetWhId)
                 ->lockForUpdate() // LOCK ROW
                 ->first();
+
+            if (! $stock) {
+                $stock = WarehouseStock::where('product_id', $item->product_id)->lockForUpdate()->first();
+            }
 
             if (! $stock) {
                 // Create if missing? Or fail? User said "Validate warehouse stock".
                 throw new \Exception('Stock not found for product: '.$item->product_name);
             }
 
-            // Convert everything to pieces for calculation
+            // Calculate stock deduction quantity (for Kg products, total_pieces in WarehouseStock = total Kg)
+            $productMode = $item->product->size_mode ?? '';
             $qtyPieces = (float)$item->total_pieces;
 
-            // Apply weight variant conversion factor if present
-            if (!empty($item->color)) {
-                try {
-                    $itemColor = $item->color;
-                    $b64Decoded = base64_decode($itemColor, true);
-                    $variantData = $b64Decoded !== false ? json_decode($b64Decoded, true) : null;
-                    if (!is_array($variantData)) {
-                        $variantData = is_string($itemColor) ? json_decode($itemColor, true) : $itemColor;
-                    }
-                    if (is_array($variantData) && isset($variantData['conv_factor'])) {
-                        $factor = (float)$variantData['conv_factor'];
-                        if ($factor > 0) {
-                            $qtyPieces = $qtyPieces * $factor;
+            if ($productMode === 'by_kg' || $productMode === 'by_gm') {
+                $factor = 1.0;
+                $unit = '';
+
+                if (!empty($item->color)) {
+                    try {
+                        $itemColor = $item->color;
+                        $b64Decoded = base64_decode($itemColor, true);
+                        $variantData = $b64Decoded !== false ? json_decode($b64Decoded, true) : null;
+                        if (!is_array($variantData)) {
+                            $variantData = is_string($itemColor) ? json_decode($itemColor, true) : $itemColor;
                         }
-                    }
-                } catch (\Exception $e) {}
+                        if (is_array($variantData)) {
+                            if (isset($variantData['conv_factor']) && (float)$variantData['conv_factor'] > 0) {
+                                $factor = (float)$variantData['conv_factor'];
+                            } elseif (isset($variantData['weight_per_piece']) && (float)$variantData['weight_per_piece'] > 0) {
+                                $factor = (float)$variantData['weight_per_piece'] / 1000.0;
+                            }
+                            if (isset($variantData['unit'])) {
+                                $unit = strtolower($variantData['unit']);
+                            }
+                        }
+                    } catch (\Exception $e) {}
+                }
+
+                if ($unit === 'gm' || $unit === 'g') {
+                    $qtyPieces = ((float)$item->qty) / 1000.0;
+                } else if ($unit === 'pcs' || $unit === 'piece' || $unit === 'pieces' || ($factor > 0 && $factor != 1.0)) {
+                    $qtyPieces = ((float)$item->qty) * $factor;
+                } else {
+                    $qtyPieces = (float)$item->qty > 0 ? (float)$item->qty : (float)$item->total_pieces;
+                }
             }
 
             if ($type === 'out') {
                 // Deduct
                 if ($stock->total_pieces < $qtyPieces) {
-                    throw new \Exception('Insufficient stock for '.$item->product_name.'. Available: '.$stock->total_pieces);
+                    $availFormatted = number_format($stock->total_pieces, 3);
+                    $unitLabel = ($productMode === 'by_kg' || $productMode === 'by_gm') ? 'Kg' : 'Pcs';
+                    throw new \Exception('Insufficient stock for '.$item->product_name.'. Available: '.$availFormatted.' '.$unitLabel);
                 }
                 $stock->total_pieces -= $qtyPieces;
                 // Update approx boxes for display
@@ -1902,6 +1927,8 @@ class SaleController extends Controller
                 'total' => (float) $item->total,
                 'color_val' => $variant['color'] ?? '',
                 'size_val' => $variant['size'] ?? '',
+                'variant_unit' => $variant['unit'] ?? '',
+                'weight_per_piece' => $variant['weight_per_piece'] ?? $item->product->weight_per_piece ?? 0,
                 'color' => is_array($variant) ? $variant : [$item->color], // for legacy compatibility
                 'pieces_per_box' => $item->product->pieces_per_box ?? 1,
                 'price_per_piece' => ($item->total_pieces > 0) ? ($item->total / $item->total_pieces) : 0,

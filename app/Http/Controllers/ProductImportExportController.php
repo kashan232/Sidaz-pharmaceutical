@@ -27,67 +27,46 @@ class ProductImportExportController extends Controller
             $handle = fopen('php://output', 'w');
             fputcsv($handle, $headers);
 
-            // Row 1: Product A - Variant 1 (Red, Small)
+            // New column order: Item Code, Product Name, Category, Sub Category, Brand,
+            // Size Mode, Pieces Per Box, Sale Discount%, Purchase Discount%, Is Active,
+            // Variant Name, Variant Size, Variant Color, Variant Unit, Variant Conv Factor,
+            // Variant Piece Wt (g), Variant Sale Price, Variant Wholesale, Variant Purch Price,
+            // Variant Alert, Variant Barcode, Variant Is Base, Variant Stock
+
+            // Row 1: Product A – Variant 1 (by_pieces, base row)
             fputcsv($handle, [
-                'ITEM-0001',            // Item Code
-                'T-Shirt V-Neck',       // Product Name
-                'Clothing',             // Category
-                'Shirts',               // Sub Category
-                'Nike',                 // Brand
-                'by_pieces',            // Size Mode
-                '1',                    // Pieces Per Box
-                'Red Small',            // Variant Name
-                'S',                    // Variant Size
-                'Red',                  // Variant Color
-                '876543210001',         // Variant Barcode
-                '50',                   // Variant Stock Pieces
-                '1500',                 // Variant Sale Price (Piece)
-                '1000',                 // Variant Purchase Price (Piece)
-                '0',                    // Variant Sale Discount %
-                '0',                    // Variant Purchase Discount %
-                '1',                    // Is Active
+                'ITEM-0001', 'T-Shirt V-Neck', 'Clothing', 'Shirts', 'Nike',
+                'by_pieces', '1',
+                '0', '0', '1',
+                'T-Shirt V-Neck', 'S', 'Red', 'Pcs', '1', '0',
+                '1500', '1400', '1000', '0', '876543210001', '1', '50',
             ]);
 
-            // Row 2: Product A - Variant 2 (Blue, Large)
+            // Row 2: Product A – Variant 2 (child variant)
             fputcsv($handle, [
-                'ITEM-0001',            // Item Code
-                'T-Shirt V-Neck',       // Product Name
-                'Clothing',             // Category
-                'Shirts',               // Sub Category
-                'Nike',                 // Brand
-                'by_pieces',            // Size Mode
-                '1',                    // Pieces Per Box
-                'Blue Large',           // Variant Name
-                'L',                    // Variant Size
-                'Blue',                 // Variant Color
-                '876543210002',         // Variant Barcode
-                '30',                   // Variant Stock Pieces
-                '1600',                 // Variant Sale Price (Piece)
-                '1000',                 // Variant Purchase Price (Piece)
-                '0',                    // Variant Sale Discount %
-                '0',                    // Variant Purchase Discount %
-                '1',                    // Is Active
+                'ITEM-0001', 'T-Shirt V-Neck', 'Clothing', 'Shirts', 'Nike',
+                'by_pieces', '1',
+                '0', '0', '1',
+                'T-Shirt V-Neck', 'L', 'Blue', 'Pcs', '1', '0',
+                '1600', '1500', '1000', '0', '876543210002', '0', '30',
             ]);
 
-            // Row 3: Product B - Single Variant Product
+            // Row 3: Kg Product – base variant (1 Kg unit)
             fputcsv($handle, [
-                'ITEM-0002',            // Item Code
-                'Jeans Classic',        // Product Name
-                'Clothing',             // Category
-                'Pants',                // Sub Category
-                'Levi',                 // Brand
-                'by_pieces',            // Size Mode
-                '1',                    // Pieces Per Box
-                'Jeans Classic',        // Variant Name
-                '-',                    // Variant Size
-                '-',                    // Variant Color
-                '876543210003',         // Variant Barcode
-                '100',                  // Variant Stock Pieces
-                '2500',                 // Variant Sale Price (Piece)
-                '1800',                 // Variant Purchase Price (Piece)
-                '5',                    // Variant Sale Discount %
-                '0',                    // Variant Purchase Discount %
-                '1',                    // Is Active
+                'ITEM-0002', 'Steel Wire', 'Hardware', 'Wires', 'General',
+                'by_kg', '1',
+                '0', '0', '1',
+                'Steel Wire', '-', '-', 'Kg', '1', '1000',
+                '1000', '950', '700', '0', '876543210003', '1', '10',
+            ]);
+
+            // Row 4: Kg Product – child Pcs variant (500g = 0.5 Kg)
+            fputcsv($handle, [
+                'ITEM-0002', 'Steel Wire', 'Hardware', 'Wires', 'General',
+                'by_kg', '1',
+                '0', '0', '1',
+                'Steel Wire 500g Roll', '-', '-', 'Pcs', '0.5', '500',
+                '500', '470', '350', '5', '876543210004', '0', '20',
             ]);
 
             fclose($handle);
@@ -148,6 +127,7 @@ class ProductImportExportController extends Controller
                     $ws = WarehouseStock::where('product_id', $p->id)->first();
                     $stockPieces = $ws ? $ws->total_pieces : 0;
                     
+                    $vUnit = $sizeMode === 'by_kg' ? 'Kg' : ($sizeMode === 'by_gm' ? 'Gm' : 'Pcs');
                     fputcsv($handle, [
                         $p->item_code,
                         $p->item_name,
@@ -156,19 +136,32 @@ class ProductImportExportController extends Controller
                         $p->brand->name ?? '',
                         $sizeMode,
                         $pcsPerBox,
-                        $p->item_name, // Variant Name
-                        '-', // Variant Size
-                        '-', // Variant Color
-                        $p->barcode_path, // Variant Barcode
-                        $stockPieces,
-                        round($p->sale_price_per_piece ?? 0, 2),
-                        round($p->purchase_price_per_piece ?? 0, 2),
                         $p->sale_discount_percent ?? 0,
                         $p->purchase_discount_percent ?? 0,
                         $p->is_active ? 1 : 0,
+                        // Variant columns
+                        $p->item_name,  // Variant Name
+                        '-',            // Variant Size
+                        '-',            // Variant Color
+                        $vUnit,         // Variant Unit
+                        '1',            // Variant Conv Factor
+                        $vUnit === 'Kg' ? '1000' : '0', // Variant Piece Wt (g)
+                        round($p->sale_price_per_piece ?? 0, 2),
+                        round($p->wholesale_price ?? 0, 2),
+                        round($p->purchase_price_per_piece ?? 0, 2),
+                        '0',            // Variant Alert
+                        $p->barcode_path, // Variant Barcode
+                        '1',            // Variant Is Base
+                        $stockPieces,   // Variant Stock
                     ]);
                 } else {
                     foreach ($variants as $v) {
+                        $vUnit = $v['unit'] ?? ($sizeMode === 'by_kg' ? 'Kg' : ($sizeMode === 'by_gm' ? 'Gm' : 'Pcs'));
+                        $vFactor = isset($v['conv_factor']) ? $v['conv_factor'] : 1;
+                        $vWeight = isset($v['weight_per_piece']) ? $v['weight_per_piece'] : (($vFactor > 0 && $vFactor < 10) ? $vFactor * 1000 : 0);
+                        $vIsBase = isset($v['is_base_variant']) ? (int)$v['is_base_variant'] : 0;
+                        $vAlert  = $v['alert'] ?? 0;
+
                         fputcsv($handle, [
                             $p->item_code,
                             $p->item_name,
@@ -177,17 +170,23 @@ class ProductImportExportController extends Controller
                             $p->brand->name ?? '',
                             $sizeMode,
                             $pcsPerBox,
+                            $p->sale_discount_percent ?? 0,
+                            $p->purchase_discount_percent ?? 0,
+                            $p->is_active ? 1 : 0,
+                            // Variant columns
                             $v['name'] ?? $p->item_name,
                             $v['size'] ?? '-',
                             $v['color'] ?? '-',
-                            $v['barcode'] ?? $p->barcode_path,
-                            $v['stock'] ?? 0,
+                            $vUnit,
+                            $vFactor,
+                            $vWeight,
                             round($v['sale_price'] ?? $p->sale_price_per_piece ?? 0, 2),
                             round($v['wholesale_price'] ?? $p->wholesale_price ?? 0, 2),
                             round($v['purch_price'] ?? $p->purchase_price_per_piece ?? 0, 2),
-                            $p->sale_discount_percent ?? 0, // Master sale discount
-                            $p->purchase_discount_percent ?? 0, // Master purchase discount
-                            $p->is_active ? 1 : 0,
+                            $vAlert,
+                            $v['barcode'] ?? $p->barcode_path,
+                            $vIsBase,
+                            $v['stock'] ?? 0,
                         ]);
                     }
                 }
@@ -237,11 +236,11 @@ class ProductImportExportController extends Controller
         
         // Mapping accepted header names (Product Reference is optional now)
         $requiredCols = [
-            'product_name' => ['product name', 'product_name', 'item_name', 'item_name (*)'],
-            'variant_name' => ['variant name', 'variant_name', 'item_name (*)'],
-            'sale_price' => ['variant sale price', 'sale_price', 'variant_sale_price_per_piece', 'sale_price_per_piece'],
-            'wholesale_price' => ['variant wholesale price', 'wholesale_price', 'wholesale_price'],
-            'purch_price' => ['variant purchase price', 'purchase_price', 'variant_purchase_price_per_piece', 'purchase_price_per_piece'],
+            'product_name'    => ['product name', 'product_name', 'item_name', 'item_name (*)'],
+            'variant_name'    => ['variant name', 'variant_name', 'item_name (*)'],
+            'sale_price'      => ['variant sale price', 'sale_price', 'variant_sale_price_per_piece', 'sale_price_per_piece'],
+            'wholesale_price' => ['variant wholesale', 'variant wholesale price', 'wholesale_price'],
+            'purch_price'     => ['variant purch price', 'variant purchase price', 'purchase_price', 'variant_purchase_price_per_piece', 'purchase_price_per_piece'],
         ];
 
         $matchedHeaders = [];
@@ -338,13 +337,27 @@ class ProductImportExportController extends Controller
             }
 
             if (!isset($productsByRef[$prodRef])) {
+                $rawSizeMode = strtolower(trim($get($row, ['size mode', 'size_mode', 'mode'], 'by_pieces')));
+                $sizeMode = 'by_pieces';
+                if (in_array($rawSizeMode, ['by_kg', 'kg', 'kgs', 'kilogram', 'kilograms'])) {
+                    $sizeMode = 'by_kg';
+                } elseif (in_array($rawSizeMode, ['by_gm', 'gm', 'g', 'gram', 'grams'])) {
+                    $sizeMode = 'by_gm';
+                } elseif (in_array($rawSizeMode, ['by_cartons', 'carton', 'cartons'])) {
+                    $sizeMode = 'by_cartons';
+                } elseif (in_array($rawSizeMode, ['by_feet', 'ft', 'feet'])) {
+                    $sizeMode = 'by_feet';
+                } elseif (in_array($rawSizeMode, ['by_meter', 'meter', 'mtr'])) {
+                    $sizeMode = 'by_meter';
+                }
+
                 $productsByRef[$prodRef] = [
                     'ref' => $prodRef,
                     'name' => $prodName,
                     'category' => $catName,
                     'sub_category' => $subCatName,
                     'brand' => $brandName,
-                    'size_mode' => $get($row, ['size mode', 'size_mode'], 'by_pieces'),
+                    'size_mode' => $sizeMode,
                     'pcs_per_carton' => max(1, (int)$get($row, ['pcs per box', 'pieces per box', 'pcs_per_carton'], 1)),
                     'sale_discount' => max(0, (float)$get($row, ['sale discount %', 'sale_discount_%'], 0)),
                     'purch_discount' => max(0, (float)$get($row, ['purchase discount %', 'purchase_discount_%'], 0)),
@@ -358,17 +371,32 @@ class ProductImportExportController extends Controller
                 }
             }
 
+            $vUnit = $get($row, ['variant unit', 'variant_unit', 'unit'], ($productsByRef[$prodRef]['size_mode'] === 'by_kg' ? 'Kg' : 'Pcs'));
+            $vPieceWt = (float) $get($row, ['variant piece wt (g)', 'variant piece weight (g)', 'variant_weight_per_piece', 'weight_per_piece', 'piece_weight'], 0);
+            $vConvFactor = (float) $get($row, ['variant conv factor', 'variant_conv_factor', 'conv_factor', 'factor'], 1);
+            $vIsBase = (int) $get($row, ['variant is base', 'variant_is_base', 'is_base'], 0);
+            $vAlert  = (float) $get($row, ['variant alert', 'variant_alert_qty', 'alert'], 0);
+
+            if ($vPieceWt > 0 && ($vConvFactor == 1 || $vConvFactor == 0)) {
+                $vConvFactor = $vPieceWt > 10 ? ($vPieceWt / 1000.0) : $vPieceWt;
+            }
+
             // Variant Data
             $productsByRef[$prodRef]['variants'][] = [
-                'row' => $rowNum,
-                'name' => $get($row, $requiredCols['variant_name'], $prodName),
-                'size' => $get($row, ['variant size', 'variant_size'], '-'),
-                'color' => $get($row, ['variant color', 'variant_color'], '-'),
-                'barcode' => $vBarcode,
-                'stock' => max(0, (int)$get($row, ['variant stock pieces', 'variant_stock', 'stock_total_pieces'], 0)),
-                'sale_price' => max(0, (float)$get($row, $requiredCols['sale_price'], 0)),
+                'row'             => $rowNum,
+                'name'            => $get($row, $requiredCols['variant_name'], $prodName),
+                'size'            => $get($row, ['variant size', 'variant_size'], '-'),
+                'color'           => $get($row, ['variant color', 'variant_color'], '-'),
+                'unit'            => $vUnit,
+                'conv_factor'     => $vConvFactor,
+                'weight_per_piece'=> $vPieceWt,
+                'barcode'         => $vBarcode,
+                'stock'           => max(0, (float)$get($row, ['variant stock', 'variant stock pieces', 'variant_stock', 'stock_total_pieces'], 0)),
+                'sale_price'      => max(0, (float)$get($row, $requiredCols['sale_price'], 0)),
                 'wholesale_price' => max(0, (float)$get($row, $requiredCols['wholesale_price'], 0)),
-                'purch_price' => max(0, (float)$get($row, $requiredCols['purch_price'], 0)),
+                'purch_price'     => max(0, (float)$get($row, $requiredCols['purch_price'], 0)),
+                'is_base_variant' => $vIsBase,
+                'alert'           => $vAlert,
             ];
         }
 
@@ -559,14 +587,19 @@ class ProductImportExportController extends Controller
                         }
                         
                         $vArr = [
-                            'name' => $newV['name'],
-                            'size' => $newV['size'],
-                            'color' => $newV['color'],
-                            'stock' => $newV['stock'],
-                            'sale_price' => $newV['sale_price'],
-                            'wholesale_price' => $newV['wholesale_price'] ?? 0,
-                            'purch_price' => $newV['purch_price'],
-                            'barcode' => $newV['barcode'] ?: $oldBarcode,
+                            'name'             => $newV['name'],
+                            'size'             => $newV['size'],
+                            'color'            => $newV['color'],
+                            'unit'             => $newV['unit'] ?? ($pData['size_mode'] === 'by_kg' ? 'Kg' : 'Pcs'),
+                            'conv_factor'      => (float)($newV['conv_factor'] ?? 1),
+                            'weight_per_piece' => (float)($newV['weight_per_piece'] ?? 0),
+                            'stock'            => $newV['stock'],
+                            'sale_price'       => $newV['sale_price'],
+                            'wholesale_price'  => $newV['wholesale_price'] ?? 0,
+                            'purch_price'      => $newV['purch_price'],
+                            'barcode'          => $newV['barcode'] ?: $oldBarcode,
+                            'is_base_variant'  => (int)($newV['is_base_variant'] ?? 0),
+                            'alert'            => (float)($newV['alert'] ?? 0),
                         ];
                         
                         if ($foundIdx >= 0) {
@@ -578,7 +611,19 @@ class ProductImportExportController extends Controller
                         }
                     }
                     
-                    $stockTotal = array_sum(array_column($finalVariants, 'stock'));
+                    $stockTotal = 0;
+                    foreach ($finalVariants as $v) {
+                        $stk = (float) ($v['stock'] ?? 0);
+                        $f = (float) ($v['conv_factor'] ?? 1);
+                        $u = strtolower($v['unit'] ?? '');
+                        if (($pData['size_mode'] === 'by_kg' || $pData['size_mode'] === 'by_gm') && ($u === 'pcs' || $u === 'pc') && $f > 0) {
+                            $stockTotal += ($stk * $f);
+                        } elseif ($u === 'gm' || $u === 'g') {
+                            $stockTotal += ($stk / 1000.0);
+                        } else {
+                            $stockTotal += $stk;
+                        }
+                    }
                     
                     $product->update([
                         'item_name' => $pData['name'],
@@ -621,19 +666,36 @@ class ProductImportExportController extends Controller
                 } else {
                     foreach ($pData['variants'] as $newV) {
                         $finalVariants[] = [
-                            'name' => $newV['name'],
-                            'size' => $newV['size'],
-                            'color' => $newV['color'],
-                            'stock' => $newV['stock'],
-                            'sale_price' => $newV['sale_price'],
-                            'wholesale_price' => $newV['wholesale_price'] ?? 0,
-                            'purch_price' => $newV['purch_price'],
-                            'barcode' => $newV['barcode'],
+                            'name'             => $newV['name'],
+                            'size'             => $newV['size'],
+                            'color'            => $newV['color'],
+                            'unit'             => $newV['unit'] ?? ($pData['size_mode'] === 'by_kg' ? 'Kg' : 'Pcs'),
+                            'conv_factor'      => (float)($newV['conv_factor'] ?? 1),
+                            'weight_per_piece' => (float)($newV['weight_per_piece'] ?? 0),
+                            'stock'            => $newV['stock'],
+                            'sale_price'       => $newV['sale_price'],
+                            'wholesale_price'  => $newV['wholesale_price'] ?? 0,
+                            'purch_price'      => $newV['purch_price'],
+                            'barcode'          => $newV['barcode'],
+                            'is_base_variant'  => (int)($newV['is_base_variant'] ?? 0),
+                            'alert'            => (float)($newV['alert'] ?? 0),
                         ];
                         $createdVariants++;
                     }
                     
-                    $stockTotal = array_sum(array_column($finalVariants, 'stock'));
+                    $stockTotal = 0;
+                    foreach ($finalVariants as $v) {
+                        $stk = (float) ($v['stock'] ?? 0);
+                        $f = (float) ($v['conv_factor'] ?? 1);
+                        $u = strtolower($v['unit'] ?? '');
+                        if (($pData['size_mode'] === 'by_kg' || $pData['size_mode'] === 'by_gm') && ($u === 'pcs' || $u === 'pc') && $f > 0) {
+                            $stockTotal += ($stk * $f);
+                        } elseif ($u === 'gm' || $u === 'g') {
+                            $stockTotal += ($stk / 1000.0);
+                        } else {
+                            $stockTotal += $stk;
+                        }
+                    }
                     
                     // Always generate a fresh ITEM-XXXX code for new products
                     $lastProduct = Product::orderBy('id', 'desc')->first();
@@ -701,28 +763,36 @@ class ProductImportExportController extends Controller
 
     // ──────────────────────────────────────────────────────────
     //  Helper – canonical CSV column headers
+    //  ORDER matches create_product form variant columns exactly
     // ──────────────────────────────────────────────────────────
     private function csvHeaders(): array
     {
         return [
-            'Item Code',
-            'Product Name',
+            'Item Code',            // Product reference key
+            'Product Name',         // item_name
             'Category',
             'Sub Category',
             'Brand',
-            'Size Mode',
+            'Size Mode',            // by_pieces / by_kg / by_gm / by_cartons / by_size
             'Pieces Per Box',
-            'Variant Name',
-            'Variant Size',
-            'Variant Color',
-            'Variant Barcode',
-            'Variant Stock Pieces',
-            'Variant Sale Price',
-            'Variant Wholesale Price',
-            'Variant Purchase Price',
             'Sale Discount %',
             'Purchase Discount %',
             'Is Active',
+            // Variant columns — same order as create_product table headers
+            'Variant Name',          // variant_name[]
+            'Variant Size',          // variant_size[]
+            'Variant Color',         // variant_color[]
+            'Variant Unit',          // variant_unit[]: Kg/Pcs/Gm/Ft/Meter/Box/Dozen
+            'Variant Conv Factor',   // variant_conv_factor[]
+            'Variant Piece Wt (g)',  // variant_weight_per_piece[]
+            'Variant Sale Price',    // variant_sale_price[]
+            'Variant Wholesale',     // variant_wholesale_price[]
+            'Variant Purch Price',   // variant_purchase_price[]
+            'Variant Alert',         // variant_alert_qty[]
+            'Variant Barcode',       // variant_barcode[]
+            'Variant Is Base',       // variant_is_base[]: 1=base row 0=child
+            'Variant Stock',         // variant_stock[] (initial stock in base unit)
         ];
     }
 }
+
