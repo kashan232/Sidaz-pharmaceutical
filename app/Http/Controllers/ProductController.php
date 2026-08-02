@@ -662,23 +662,35 @@ class ProductController extends Controller
                     }
                 }
 
+                $variantStockSum = 0;
                 for ($i = 0; $i < count($names); $i++) {
                     if (!empty($names[$i])) {
+                        $vStock = (float)($stocks[$i] ?? 0);
+                        $vConvFactor = (float)($conv_factors[$i] ?? 0);
+                        if ($vConvFactor <= 0) $vConvFactor = 1;
+
+                        $variantStockSum += ($vStock * $vConvFactor);
+
                         $variants[] = [
                             'name' => $names[$i],
                             'size' => $sizes[$i] ?? '-',
                             'color' => $colors[$i] ?? '-',
-                            'stock' => $stocks[$i] ?? 0,
+                            'stock' => $vStock,
                             'sale_price' => $sale_prices[$i] ?? 0,
                             'wholesale_price' => $wholesale_prices[$i] ?? 0,
                             'weight_per_piece' => $weight_factors[$i] ?? 0,
                             'purch_price' => $purch_prices[$i] ?? 0,
                             'alert' => $alerts[$i] ?? 0,
                             'barcode' => $barcodes[$i] ?? '',
-                            'conv_factor' => $conv_factors[$i] ?? 0,
+                            'conv_factor' => $vConvFactor,
                             'is_base_variant' => $is_bases[$i] ?? 0,
                         ];
                     }
+                }
+                
+                if (count($variants) > 0) {
+                    $totalStockQty = $variantStockSum;
+                    $boxesQuantity = $piecesPerBox > 0 ? $totalStockQty / $piecesPerBox : $totalStockQty;
                 }
             }
 
