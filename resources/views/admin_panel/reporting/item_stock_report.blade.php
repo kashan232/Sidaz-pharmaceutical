@@ -101,16 +101,16 @@
 
         <div class="kpi-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
             <div>
-                <div style="font-size:.7rem; font-weight:700; text-transform:uppercase; opacity:.85;">Total Current Stock</div>
-                <div class="fs-4 fw-bold mt-1" id="kpiTotalStock">0 Pcs</div>
+                <div class="text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.5px;">Current Total Stock</div>
+                <div class="fs-4 fw-bold mt-1" id="kpiTotalStock">0 Units</div>
             </div>
             <div style="font-size:24px; opacity:.8;"><i class="fas fa-cubes"></i></div>
         </div>
 
         <div class="kpi-card" style="background: linear-gradient(135deg, #d97706 0%, #b45309 100%);">
             <div>
-                <div style="font-size:.7rem; font-weight:700; text-transform:uppercase; opacity:.85;">Net Stock Adjustments</div>
-                <div class="fs-4 fw-bold mt-1" id="kpiNetAdjustments">0 Pcs</div>
+                <div class="text-uppercase fw-bold text-muted" style="font-size: 0.75rem; letter-spacing: 0.5px;">Net Adjustments</div>
+                <div class="fs-4 fw-bold mt-1" id="kpiNetAdjustments">0 Units</div>
             </div>
             <div style="font-size:24px; opacity:.8;"><i class="fas fa-sliders-h"></i></div>
         </div>
@@ -241,7 +241,7 @@
                             <th class="ps-4">Date &amp; Time</th>
                             <th>Movement Type</th>
                             <th>Reference</th>
-                            <th class="text-center">Quantity (Pcs)</th>
+                            <th class="text-center">Quantity (Units)</th>
                             <th>Note / Reason</th>
                         </tr>
                     </thead>
@@ -340,10 +340,12 @@ $(document).ready(function() {
 
                 // Update KPIs
                 $('#kpiGrandStockValue').text('Rs ' + (res.grand_total || 0).toLocaleString(undefined, {minimumFractionDigits: 2}));
-                $('#kpiTotalStock').text((res.total_current_stock || 0).toLocaleString() + ' Units');
+                
+                let totalStock = res.total_current_stock || 0;
+                $('#kpiTotalStock').text(totalStock.toLocaleString() + ' Units');
                 
                 let netAdj = res.total_adjustments_qty || 0;
-                let netAdjStr = (netAdj >= 0 ? '+' : '') + netAdj.toLocaleString() + ' Pcs';
+                let netAdjStr = (netAdj >= 0 ? '+' : '') + netAdj.toLocaleString() + ' Units';
                 $('#kpiNetAdjustments').text(netAdjStr);
                 
                 $('#kpiSoldAmount').text('Rs ' + (res.total_sold_amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2}));
@@ -437,7 +439,7 @@ $(document).ready(function() {
                     <td>${row.category_name}</td>
                     <td><span class="badge bg-light text-dark border">${row.unit_name}</span></td>
                     <td class="text-center fw-bold text-primary">${row.formatted_stock}</td>
-                    <td class="text-center">${row.cartons !== '-' ? row.cartons + ' Box . ' + row.loose + ' Pc' : '—'}</td>
+                    <td class="text-center">${row.cartons !== '-' ? row.cartons + ' Box . ' + row.loose + ' ' + row.unit_name : '—'}</td>
                     <td class="text-end">Rs ${parseFloat(row.average_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     <td class="text-end fw-bold text-dark">Rs ${parseFloat(row.stock_value).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     <td class="text-center">${statusBadge}</td>
@@ -450,9 +452,9 @@ $(document).ready(function() {
                 let adjVal = parseFloat(row.adjustments) || 0;
                 let adjBadge = '<span class="text-muted">—</span>';
                 if (adjVal > 0) {
-                    adjBadge = `<span class="badge-adj-plus">+${adjVal} Pcs</span>`;
+                    adjBadge = `<span class="badge-adj-plus">+${adjVal} ${row.unit_name}</span>`;
                 } else if (adjVal < 0) {
-                    adjBadge = `<span class="badge-adj-minus">${adjVal} Pcs</span>`;
+                    adjBadge = `<span class="badge-adj-minus">${adjVal} ${row.unit_name}</span>`;
                 }
 
                 let rowHtml = `
@@ -466,7 +468,7 @@ $(document).ready(function() {
                     <td class="text-end text-success">+${parseFloat(row.returned_qty).toLocaleString()}</td>
                     <td class="text-end text-danger">-${parseFloat(row.purch_returned_qty).toLocaleString()}</td>
                     <td class="text-center" style="background:#fffbeb !important;">${adjBadge}</td>
-                    <td class="text-end fw-bold text-primary" style="background:#eef2ff !important;">${row.balance.toLocaleString()} Pcs</td>
+                    <td class="text-end fw-bold text-primary" style="background:#eef2ff !important;">${row.balance.toLocaleString()} ${row.unit_name}</td>
                     <td class="text-end fw-bold">Rs ${parseFloat(row.stock_value).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                     <td class="text-center">${historyBtn}</td>
                 </tr>`;
@@ -516,7 +518,7 @@ $(document).ready(function() {
                             <td class="ps-4 text-muted" style="font-size:.78rem;">${m.date}</td>
                             <td><span class="badge bg-${m.type_badge} px-2 py-1">${m.type}</span></td>
                             <td><code class="text-dark">${m.ref_type}</code></td>
-                            <td class="text-center fw-bold fs-6">${m.qty > 0 ? '+' : ''}${m.qty} Pcs</td>
+                            <td class="text-center fw-bold fs-6">${m.qty > 0 ? '+' : ''}${m.qty}</td>
                             <td style="font-size:.78rem; color:#475569;">${m.note}</td>
                         </tr>`;
                         tbody.append(row);

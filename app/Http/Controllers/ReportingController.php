@@ -245,16 +245,25 @@ class ReportingController extends Controller
                     $totalAdjustments  += $adjustments;
                     $totalSoldAmount   += $saleAmount;
 
+                    // Variant Unit Logic
+                    $vUnitName = $v['unit'] ?? $unitName;
+                    if (isset($v['conv_factor']) && $product->size_mode === 'by_kg') {
+                        $factor = (float) $v['conv_factor'];
+                        if ($factor != 1 && !isset($v['unit'])) {
+                            $vUnitName = 'Pcs';
+                        }
+                    }
+
                     // Cartons / Loose / Unit Formatting
                     $ppb = (float) ($product->pieces_per_box ?? 1);
                     if ($ppb > 1) {
                         $cartons = floor($balance / $ppb);
                         $loose   = $balance % $ppb;
-                        $formattedStock = "{$cartons} Box . {$loose} Pcs";
+                        $formattedStock = "{$cartons} Box . {$loose} {$vUnitName}";
                     } else {
                         $cartons = '-';
                         $loose   = $balance;
-                        $formattedStock = "{$balance} {$unitName}";
+                        $formattedStock = "{$balance} {$vUnitName}";
                     }
 
                     // Stock Status Badge
@@ -267,7 +276,7 @@ class ReportingController extends Controller
                         'item_code'       => $product->item_code,
                         'item_name'       => $vName . ' (' . $vSize . ' | ' . $vColor . ')',
                         'category_name'   => $product->category_relation->name ?? 'Standard',
-                        'unit_name'       => $unitName,
+                        'unit_name'       => $vUnitName,
                         'size_mode'       => $sizeMode,
                         'initial_stock'   => $initial,
                         'purchased'       => $purchased,

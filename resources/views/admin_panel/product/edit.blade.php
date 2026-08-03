@@ -297,9 +297,9 @@
                                 </div>
 
                                 <div class="col-12 mt-3 pt-3 border-top">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                                         <h6 class="form-label-pro text-primary mb-0"><i class="fas fa-cubes me-1"></i>Product Variants & Units</h6>
-                                        <button type="button" class="btn btn-sm btn-primary" id="enableVariantsBtn"><i class="fas fa-plus me-1"></i>Add Variant Row</button>
+                                        <button type="button" class="btn btn-sm btn-primary d-none d-md-inline-block" id="enableVariantsBtn"><i class="fas fa-plus me-1"></i>Add Variant Row</button>
                                     </div>
                                     <div id="variantsContainer">
                                         <div class="table-responsive">
@@ -311,7 +311,8 @@
                                                         <th class="text-uppercase text-muted p-1" style="width: 80px; font-size: 10px;">Color</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 75px; font-size: 10px;">Unit</th>
                                                         <th class="text-uppercase text-muted p-1 text-center" style="width: 90px; font-size: 10px;">Initial Stock</th>
-                                                        <th class="text-uppercase text-muted p-1 text-center piece-wt-col" style="width: 105px; font-size: 10px;">Piece Wt (g)</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center piece-wt-col" style="width: 95px; font-size: 10px;">Conv Factor</th>
+                                                        <th class="text-uppercase text-muted p-1 text-center piece-wt-col" style="width: 90px; font-size: 10px;">Piece Wt (g)</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 10px;">Sale Price</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 10px;">Wholesale</th>
                                                         <th class="text-uppercase text-muted p-1" style="width: 90px; font-size: 10px;">Purch Price</th>
@@ -325,6 +326,14 @@
                                                 </tbody>
                                             </table>
                                         </div>
+                                    </div>
+                                    
+                                    {{-- MOBILE VARIANTS CONTAINER --}}
+                                    <div id="mobileVariantsContainer" style="display: none;">
+                                        <div id="mobileVariantsBody" class="d-flex flex-column gap-2 mb-2"></div>
+                                        <button type="button" class="mob-add-btn" onclick="mobileAddVariant()">
+                                            <i class="fas fa-plus"></i> Add Variant
+                                        </button>
                                     </div>
                                 </div>
 
@@ -934,7 +943,6 @@
                     <td class="p-1 align-middle">
                         <input type="text" class="form-control-pro form-control-sm base-name-input fw-bold" name="variant_name[]" value="${nameVal}" placeholder="Name" data-vid="${vid}">
                         <input type="hidden" name="variant_is_base[]" value="1">
-                        <input type="hidden" name="variant_conv_factor[]" class="conv-factor-input" value="1">
                     </td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" value="${sizeVal}" placeholder="Size"></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${colorVal}" placeholder="Color"></td>
@@ -952,10 +960,13 @@
                     <td class="p-1">
                         <input type="number" class="form-control-pro form-control-sm text-center fw-bold text-primary" name="variant_stock[]" step="any" value="${stockVal}" placeholder="0" title="Initial Stock">
                     </td>
-                    <td class="p-1 piece-wt-col">
-                        <div class="input-group input-group-sm">
-                            <input type="number" class="form-control-pro form-control-sm" name="variant_weight_per_piece[]" step="any" value="${weightVal}" placeholder="0.00" readonly>
-                            <span class="input-group-text bg-light text-muted p-1" style="font-size:10px;">g</span>
+                    <td class="p-0 piece-wt-col">
+                        <input type="number" class="form-control-pro form-control-sm conv-factor-input text-center" name="variant_conv_factor[]" step="any" value="1" readonly title="Base Conv Factor = 1" style="border-radius:0; border:1px solid #dee2e6; height:30px;">
+                    </td>
+                    <td class="p-0 piece-wt-col">
+                        <div style="position:relative;">
+                            <input type="number" class="form-control-pro form-control-sm" name="variant_weight_per_piece[]" step="any" value="${weightVal}" readonly title="Auto from Conv Factor" style="padding-right:18px; border-radius:0; border:1px solid #dee2e6; height:30px; background:#f8f8f8;">
+                            <span style="position:absolute;right:5px;top:50%;transform:translateY(-50%);font-size:9px;color:#999;pointer-events:none;font-weight:600;">g</span>
                         </div>
                     </td>
                     <td class="p-1"><input type="number" class="form-control-pro form-control-sm base-sale-input" name="variant_sale_price[]" step="any" value="${saleVal}" placeholder="0.00" required></td>
@@ -972,15 +983,46 @@
                 const baseSaleInp = tr.querySelector('.base-sale-input');
                 const basePurchInp = tr.querySelector('.base-purch-input');
                 const baseWholesaleInp = tr.querySelector('input[name="variant_wholesale_price[]"]');
+                const baseStockInp = tr.querySelector('input[name="variant_stock[]"]');
 
                 if (baseSaleInp) baseSaleInp.addEventListener('input', updatePriceSuggestions);
                 if (basePurchInp) basePurchInp.addEventListener('input', updatePriceSuggestions);
                 if (baseWholesaleInp) baseWholesaleInp.addEventListener('input', updatePriceSuggestions);
+                if (baseStockInp) baseStockInp.addEventListener('input', updateVariantStocksFromBase);
                 
                 tr.querySelector('.base-name-input').addEventListener('input', function() {
                     manualNames[vid] = true;
                 });
                 toggleFactorColumns();
+            }
+
+            function updateVariantStocksFromBase() {
+                if (variantMode !== 'weight') return;
+
+                const baseRow = variantsBody.querySelector('tr');
+                if (!baseRow) return;
+
+                const baseStockInp = baseRow.querySelector('input[name="variant_stock[]"]');
+                const baseStock = parseFloat(baseStockInp?.value || 0);
+
+                const rows = variantsBody.querySelectorAll('tr');
+                rows.forEach((row, index) => {
+                    if (index === 0) return;
+
+                    const factorInp = row.querySelector('.conv-factor-input');
+                    const pieceWtInp = row.querySelector('input[name="variant_weight_per_piece[]"]');
+                    const stockInp = row.querySelector('input[name="variant_stock[]"]');
+
+                    let factor = parseFloat(factorInp?.value || 0);
+                    let pieceWt = parseFloat(pieceWtInp?.value || 0);
+
+                    // Removed the fallback that forcibly restored factor from pieceWt, which prevented clearing the input.
+
+                    if (baseStock > 0 && factor > 0 && stockInp) {
+                        const calcPcs = Math.round(baseStock / factor);
+                        stockInp.value = calcPcs;
+                    }
+                });
             }
 
             function updatePriceSuggestions() {
@@ -1016,11 +1058,14 @@
                         if (wholesaleInp && (!vid || !manualPrices[vid + '_wholesale'])) {
                             wholesaleInp.value = (baseWholesale * factor).toFixed(2);
                         }
-                        if (pieceWtInp && (!vid || !manualPrices[vid + '_weight'])) {
-                            pieceWtInp.value = (factor < 10) ? (factor * 1000).toFixed(1).replace(/\.0$/, '') : factor;
+                        // Piece Wt is always driven by Conv Factor — never manually overridden
+                        if (pieceWtInp) {
+                            pieceWtInp.value = (factor * 1000).toFixed(0);
                         }
                     }
                 });
+
+                updateVariantStocksFromBase();
             }
 
             function addVariantRow(weightGrams = null, v = null) {
@@ -1067,7 +1112,6 @@
                     <td class="p-1">
                         <input type="text" class="form-control-pro form-control-sm var-name-input" name="variant_name[]" value="${suggestedName}" placeholder="Name">
                         <input type="hidden" name="variant_is_base[]" value="0">
-                        <input type="hidden" name="variant_conv_factor[]" class="conv-factor-input" value="${factor}">
                     </td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_size[]" value="${sizeVal}" placeholder="Size (XL, 10x12)"></td>
                     <td class="p-1"><input type="text" class="form-control-pro form-control-sm" name="variant_color[]" value="${colorVal}" placeholder="Color"></td>
@@ -1083,12 +1127,15 @@
                         </select>
                     </td>
                     <td class="p-1">
-                        <input type="number" class="form-control-pro form-control-sm text-center fw-bold text-primary" name="variant_stock[]" step="any" value="${stockVal}" placeholder="0" title="Initial Stock">
+                        <input type="number" class="form-control-pro form-control-sm text-center fw-bold text-primary stock-input" name="variant_stock[]" step="any" value="" placeholder="Auto" title="Initial Stock (auto in weight mode)" ${variantMode === 'weight' ? 'readonly style="background:#f8f9ff;color:#0d6efd;font-weight:bold;"' : ''}>
                     </td>
-                    <td class="p-1 piece-wt-col">
-                        <div class="input-group input-group-sm">
-                            <input type="number" class="form-control-pro form-control-sm" name="variant_weight_per_piece[]" step="any" value="${weightVal}" placeholder="0.00" readonly>
-                            <span class="input-group-text bg-light text-muted p-1" style="font-size:10px;">g</span>
+                    <td class="p-0 piece-wt-col">
+                        <input type="text" inputmode="decimal" class="form-control-pro form-control-sm conv-factor-input text-center fw-bold text-success" name="variant_conv_factor[]" value="" placeholder="0.000" title="Conv Factor: weight per Pcs in base unit" style="border-radius:0; border:1px solid #198754; height:30px; border-width:1.5px;">
+                    </td>
+                    <td class="p-0 piece-wt-col">
+                        <div style="position:relative;">
+                            <input type="number" class="form-control-pro form-control-sm piece-wt-display" name="variant_weight_per_piece[]" step="any" value="" placeholder="—" readonly title="Auto = Conv Factor × 1000" style="padding-right:18px; border-radius:0; border:1px solid #dee2e6; height:30px; background:#f0fff4; color:#198754; font-weight:600;">
+                            <span style="position:absolute;right:5px;top:50%;transform:translateY(-50%);font-size:9px;color:#198754;pointer-events:none;font-weight:700;">g</span>
                         </div>
                     </td>
                     <td class="p-1"><input type="number" class="form-control-pro form-control-sm sale-price-input" name="variant_sale_price[]" step="any" value="${suggSale}" placeholder="0.00" required></td>
@@ -1112,26 +1159,31 @@
                 if (purchInput) purchInput.addEventListener('input', () => { manualPrices[vid + '_purch'] = true; });
                 if (wholesaleInput) wholesaleInput.addEventListener('input', () => { manualPrices[vid + '_wholesale'] = true; });
 
+                // Conv Factor is the PRIMARY input in weight mode
+                // Piece Wt (g) = Conv Factor x 1000, Initial Stock = Base Stock / Conv Factor
+                // Debounced so user can type freely (e.g. 0.006) without interruption
                 if (convInput) {
+                    let convTimer = null;
                     convInput.addEventListener('input', function() {
-                        const f = parseFloat(this.value) || 0;
-                        if (pieceWtInput && f > 0) {
-                            pieceWtInput.value = (f < 10) ? (f * 1000).toFixed(1).replace(/\.0$/, '') : f;
+                        clearTimeout(convTimer);
+                        const self = this;
+                        // Immediate visual update only: Piece Wt
+                        let fImmediate = parseFloat(self.value);
+                        if (isNaN(fImmediate)) fImmediate = 0;
+                        if (pieceWtInput && fImmediate > 0) {
+                            pieceWtInput.value = (fImmediate * 1000).toFixed(0);
+                        } else if (pieceWtInput && fImmediate === 0) {
+                            pieceWtInput.value = '';
                         }
-                        updatePriceSuggestions();
-                    });
-                }
-                if (pieceWtInput) {
-                    pieceWtInput.addEventListener('input', function() {
-                        const wt = parseFloat(this.value) || 0;
-                        if (convInput && wt > 0) {
-                            const f = (wt < 10) ? wt : (wt / 1000);
-                            convInput.value = f;
+                        // Defer heavier calculations 300ms after user stops typing
+                        convTimer = setTimeout(() => {
                             updatePriceSuggestions();
-                        }
+                            updateVariantStocksFromBase();
+                        }, 300);
                     });
                 }
                 toggleFactorColumns();
+                updateVariantStocksFromBase();
             }
 
             function toggleFactorColumns() {
@@ -1237,5 +1289,293 @@
             updateMode();
  
         });
+
+        // ============================================================
+        //  MOBILE VARIANT CARDS SYSTEM
+        //  Two-way sync: desktop table <-> mobile accordion cards
+        // ============================================================
+
+        const isMobile = () => window.innerWidth < 768;
+        let mobVariantIndex = 0;
+
+        // ---- Build a mobile card HTML for a given table row ----
+        function buildMobCard(tr, idx, isBase) {
+            const card = document.createElement('div');
+            card.className = 'mob-variant-card' + (isBase ? ' is-base' : '') + (isBase ? ' is-open' : '');
+            card.dataset.mobIdx = idx;
+
+            // Mirror the hidden inputs from tr into card as hidden (for shared form state)
+            const isBaseVal = isBase ? '1' : '0';
+
+            const nameVal    = tr.querySelector('[name="variant_name[]"]')?.value || '';
+            const sizeVal    = tr.querySelector('[name="variant_size[]"]')?.value || '';
+            const colorVal   = tr.querySelector('[name="variant_color[]"]')?.value || '';
+            const unitVal    = tr.querySelector('[name="variant_unit[]"]')?.value || 'Pcs';
+            const stockInp   = tr.querySelector('[name="variant_stock[]"]');
+            const stockVal   = stockInp?.value || '0';
+            const convVal    = tr.querySelector('[name="variant_conv_factor[]"]')?.value || '';
+            const pieceWtVal = tr.querySelector('[name="variant_weight_per_piece[]"]')?.value || '';
+            const saleVal    = tr.querySelector('[name="variant_sale_price[]"]')?.value || '';
+            const wsaleVal   = tr.querySelector('[name="variant_wholesale_price[]"]')?.value || '';
+            const purchVal   = tr.querySelector('[name="variant_purchase_price[]"]')?.value || '';
+            const alertVal   = tr.querySelector('[name="variant_alert_qty[]"]')?.value || '0';
+            const barcodeVal = tr.querySelector('[name="variant_barcode[]"]')?.value || '';
+            const stockReadonly = stockInp?.hasAttribute('readonly') ? 'readonly' : '';
+
+            const isWeightMode = variantMode === 'weight';
+
+            const label = nameVal || (isBase ? 'Base Variant' : 'Variant ' + (idx + 1));
+
+            card.innerHTML = `
+                <div class="mob-card-header" onclick="mobToggleCard(this)">
+                    <div class="mob-card-title">
+                        <i class="fas fa-layer-group" style="color:${isBase ? '#5B4CF7' : '#94a3b8'};font-size:14px;flex-shrink:0;"></i>
+                        <span class="mob-card-label">${label}</span>
+                        ${isBase ? '<span class="mob-base-badge">Base</span>' : ''}
+                    </div>
+                    <svg class="mob-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="mob-card-body">
+                    <div class="mob-section-label"><i class="fas fa-info-circle me-1"></i>Basic Info</div>
+                    <div class="mob-field-group">
+                        <div class="mob-label">Variant Name ${isBase ? '<span class="req">*</span>' : ''}</div>
+                        <input type="text" class="mob-input mob-sync" data-field="variant_name[]" value="${nameVal}" placeholder="e.g. Red - XL" autocomplete="off">
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div class="mob-field-group">
+                            <div class="mob-label">Size</div>
+                            <input type="text" class="mob-input mob-sync" data-field="variant_size[]" value="${sizeVal}" placeholder="XL, M...">
+                        </div>
+                        <div class="mob-field-group">
+                            <div class="mob-label">Color</div>
+                            <input type="text" class="mob-input mob-sync" data-field="variant_color[]" value="${colorVal}" placeholder="Red, Blue...">
+                        </div>
+                    </div>
+                    <div class="mob-field-group">
+                        <div class="mob-label">Unit</div>
+                        <select class="mob-select mob-sync" data-field="variant_unit[]">
+                            <option value="Pcs" ${unitVal==='Pcs'?'selected':''}>Pcs</option>
+                            <option value="Kg" ${unitVal==='Kg'?'selected':''}>Kg</option>
+                            <option value="Gm" ${unitVal==='Gm'?'selected':''}>Gm</option>
+                            <option value="Ft" ${unitVal==='Ft'?'selected':''}>Ft</option>
+                            <option value="Meter" ${unitVal==='Meter'?'selected':''}>Mtr</option>
+                            <option value="Box" ${unitVal==='Box'?'selected':''}>Box</option>
+                            <option value="Dozen" ${unitVal==='Dozen'?'selected':''}>Dzn</option>
+                        </select>
+                    </div>
+
+                    <div class="mob-section-divider"></div>
+                    <div class="mob-section-label"><i class="fas fa-boxes me-1"></i>Stock & Pricing</div>
+
+                    <div class="mob-field-group">
+                        <div class="mob-label">Initial Stock ${isBase ? '' : (isWeightMode ? '🔵 Auto' : '')}</div>
+                        <input type="number" class="mob-input mob-sync ${!isBase && isWeightMode ? 'auto-field mob-stock-auto' : ''}" data-field="variant_stock[]" value="${stockVal}" placeholder="${!isBase && isWeightMode ? 'Auto' : '0'}" ${!isBase && isWeightMode ? 'readonly' : ''} step="any">
+                    </div>
+
+                    ${isWeightMode && !isBase ? `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div class="mob-field-group">
+                            <div class="mob-label" style="color:#059669;">🔢 Conv Factor</div>
+                            <input type="text" inputmode="decimal" class="mob-input conv-field mob-sync mob-conv-inp" data-field="variant_conv_factor[]" value="${convVal}" placeholder="0.000" autocomplete="off">
+                        </div>
+                        <div class="mob-field-group">
+                            <div class="mob-label" style="color:#059669;">⚖ Piece Wt (g)</div>
+                            <div class="mob-suffix-wrap">
+                                <input type="number" class="mob-input mob-sync mob-piecewt" data-field="variant_weight_per_piece[]" value="${pieceWtVal}" placeholder="—" readonly style="background:#f0fdf4;color:#059669;font-weight:700;">
+                                <span class="mob-suffix">g</span>
+                            </div>
+                        </div>
+                    </div>
+                    ` : (isWeightMode && isBase ? `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div class="mob-field-group">
+                            <div class="mob-label">Conv Factor</div>
+                            <input type="text" class="mob-input" value="1" readonly style="background:#f8fafc;color:#94a3b8;">
+                        </div>
+                        <div class="mob-field-group">
+                            <div class="mob-label">Piece Wt (g)</div>
+                            <div class="mob-suffix-wrap">
+                                <input type="number" class="mob-input" value="1000" readonly style="background:#f8fafc;color:#94a3b8;">
+                                <span class="mob-suffix">g</span>
+                            </div>
+                        </div>
+                    </div>
+                    ` : '')}
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div class="mob-field-group">
+                            <div class="mob-label">Sale Price <span class="req">*</span></div>
+                            <input type="number" class="mob-input mob-sync" data-field="variant_sale_price[]" value="${saleVal}" placeholder="0.00" step="any" required>
+                        </div>
+                        <div class="mob-field-group">
+                            <div class="mob-label">Wholesale Price</div>
+                            <input type="number" class="mob-input mob-sync" data-field="variant_wholesale_price[]" value="${wsaleVal}" placeholder="0.00" step="any">
+                        </div>
+                    </div>
+                    <div class="mob-field-group">
+                        <div class="mob-label">Purchase Price <span class="req">*</span></div>
+                        <input type="number" class="mob-input mob-sync" data-field="variant_purchase_price[]" value="${purchVal}" placeholder="0.00" step="any" required>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div class="mob-field-group">
+                            <div class="mob-label">Alert Qty</div>
+                            <input type="number" class="mob-input mob-sync" data-field="variant_alert_qty[]" value="${alertVal}" placeholder="0" step="any">
+                        </div>
+                        <div class="mob-field-group">
+                            <div class="mob-label">Barcode</div>
+                            <input type="text" class="mob-input mob-sync" data-field="variant_barcode[]" value="${barcodeVal}" placeholder="Scan or type...">
+                        </div>
+                    </div>
+
+                    ${!isBase ? `<button type="button" class="mob-delete-btn" onclick="mobDeleteCard(this)">
+                        <i class="fas fa-trash"></i> Remove Variant
+                    </button>` : ''}
+                </div>
+            `;
+
+            // Event: sync mob input → desktop table
+            card.querySelectorAll('.mob-sync').forEach(inp => {
+                inp.addEventListener('input', () => mobSyncToDesktop(card, idx));
+            });
+            card.querySelectorAll('.mob-sync').forEach(sel => {
+                if (sel.tagName === 'SELECT') sel.addEventListener('change', () => mobSyncToDesktop(card, idx));
+            });
+
+            // Conv factor → auto piece wt + stock + prices on mobile
+            const convInp = card.querySelector('.mob-conv-inp');
+            if (convInp) {
+                convInp.addEventListener('input', () => {
+                    let f = parseFloat(convInp.value);
+                    if (isNaN(f)) f = 0;
+                    
+                    const pieceWt = card.querySelector('.mob-piecewt');
+                    const stockAutoInp = card.querySelector('.mob-stock-auto');
+                    const saleInp2 = card.querySelector('[data-field="variant_sale_price[]"]');
+                    const purchInp2 = card.querySelector('[data-field="variant_purchase_price[]"]');
+                    const wsInp2 = card.querySelector('[data-field="variant_wholesale_price[]"]');
+
+                    if (f > 0) {
+                        if (pieceWt) pieceWt.value = (f * 1000).toFixed(0);
+
+                        // Auto stock from base row
+                        const baseRow = variantsBody.querySelector('tr');
+                        const baseStockInp = baseRow?.querySelector('[name="variant_stock[]"]');
+                        const baseStock = parseFloat(baseStockInp?.value || 0);
+                        if (stockAutoInp && baseStock > 0) stockAutoInp.value = Math.round(baseStock / f);
+
+                        // Auto prices from base row
+                        const baseSale = parseFloat(baseRow?.querySelector('.base-sale-input')?.value || 0);
+                        const basePurch = parseFloat(baseRow?.querySelector('.base-purch-input')?.value || 0);
+                        const baseWs = parseFloat(baseRow?.querySelector('[name="variant_wholesale_price[]"]')?.value || 0);
+                        if (saleInp2) saleInp2.value = (baseSale * f).toFixed(2);
+                        if (purchInp2) purchInp2.value = (basePurch * f).toFixed(2);
+                        if (wsInp2) wsInp2.value = (baseWs * f).toFixed(2);
+                    } else {
+                        if (pieceWt) pieceWt.value = '';
+                        if (stockAutoInp) stockAutoInp.value = '';
+                    }
+                    mobSyncToDesktop(card, idx);
+                });
+            }
+
+            // Live update card title from name input
+            const nameInp = card.querySelector('[data-field="variant_name[]"]');
+            if (nameInp) {
+                nameInp.addEventListener('input', () => {
+                    const lbl = card.querySelector('.mob-card-label');
+                    if (lbl) lbl.textContent = nameInp.value || (isBase ? 'Base Variant' : 'Variant ' + (idx + 1));
+                });
+            }
+
+            return card;
+        }
+
+        // ---- Sync mobile card fields → desktop table row ----
+        function mobSyncToDesktop(card, idx) {
+            const tr = variantsBody.children[idx];
+            if (!tr) return;
+            card.querySelectorAll('.mob-sync').forEach(inp => {
+                const field = inp.dataset.field;
+                if (!field) return;
+                const desktopEl = tr.querySelector(`[name="${field}"]`);
+                if (desktopEl) desktopEl.value = inp.value;
+            });
+            // trigger desktop recalc
+            if (typeof updateVariantStocksFromBase === 'function') {
+                updateVariantStocksFromBase();
+            }
+        }
+
+        // ---- Toggle accordion (one open at a time) ----
+        function mobToggleCard(headerEl) {
+            const card = headerEl.closest('.mob-variant-card');
+            const isOpen = card.classList.contains('is-open');
+            // Close all
+            document.querySelectorAll('.mob-variant-card.is-open').forEach(c => c.classList.remove('is-open'));
+            // Toggle this
+            if (!isOpen) card.classList.add('is-open');
+        }
+
+        // ---- Delete card + corresponding desktop row ----
+        function mobDeleteCard(btn) {
+            const card = btn.closest('.mob-variant-card');
+            const idx = parseInt(card.dataset.mobIdx);
+            const tr = variantsBody.children[idx];
+            if (tr) {
+                if (variantsBody.children.length <= 1) return;
+                tr.remove();
+            }
+            card.remove();
+            // Re-index remaining cards
+            document.querySelectorAll('.mob-variant-card').forEach((c, i) => {
+                c.dataset.mobIdx = i;
+            });
+        }
+
+        // ---- Add a new variant (mobile) ----
+        function mobileAddVariant() {
+            // Trigger desktop add (reuse logic)
+            if (typeof addVariantRow === 'function') {
+                addVariantRow();
+            }
+            // Rebuild mobile cards from updated desktop rows
+            rebuildMobileCards();
+            // Open last card
+            const cards = document.querySelectorAll('.mob-variant-card');
+            document.querySelectorAll('.mob-variant-card.is-open').forEach(c => c.classList.remove('is-open'));
+            if (cards.length) cards[cards.length - 1].classList.add('is-open');
+        }
+
+        // ---- Rebuild all mobile cards from desktop rows ----
+        function rebuildMobileCards() {
+            const body = document.getElementById('mobileVariantsBody');
+            if (!body) return;
+            body.innerHTML = '';
+            Array.from(variantsBody.children).forEach((tr, idx) => {
+                const isBase = !!tr.querySelector('.base-name-input');
+                const card = buildMobCard(tr, idx, isBase);
+                body.appendChild(card);
+            });
+        }
+
+        // ---- Initial render of mobile cards (after desktop rows exist) ----
+        // Observe desktop table for row additions
+        const desktopObserver = new MutationObserver(() => {
+            if (isMobile()) rebuildMobileCards();
+        });
+        const variantsBodyEl = document.getElementById('variantsBody');
+        if (variantsBodyEl) {
+            desktopObserver.observe(variantsBodyEl, { childList: true });
+        }
+
+        // Also rebuild when window resizes to mobile
+        window.addEventListener('resize', () => {
+            if (isMobile()) rebuildMobileCards();
+        });
+
+        // Make functions global
+        window.mobileAddVariant = mobileAddVariant;
+        window.mobToggleCard = mobToggleCard;
+        window.mobDeleteCard = mobDeleteCard;
     </script>
 @endsection

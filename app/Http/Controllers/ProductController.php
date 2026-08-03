@@ -237,16 +237,22 @@ class ProductController extends Controller
                     }
 
                     $vStockDisplay = $vBalance;
+                    $vUnitName = $v['unit'] ?? $unitName;
+
                     if (isset($v['conv_factor']) && $p->size_mode === 'by_kg') {
                         $factor = (float) $v['conv_factor'];
+                        if ($factor != 1 && !isset($v['unit'])) {
+                            $vUnitName = 'Pcs';
+                        }
+                        
                         if ($factor == 1) {
                             if ($vBalance < 0.001) {
-                                $vStockDisplay = "0 Kg (0 Gm)";
+                                $vStockDisplay = "0 {$vUnitName} (0 Gm)";
                             } elseif ($vBalance < 1 && $vBalance > 0) {
                                 $gmVal = (int) round($vBalance * 1000);
-                                $vStockDisplay = "{$vBalance} Kg ({$gmVal} Gm)";
+                                $vStockDisplay = "{$vBalance} {$vUnitName} ({$gmVal} Gm)";
                             } else {
-                                $vStockDisplay = "{$vBalance} Kg";
+                                $vStockDisplay = "{$vBalance} {$vUnitName}";
                             }
                         } else {
                             $pcsCount = (int) floor($vBalance);
@@ -269,7 +275,7 @@ class ProductController extends Controller
                         'stock_pieces' => $vBalance,
                         'name' => $vName,
                         'size_mode' => $p->size_mode,
-                        'unit_name' => $unitName,
+                        'unit_name' => $vUnitName,
                         'pieces_per_box' => $ppb,
                         'ppb' => $ppb,
                         'trade_price' => $v['purch_price'] ?? $p->purchase_price_per_piece ?? 0,
@@ -633,6 +639,7 @@ class ProductController extends Controller
                 $barcodes = $request->variant_barcode;
                 $conv_factors = $request->variant_conv_factor;
                 $is_bases = $request->variant_is_base;
+                $units = $request->variant_unit;
 
                 // Validate Conv Factors if Weight Unit is selected
                 if (in_array($mode, ['by_kg', 'by_gm', 'by_ton'])) {
@@ -645,15 +652,18 @@ class ProductController extends Controller
                             if ($factor <= 0) {
                                 throw new \Exception("Conversion Factor must be greater than 0.");
                             }
-                            if (in_array((string)$factor, $factors, true)) {
-                                throw new \Exception("Duplicate Conversion Factor found: " . $factor);
-                            }
-                            $factors[] = (string)$factor;
                             if ($isBase === 1) {
                                 $baseCount++;
                                 if ($factor != 1) {
                                     throw new \Exception("Base variant must have Conversion Factor exactly equal to 1.");
                                 }
+                                // Base factor is not added to duplicate list
+                            } else {
+                                // Non‑base variant: ensure uniqueness
+                                if (in_array((string)$factor, $factors, true)) {
+                                    throw new \Exception("Duplicate Conversion Factor found: " . $factor);
+                                }
+                                $factors[] = (string)$factor;
                             }
                         }
                     }
@@ -667,9 +677,16 @@ class ProductController extends Controller
                     if (!empty($names[$i])) {
                         $vStock = (float)($stocks[$i] ?? 0);
                         $vConvFactor = (float)($conv_factors[$i] ?? 0);
+                        $isBase = (int)($is_bases[$i] ?? 0);
                         if ($vConvFactor <= 0) $vConvFactor = 1;
 
-                        $variantStockSum += ($vStock * $vConvFactor);
+                        if (in_array($mode, ['by_kg', 'by_gm', 'by_ton'])) {
+                            if ($isBase === 1) {
+                                $variantStockSum += $vStock;
+                            }
+                        } else {
+                            $variantStockSum += $vStock;
+                        }
 
                         $variants[] = [
                             'name' => $names[$i],
@@ -684,6 +701,7 @@ class ProductController extends Controller
                             'barcode' => $barcodes[$i] ?? '',
                             'conv_factor' => $vConvFactor,
                             'is_base_variant' => $is_bases[$i] ?? 0,
+                            'unit' => $units[$i] ?? 'Pcs',
                         ];
                     }
                 }
@@ -928,6 +946,7 @@ class ProductController extends Controller
                 $barcodes = $request->variant_barcode;
                 $conv_factors = $request->variant_conv_factor;
                 $is_bases = $request->variant_is_base;
+                $units = $request->variant_unit;
 
                 // Validate Conv Factors if Weight Unit is selected
                 if (in_array($mode, ['by_kg', 'by_gm', 'by_ton'])) {
@@ -940,15 +959,18 @@ class ProductController extends Controller
                             if ($factor <= 0) {
                                 throw new \Exception("Conversion Factor must be greater than 0.");
                             }
-                            if (in_array((string)$factor, $factors, true)) {
-                                throw new \Exception("Duplicate Conversion Factor found: " . $factor);
-                            }
-                            $factors[] = (string)$factor;
                             if ($isBase === 1) {
                                 $baseCount++;
                                 if ($factor != 1) {
                                     throw new \Exception("Base variant must have Conversion Factor exactly equal to 1.");
                                 }
+                                // do not add base factor to $factors array
+                            } else {
+                                // Non‑base variant: ensure uniqueness
+                                if (in_array((string)$factor, $factors, true)) {
+                                    throw new \Exception("Duplicate Conversion Factor found: " . $factor);
+                                }
+                                $factors[] = (string)$factor;
                             }
                         }
                     }
@@ -972,6 +994,7 @@ class ProductController extends Controller
                             'barcode' => $barcodes[$i] ?? '',
                             'conv_factor' => $conv_factors[$i] ?? 0,
                             'is_base_variant' => $is_bases[$i] ?? 0,
+                            'unit' => $units[$i] ?? 'Pcs',
                         ];
                     }
                 }

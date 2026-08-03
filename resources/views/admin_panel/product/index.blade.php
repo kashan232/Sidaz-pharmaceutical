@@ -982,13 +982,18 @@ $(document).ready(function () {
                         let barcode   = v.barcode || (product.barcode_path ?? product.item_code);
                         let colorBadge = (v.color && v.color !== '-') ? `<span style="background:#e2e8f0;border-radius:4px;padding:2px 6px;font-size:.72rem;">${v.color}</span>` : '<span style="color:#94a3b8;">—</span>';
                         let alertQty  = (v.alert != null && v.alert != 0) ? v.alert : '-';
+                        
+                        let vUnit = v.unit || (product.unit ? product.unit.name : 'pc');
+                        if (product.size_mode === 'by_kg' && v.conv_factor != 1 && !v.unit) vUnit = 'Pcs'; // Fallback
+                        let vPriceLabel = product.size_mode === 'by_size' ? '/m²' : '/' + vUnit;
+
                         tbody.append(`<tr>
                             <td class="text-start ps-4 fw-semibold">${v.name || product.item_name}</td>
                             <td>${v.size || '-'}</td>
                             <td>${colorBadge}</td>
                             <td>${stockBadgeHtml(v.stock, v.alert)}</td>
-                            <td class="fw-bold" style="color:#059669;">Rs. ${parseFloat(v.sale_price||0).toFixed(2)} <small class="fw-normal text-muted">${priceLabel}</small></td>
-                            <td class="text-muted">Rs. ${parseFloat(v.purch_price||0).toFixed(2)} <small>${priceLabel}</small></td>
+                            <td class="fw-bold" style="color:#059669;">Rs. ${parseFloat(v.sale_price||0).toFixed(2)} <small class="fw-normal text-muted">${vPriceLabel}</small></td>
+                            <td class="text-muted">Rs. ${parseFloat(v.purch_price||0).toFixed(2)} <small>${vPriceLabel}</small></td>
                             <td><span style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:2px 6px;font-size:.72rem;">${alertQty}</span></td>
                             <td class="text-end pe-4"><code style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:2px 6px;font-size:.75rem;">${barcode}</code></td>
                         </tr>`);
