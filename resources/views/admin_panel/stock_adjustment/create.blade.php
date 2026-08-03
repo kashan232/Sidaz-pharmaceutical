@@ -206,6 +206,7 @@
                             <div class="product-card-title">{{ $p->item_name }}</div>
                             <div class="product-card-code">{{ $p->item_code }}</div>
                             
+                            @if($hasVariants)
                                 <div class="variant-badge">
                                     <i class="fa fa-tags me-1"></i> {{ count($variants) }} Variants (Size/Color)
                                 </div>
