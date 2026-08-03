@@ -63,16 +63,16 @@
     }
 
     .product-card {
-        background: #ffffff; border: 1px solid var(--pos-border); border-radius: 10px;
-        padding: 12px; display: flex; flex-direction: column; justify-content: space-between;
+        background: #ffffff !important; border: 1px solid var(--pos-border) !important; border-radius: 10px !important;
+        display: flex; flex-direction: column; justify-content: space-between;
         transition: all .15s ease; cursor: pointer; user-select: none; position: relative;
     }
-    .product-card:hover { border-color: var(--pos-primary); transform: translateY(-2px); box-shadow: 0 4px 14px rgba(79,70,229,.12); }
+    .product-card:hover { border-color: var(--pos-primary) !important; transform: translateY(-2px); box-shadow: 0 4px 14px rgba(79,70,229,.12); }
     
-    .product-card-title { font-weight: 700; font-size: .88rem; color: var(--pos-text); line-height: 1.2; margin-bottom: 4px; }
-    .product-card-code  { font-size: .72rem; color: var(--pos-muted); font-family: monospace; }
-    .variant-badge      { background: var(--pos-info-lt); color: var(--pos-info); border-radius: 4px; padding: 2px 6px; font-size: .68rem; font-weight: 700; margin-top: 4px; display: inline-block; }
-    .product-card-stock { font-size: .74rem; font-weight: 700; background: var(--pos-primary-lt); color: var(--pos-primary); border-radius: 6px; padding: 2px 8px; margin-top: 8px; display: inline-block; width: fit-content; }
+    .product-card-title { font-weight: 700 !important; font-size: .88rem !important; color: var(--pos-text) !important; line-height: 1.2 !important; margin-bottom: 4px !important; font-family: inherit !important; }
+    .product-card-code  { font-size: .72rem !important; color: var(--pos-muted) !important; font-family: monospace !important; }
+    .variant-badge      { background: var(--pos-info-lt) !important; color: var(--pos-info) !important; border-radius: 4px !important; padding: 2px 6px !important; font-size: .68rem !important; font-weight: 700 !important; margin-top: 4px !important; display: inline-block !important; }
+    .product-card-stock { font-size: .74rem !important; font-weight: 700 !important; background: var(--pos-primary-lt) !important; color: var(--pos-primary) !important; border-radius: 6px !important; padding: 4px 10px !important; margin-top: 8px !important; display: inline-block !important; width: fit-content !important; }
 
     /* Right Side — Adjustment Cart & Summary */
     .pos-cart-panel {
@@ -194,7 +194,7 @@
                         $hasVariants = count($variants) > 0;
                     @endphp
 
-                    <div class="product-card" 
+                    <div class="product-card p-3" 
                          data-id="{{ $p->id }}"
                          data-name="{{ $p->item_name }}"
                          data-code="{{ $p->item_code }}"
@@ -206,9 +206,8 @@
                             <div class="product-card-title">{{ $p->item_name }}</div>
                             <div class="product-card-code">{{ $p->item_code }}</div>
                             
-                            @if($hasVariants)
                                 <div class="variant-badge">
-                                    <i class="fas fa-tags me-1"></i> {{ count($variants) }} Variants (Size/Color)
+                                    <i class="fa fa-tags me-1"></i> {{ count($variants) }} Variants (Size/Color)
                                 </div>
                             @else
                                 <div class="text-muted small mt-1">Standard Item</div>
@@ -216,7 +215,7 @@
                         </div>
 
                         <div class="product-card-stock mt-2">
-                            <i class="fas fa-cubes me-1"></i> Click to Adjust
+                            <i class="fa fa-hand-pointer me-1"></i> Click to Adjust
                         </div>
                     </div>
                 @endforeach
