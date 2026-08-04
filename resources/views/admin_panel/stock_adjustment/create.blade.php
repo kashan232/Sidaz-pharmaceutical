@@ -2,7 +2,7 @@
 @section('content')
 
 <style>
-    /* ── POS Stock Adjustment Terminal – Responsive Flexbox & Collapsible Layout ── */
+    /* ── POS Stock Adjustment Terminal – Fixed Viewport & Visible Product Scrollbar ── */
     :root {
         --pos-primary:    #4f46e5;
         --pos-primary-lt: #eef2ff;
@@ -23,17 +23,17 @@
         --pos-shadow:     0 2px 10px rgba(0,0,0,.04);
     }
 
-    /* Custom Visible Scrollbars for Desktop & POS */
+    /* Custom Webkit Scrollbars for Desktop & POS */
     .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
     .custom-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
     .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
 
-    /* Prominent Product Grid Scrollbar */
-    .pos-items-grid::-webkit-scrollbar { width: 10px; }
-    .pos-items-grid::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 6px; }
-    .pos-items-grid::-webkit-scrollbar-thumb { background: #64748b; border-radius: 6px; border: 2px solid #e2e8f0; }
-    .pos-items-grid::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
+    /* Prominent Product Grid Scrollbar on Right Side of Left Box */
+    .pos-items-grid::-webkit-scrollbar { width: 12px !important; }
+    .pos-items-grid::-webkit-scrollbar-track { background: #cbd5e1 !important; border-radius: 6px !important; }
+    .pos-items-grid::-webkit-scrollbar-thumb { background: #4f46e5 !important; border-radius: 6px !important; border: 2px solid #cbd5e1 !important; }
+    .pos-items-grid::-webkit-scrollbar-thumb:hover { background: #3730a3 !important; }
 
     .pos-adj-page {
         background: var(--pos-bg);
@@ -60,8 +60,9 @@
         grid-template-columns: 1fr 420px;
         gap: 14px;
         flex: 1 1 auto;
-        min-height: 520px;
-        max-height: calc(100vh - 150px);
+        height: calc(100vh - 165px);
+        max-height: calc(100vh - 165px);
+        min-height: 480px;
         overflow: hidden;
         transition: grid-template-columns 0.25s ease;
     }
@@ -86,14 +87,17 @@
     .cat-pill { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--pos-border); background: #fff; font-size: .75rem; font-weight: 600; color: var(--pos-muted); cursor: pointer; transition: all .15s; user-select: none; }
     .cat-pill.active, .cat-pill:hover { background: var(--pos-primary); color: #fff; border-color: var(--pos-primary); }
 
-    /* Product Cards Grid */
+    /* Product Cards Grid with Explicit Height & Visible Scrollbar */
     .pos-items-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
         gap: 10px;
         flex: 1 1 auto;
-        overflow-y: auto;
-        padding-right: 6px;
+        height: calc(100vh - 280px) !important;
+        max-height: calc(100vh - 280px) !important;
+        min-height: 340px !important;
+        overflow-y: scroll !important; /* Force visible right-side scrollbar on product container */
+        padding-right: 8px;
         align-content: start;
     }
 
@@ -125,7 +129,14 @@
     .cart-header { padding: 10px 14px; border-bottom: 1px solid var(--pos-border); background: #fff; display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto; }
     .cart-header .cart-title { font-size: .88rem; font-weight: 700; color: var(--pos-text); margin: 0; display: flex; align-items: center; gap: 8px; }
 
-    .cart-items-wrap { flex: 1 1 auto; overflow-y: auto; min-height: 140px; padding: 8px 12px; }
+    .cart-items-wrap {
+        height: calc(100vh - 460px) !important;
+        min-height: 160px !important;
+        max-height: calc(100vh - 460px) !important;
+        overflow-y: scroll !important;
+        padding: 8px 12px;
+        flex: 1 1 auto;
+    }
 
     .cart-item-row {
         background: #fff; border: 1px solid var(--pos-border); border-radius: 8px;
@@ -219,9 +230,9 @@
 
     /* Mobile Responsive Layout */
     @media (max-width: 992px) {
-        .pos-grid-layout { grid-template-columns: 1fr; max-height: none; overflow: visible; }
+        .pos-grid-layout { grid-template-columns: 1fr; max-height: none; overflow: visible; height: auto; }
         .pos-cart-panel { margin-top: 16px; height: auto; }
-        .pos-items-grid { max-height: 480px; }
+        .pos-items-grid { max-height: 480px !important; height: 480px !important; }
     }
 </style>
 
@@ -284,7 +295,7 @@
                 @endforeach
             </div>
 
-            {{-- Product POS Cards Grid with Prominent Vertical Scrollbar --}}
+            {{-- Product POS Cards Grid with Prominent Right-Side Vertical Scrollbar --}}
             <div id="posItemsGrid" class="pos-items-grid">
                 @foreach($products as $p)
                     @php
