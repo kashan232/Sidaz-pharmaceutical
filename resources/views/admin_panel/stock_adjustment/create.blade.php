@@ -2,7 +2,7 @@
 @section('content')
 
 <style>
-    /* ── POS Stock Adjustment Terminal – Responsive Flexbox Layout ── */
+    /* ── POS Stock Adjustment Terminal – Responsive Flexbox & Collapsible Layout ── */
     :root {
         --pos-primary:    #4f46e5;
         --pos-primary-lt: #eef2ff;
@@ -23,16 +23,22 @@
         --pos-shadow:     0 2px 10px rgba(0,0,0,.04);
     }
 
-    /* Custom Webkit Scrollbars for sleek desktop scrolling */
-    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    /* Custom Visible Scrollbars for Desktop & POS */
+    .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
     .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+
+    /* Prominent Product Grid Scrollbar */
+    .pos-items-grid::-webkit-scrollbar { width: 10px; }
+    .pos-items-grid::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 6px; }
+    .pos-items-grid::-webkit-scrollbar-thumb { background: #64748b; border-radius: 6px; border: 2px solid #e2e8f0; }
+    .pos-items-grid::-webkit-scrollbar-thumb:hover { background: #4f46e5; }
 
     .pos-adj-page {
         background: var(--pos-bg);
         min-height: calc(100vh - 75px);
-        padding: 12px 0;
+        padding: 10px 0;
         display: flex;
         flex-direction: column;
     }
@@ -41,41 +47,42 @@
     /* Top Bar Header */
     .pos-top-bar {
         background: #ffffff; border-radius: var(--pos-radius); border: 1px solid var(--pos-border);
-        box-shadow: var(--pos-shadow); padding: 10px 16px; margin-bottom: 12px;
-        display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+        box-shadow: var(--pos-shadow); padding: 8px 16px; margin-bottom: 10px;
+        display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
         flex: 0 0 auto;
     }
     .pos-top-bar .title-box { display: flex; align-items: center; gap: 10px; }
-    .pos-top-bar .title-icon { width: 38px; height: 38px; border-radius: 9px; background: var(--pos-primary-lt); color: var(--pos-primary); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .pos-top-bar .title-icon { width: 36px; height: 36px; border-radius: 9px; background: var(--pos-primary-lt); color: var(--pos-primary); display: flex; align-items: center; justify-content: center; font-size: 16px; }
 
     /* Main 2-Column POS Layout with Viewport Height Lock */
     .pos-grid-layout {
         display: grid;
         grid-template-columns: 1fr 420px;
-        gap: 16px;
+        gap: 14px;
         flex: 1 1 auto;
         min-height: 520px;
-        max-height: calc(100vh - 165px);
+        max-height: calc(100vh - 150px);
         overflow: hidden;
+        transition: grid-template-columns 0.25s ease;
     }
 
     /* Left Side — Product & Variant Search/Grid */
     .pos-products-panel {
         background: var(--pos-card-bg); border-radius: var(--pos-radius);
         border: 1px solid var(--pos-border); box-shadow: var(--pos-shadow);
-        padding: 14px; display: flex; flex-direction: column; height: 100%;
+        padding: 12px; display: flex; flex-direction: column; height: 100%;
         overflow: hidden;
     }
 
     /* Product Search & Category Bar */
-    .pos-search-box { position: relative; margin-bottom: 10px; flex: 0 0 auto; }
+    .pos-search-box { position: relative; margin-bottom: 8px; flex: 0 0 auto; }
     .pos-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--pos-muted); font-size: 14px; pointer-events: none; }
-    .pos-search-input { width: 100%; height: 40px; padding-left: 36px; padding-right: 12px; border: 1px solid var(--pos-border); border-radius: 9px; font-size: .88rem; font-weight: 600; outline: none; transition: border-color .15s; }
+    .pos-search-input { width: 100%; height: 38px; padding-left: 36px; padding-right: 12px; border: 1px solid var(--pos-border); border-radius: 8px; font-size: .88rem; font-weight: 600; outline: none; transition: border-color .15s; }
     .pos-search-input:focus { border-color: var(--pos-primary); box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
 
     /* Category Filter Pills Header + Count */
     .cat-bar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; flex: 0 0 auto; }
-    .cat-pills { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 10px; flex: 0 0 auto; white-space: nowrap; }
+    .cat-pills { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; flex: 0 0 auto; white-space: nowrap; }
     .cat-pill { padding: 4px 12px; border-radius: 20px; border: 1px solid var(--pos-border); background: #fff; font-size: .75rem; font-weight: 600; color: var(--pos-muted); cursor: pointer; transition: all .15s; user-select: none; }
     .cat-pill.active, .cat-pill:hover { background: var(--pos-primary); color: #fff; border-color: var(--pos-primary); }
 
@@ -86,7 +93,7 @@
         gap: 10px;
         flex: 1 1 auto;
         overflow-y: auto;
-        padding-right: 4px;
+        padding-right: 6px;
         align-content: start;
     }
 
@@ -107,14 +114,15 @@
     .variant-badge      { background: var(--pos-info-lt) !important; color: var(--pos-info) !important; border-radius: 4px !important; padding: 2px 6px !important; font-size: .68rem !important; font-weight: 700 !important; margin-top: 4px !important; display: inline-block !important; }
     .product-card-stock { font-size: .72rem !important; font-weight: 700 !important; background: var(--pos-primary-lt) !important; color: var(--pos-primary) !important; border-radius: 6px !important; padding: 4px 8px !important; margin-top: 6px !important; display: inline-block !important; width: fit-content !important; }
 
-    /* Right Side — Adjustment Cart & Summary */
+    /* Right Side — Adjustment Cart & Summary Panel */
     .pos-cart-panel {
         background: var(--pos-card-bg); border-radius: var(--pos-radius);
         border: 1px solid var(--pos-border); box-shadow: var(--pos-shadow);
         display: flex; flex-direction: column; height: 100%; overflow: hidden;
+        transition: all 0.25s ease;
     }
 
-    .cart-header { padding: 12px 16px; border-bottom: 1px solid var(--pos-border); background: #fff; display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto; }
+    .cart-header { padding: 10px 14px; border-bottom: 1px solid var(--pos-border); background: #fff; display: flex; align-items: center; justify-content: space-between; flex: 0 0 auto; }
     .cart-header .cart-title { font-size: .88rem; font-weight: 700; color: var(--pos-text); margin: 0; display: flex; align-items: center; gap: 8px; }
 
     .cart-items-wrap { flex: 1 1 auto; overflow-y: auto; min-height: 140px; padding: 8px 12px; }
@@ -128,10 +136,10 @@
     .cart-flow      { font-size: .73rem; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; padding: 4px 6px; border-radius: 6px; }
 
     /* Reason Box */
-    .cart-reason-wrap { padding: 10px 14px; background: #fff; border-top: 1px solid var(--pos-border); flex: 0 0 auto; }
+    .cart-reason-wrap { padding: 8px 12px; background: #fff; border-top: 1px solid var(--pos-border); flex: 0 0 auto; }
 
     /* POS Totals Box */
-    .pos-totals-box { background: #1e293b; color: #fff; padding: 14px 16px; border-top: 1px solid var(--pos-border); flex: 0 0 auto; }
+    .pos-totals-box { background: #1e293b; color: #fff; padding: 12px 14px; border-top: 1px solid var(--pos-border); flex: 0 0 auto; }
     .totals-row { display: flex; align-items: center; justify-content: space-between; font-size: .78rem; margin-bottom: 4px; color: #cbd5e1; }
     .totals-row.grand { font-size: 1.02rem; font-weight: 700; color: #38bdf8; border-top: 1px solid #334155; padding-top: 6px; margin-top: 4px; margin-bottom: 0; }
 
@@ -139,7 +147,7 @@
         background: #059669; color: #fff; border: none; border-radius: 9px;
         width: 100%; height: 42px; font-size: .92rem; font-weight: 700;
         display: flex; align-items: center; justify-content: center; gap: 8px;
-        cursor: pointer; transition: background .15s; margin-top: 10px;
+        cursor: pointer; transition: background .15s; margin-top: 8px;
     }
     .btn-submit-pos:hover { background: #047857; }
     .btn-submit-pos:disabled { background: #475569; opacity: .6; cursor: not-allowed; }
@@ -155,11 +163,65 @@
     .qty-btn:active { transform: scale(0.92); }
     .qty-input { width: 42px; height: 26px; text-align: center; font-weight: 700; font-size: .78rem; border: 1px solid var(--pos-border); border-radius: 5px; outline: none; }
 
+    /* ── COLLAPSED / FOOTER DOCK CART MODE ── */
+    .pos-grid-layout.cart-collapsed {
+        grid-template-columns: 1fr;
+    }
+
+    .pos-grid-layout.cart-collapsed .pos-cart-panel {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        z-index: 1050;
+        height: auto;
+        max-height: 80vh;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -6px 24px rgba(0,0,0,0.25);
+        border-top: 2px solid var(--pos-primary);
+    }
+
+    .pos-grid-layout.cart-collapsed .pos-cart-panel.dock-minimized {
+        height: 52px !important;
+        overflow: hidden !important;
+    }
+
+    .pos-grid-layout.cart-collapsed .pos-cart-panel.dock-minimized .cart-items-wrap,
+    .pos-grid-layout.cart-collapsed .pos-cart-panel.dock-minimized .cart-reason-wrap,
+    .pos-grid-layout.cart-collapsed .pos-cart-panel.dock-minimized .pos-totals-box {
+        display: none !important;
+    }
+
+    /* Circle Arrow Toggle Buttons */
+    .btn-circle-toggle {
+        width: 32px; height: 32px; border-radius: 50%;
+        background: var(--pos-primary-lt); color: var(--pos-primary);
+        border: 1px solid var(--pos-border); display: inline-flex;
+        align-items: center; justify-content: center; font-size: 14px;
+        cursor: pointer; transition: all .2s ease;
+    }
+    .btn-circle-toggle:hover {
+        background: var(--pos-primary); color: #fff; transform: scale(1.08);
+    }
+
+    /* Fixed Floating Footer Trigger Bar (Always available when collapsed) */
+    .cart-dock-trigger-bar {
+        display: none;
+        position: fixed; bottom: 0; left: 0; right: 0;
+        background: #1e293b; color: #fff;
+        padding: 8px 20px; z-index: 1040;
+        box-shadow: 0 -4px 16px rgba(0,0,0,0.2);
+        border-top: 2px solid var(--pos-primary);
+        align-items: center; justify-content: space-between;
+    }
+
+    .pos-grid-layout.cart-collapsed + .cart-dock-trigger-bar {
+        display: flex;
+    }
+
     /* Mobile Responsive Layout */
     @media (max-width: 992px) {
         .pos-grid-layout { grid-template-columns: 1fr; max-height: none; overflow: visible; }
         .pos-cart-panel { margin-top: 16px; height: auto; }
-        .pos-items-grid { max-height: 450px; }
+        .pos-items-grid { max-height: 480px; }
     }
 </style>
 
@@ -194,8 +256,8 @@
         </div>
     </div>
 
-    {{-- Main POS 2-Column Grid --}}
-    <div class="pos-grid-layout">
+    {{-- Main POS 2-Column Grid Layout --}}
+    <div id="posGridLayout" class="pos-grid-layout">
 
         {{-- LEFT SIDE: Product Cards Grid --}}
         <div class="pos-products-panel">
@@ -222,8 +284,8 @@
                 @endforeach
             </div>
 
-            {{-- Product POS Cards Grid --}}
-            <div id="posItemsGrid" class="pos-items-grid custom-scroll">
+            {{-- Product POS Cards Grid with Prominent Vertical Scrollbar --}}
+            <div id="posItemsGrid" class="pos-items-grid">
                 @foreach($products as $p)
                     @php
                         $variants = [];
@@ -275,16 +337,22 @@
         </div>
 
         {{-- RIGHT SIDE: Adjustment Cart & POS Totals Box --}}
-        <div class="pos-cart-panel">
+        <div id="posCartPanel" class="pos-cart-panel">
             
             {{-- Cart Header --}}
             <div class="cart-header">
                 <p class="cart-title">
                     <i class="fas fa-shopping-cart text-primary"></i> Staged Adjustments (<span id="cartCount">0</span>)
                 </p>
-                <button type="button" id="clearCartBtn" class="btn btn-link btn-sm text-danger text-decoration-none p-0">
-                    <i class="fas fa-trash-alt me-1"></i> Clear Cart
-                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" id="clearCartBtn" class="btn btn-link btn-sm text-danger text-decoration-none p-0 me-2" title="Clear all staged adjustments">
+                        <i class="fas fa-trash-alt me-1"></i> Clear
+                    </button>
+                    {{-- Up/Down Toggle Button for Side/Bottom Mode --}}
+                    <button type="button" id="toggleCartCollapseBtn" class="btn-circle-toggle" title="Toggle Dock / Full View">
+                        <i class="fas fa-chevron-down" id="toggleCartIcon"></i>
+                    </button>
+                </div>
             </div>
 
             {{-- Cart Items List --}}
@@ -332,6 +400,24 @@
 
         </div>
 
+    </div>
+
+    {{-- FLOATING BOTTOM DOCK TRIGGER BAR (Visible when collapsed into bottom bar) --}}
+    <div id="cartDockTriggerBar" class="cart-dock-trigger-bar">
+        <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-primary px-3 py-2 rounded-pill fs-6 fw-bold">
+                <i class="fas fa-shopping-cart me-1"></i> Staged Adjustments (<span id="dockCartCount">0</span>)
+            </span>
+            <span class="text-white small font-monospace">
+                Net Diff: <strong class="text-info" id="dockNetDiff">0 Pcs</strong>
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small">Click to Expand Cart</span>
+            <button type="button" id="expandDockCartBtn" class="btn-circle-toggle bg-primary text-white border-0" title="Expand Cart Panel">
+                <i class="fas fa-chevron-up"></i>
+            </button>
+        </div>
     </div>
 
 </div>
@@ -397,6 +483,32 @@ $(document).ready(function () {
     // Staged Cart Array
     let cart = [];
     let totalProductCards = $('.product-card').length;
+    let isCartCollapsed = false;
+
+    // Toggle Collapse / Bottom Dock Cart Mode
+    $('#toggleCartCollapseBtn').on('click', function () {
+        toggleCartPanel();
+    });
+
+    $('#expandDockCartBtn').on('click', function () {
+        toggleCartPanel();
+    });
+
+    function toggleCartPanel() {
+        isCartCollapsed = !isCartCollapsed;
+        let layout = $('#posGridLayout');
+        let icon   = $('#toggleCartIcon');
+
+        if (isCartCollapsed) {
+            layout.addClass('cart-collapsed');
+            $('#posCartPanel').addClass('dock-minimized');
+            icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+        } else {
+            layout.removeClass('cart-collapsed');
+            $('#posCartPanel').removeClass('dock-minimized');
+            icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+        }
+    }
 
     // Category Filter Pills
     $('.cat-pill').on('click', function () {
@@ -611,11 +723,11 @@ $(document).ready(function () {
                 <small>Click on any product card on the left to select variants and adjust stock!</small>
             </div>`);
 
-            $('#cartCount, #statItemsCount, #btnSubmitCount').text('0');
+            $('#cartCount, #dockCartCount, #statItemsCount, #btnSubmitCount').text('0');
             $('#statProductsCount').text('0');
             $('#statAddedQty').text('+0 Pcs');
             $('#statDeductedQty').text('-0 Pcs');
-            $('#statNetDiff').text('0 Pcs');
+            $('#statNetDiff, #dockNetDiff').text('0 Pcs');
             $('#submitTerminalBtn').prop('disabled', true);
             return;
         }
@@ -669,11 +781,11 @@ $(document).ready(function () {
         let netDiff = totalAdded - totalDeducted;
         let netStr  = (netDiff > 0 ? '+' : '') + netDiff.toLocaleString() + ' Pcs';
 
-        $('#cartCount, #statItemsCount, #btnSubmitCount').text(cart.length);
+        $('#cartCount, #dockCartCount, #statItemsCount, #btnSubmitCount').text(cart.length);
         $('#statProductsCount').text(uniqueProducts.size);
         $('#statAddedQty').text('+' + totalAdded.toLocaleString() + ' Pcs');
         $('#statDeductedQty').text('-' + totalDeducted.toLocaleString() + ' Pcs');
-        $('#statNetDiff').text(netStr);
+        $('#statNetDiff, #dockNetDiff').text(netStr);
 
         $('#submitTerminalBtn').prop('disabled', false);
     }
