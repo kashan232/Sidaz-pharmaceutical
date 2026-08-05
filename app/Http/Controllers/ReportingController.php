@@ -1234,7 +1234,40 @@ class ReportingController extends Controller
                 ];
             });
 
-            return response()->json($transformed);
+            // Calculate Expenses for date range
+            $expenseQueryV1 = DB::table('expense_vouchers');
+            $expenseQueryV2 = DB::table('voucher_masters')->where('voucher_type', 'expense');
+
+            if ($start && $end) {
+                $startDt = \Carbon\Carbon::parse($start)->format('Y-m-d H:i:s');
+                $endDt   = \Carbon\Carbon::parse($end)->format('Y-m-d H:i:s');
+                $expenseQueryV1->whereBetween('entry_date', [$startDt, $endDt]);
+                $expenseQueryV2->whereBetween('date', [$startDt, $endDt]);
+            }
+
+            $totalExpenses = (float) $expenseQueryV1->sum('total_amount') + (float) $expenseQueryV2->sum('total_amount');
+
+            // Calculate Total COGS for fetched sales
+            $totalCogs = 0;
+            foreach ($sales as $sale) {
+                foreach ($sale->items as $item) {
+                    $purchPrice = 0;
+                    if (isset($item->purchase_price) && (float)$item->purchase_price > 0) {
+                        $purchPrice = (float) $item->purchase_price;
+                    } elseif ($item->product) {
+                        $purchPrice = (float) ($item->product->purchase_price_per_piece ?? 0);
+                    }
+                    $totalCogs += ((float) $item->total_pieces) * $purchPrice;
+                }
+            }
+
+            return response()->json([
+                'sales' => $transformed,
+                'summary' => [
+                    'expenses' => $totalExpenses,
+                    'cogs'     => $totalCogs,
+                ]
+            ]);
         }
 
         return view('admin_panel.reporting.sale_report');

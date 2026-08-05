@@ -19,7 +19,7 @@
     .sale-filter-group {
         display: flex;
         align-items: center;
-        margin-right: 12px;
+        margin-right: 14px;
     }
     .sale-filter-label {
         margin-right: 8px !important;
@@ -30,41 +30,42 @@
         color: #475569;
     }
     
-    /* Compact Summary Stat Cards */
-    .summary-card-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-        gap: 10px;
-        margin-bottom: 10px;
-    }
-    .stat-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 10px 14px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    /* Single Horizontal Line Summary Metrics Bar */
+    .summary-pill-bar {
         display: flex;
-        flex-direction: column;
-        justify-content: center;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        overflow-x: auto;
+        white-space: nowrap;
     }
-    .stat-card .stat-label {
-        font-size: .68rem;
+    
+    .stat-pill {
+        flex: 1 1 0px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        text-align: center;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .stat-pill .stat-label {
+        font-size: .60rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #64748b;
-        margin-bottom: 3px;
+        letter-spacing: 0.4px;
+        margin-bottom: 1px;
     }
-    .stat-card .stat-value {
-        font-size: 1.08rem;
+    .stat-pill .stat-val {
+        font-size: .88rem;
         font-weight: 800;
         line-height: 1.2;
     }
 
     /* Scrollable Table Wrapper with Sticky Header */
     .sale-table-wrap {
-        height: calc(100vh - 245px);
-        max-height: calc(100vh - 245px);
+        height: calc(100vh - 250px);
+        max-height: calc(100vh - 250px);
         min-height: 380px;
         overflow-y: auto;
         border: 1px solid #cbd5e1;
@@ -108,7 +109,7 @@
 
 <div class="sale-report-container">
     
-    {{-- Filter Header Bar with Explicit Margins & Gaps --}}
+    {{-- Filter Header Bar with Explicit Margins --}}
     <div class="card border-0 shadow-sm mb-2" style="border-radius: 10px;">
         <div class="card-body py-2 px-3">
             <form id="SaleFilterForm" class="sale-filter-form">
@@ -153,27 +154,60 @@
         </div>
     </div>
 
-    {{-- Top Summary Stats Cards Bar (Header Metrics) --}}
-    <div class="summary-card-grid">
-        <div class="stat-card" style="border-left: 4px solid #4f46e5;">
-            <div class="stat-label">Total Invoices</div>
-            <div class="stat-value text-dark" id="cardTotalInvoices">0</div>
-        </div>
-        <div class="stat-card" style="border-left: 4px solid #0284c7;">
-            <div class="stat-label">Total Quantity</div>
-            <div class="stat-value text-info" id="cardTotalQty">0 Pcs</div>
-        </div>
-        <div class="stat-card" style="border-left: 4px solid #64748b;">
-            <div class="stat-label">Gross Total</div>
-            <div class="stat-value text-secondary" id="cardTotalAmount">Rs 0.00</div>
-        </div>
-        <div class="stat-card" style="border-left: 4px solid #059669;">
-            <div class="stat-label">Net Sales</div>
-            <div class="stat-value text-success" id="cardNetSales">Rs 0.00</div>
-        </div>
-        <div class="stat-card" style="border-left: 4px solid #dc2626;">
-            <div class="stat-label">Total Returns</div>
-            <div class="stat-value text-danger" id="cardTotalReturns">Rs 0.00</div>
+    {{-- Single Horizontal Line Summary Pill Metrics Bar --}}
+    <div class="card border-0 shadow-sm mb-2" style="border-radius: 10px; background: #ffffff;">
+        <div class="card-body p-2">
+            <div class="summary-pill-bar custom-scroll">
+                
+                {{-- 1. Total Invoices --}}
+                <div class="stat-pill" style="background: #f8fafc; border-color: #cbd5e1;">
+                    <div class="stat-label text-muted">Invoices</div>
+                    <div class="stat-val text-dark" id="pillTotalInvoices">0</div>
+                </div>
+
+                {{-- 2. Total Quantity --}}
+                <div class="stat-pill" style="background: #f0f9ff; border-color: #bae6fd;">
+                    <div class="stat-label text-info">Total Qty</div>
+                    <div class="stat-val text-info" id="pillTotalQty">0 Pcs</div>
+                </div>
+
+                {{-- 3. Gross Sale --}}
+                <div class="stat-pill" style="background: #f8fafc; border-color: #cbd5e1;">
+                    <div class="stat-label text-secondary">Gross Sale</div>
+                    <div class="stat-val text-secondary" id="pillGrossSale">Rs 0</div>
+                </div>
+
+                {{-- 4. Returns --}}
+                <div class="stat-pill" style="background: #fef2f2; border-color: #fca5a5;">
+                    <div class="stat-label text-danger">Returns</div>
+                    <div class="stat-val text-danger" id="pillTotalReturns">Rs 0</div>
+                </div>
+
+                {{-- 5. Net Sale --}}
+                <div class="stat-pill" style="background: #f0fdf4; border-color: #86efac;">
+                    <div class="stat-label text-success">Net Sale</div>
+                    <div class="stat-val text-success" id="pillNetSale">Rs 0</div>
+                </div>
+
+                {{-- 6. Total Profit --}}
+                <div class="stat-pill" style="background: #eff6ff; border-color: #93c5fd;">
+                    <div class="stat-label text-primary">Total Profit</div>
+                    <div class="stat-val text-primary" id="pillGrossProfit">Rs 0</div>
+                </div>
+
+                {{-- 7. Expense --}}
+                <div class="stat-pill" style="background: #fffbeb; border-color: #fde047;">
+                    <div class="stat-label" style="color: #b45309;">Expense</div>
+                    <div class="stat-val" style="color: #d97706;" id="pillExpenses">Rs 0</div>
+                </div>
+
+                {{-- 8. Current Profit --}}
+                <div class="stat-pill" style="background: #ecfdf5; border-color: #34d399;">
+                    <div class="stat-label" style="color: #047857;">Current Profit</div>
+                    <div class="stat-val" style="color: #059669;" id="pillCurrentProfit">Rs 0</div>
+                </div>
+
+            </div>
         </div>
     </div>
 
@@ -215,6 +249,9 @@
 <script>
     $(document).ready(function() {
 
+        let currentExpenses = 0;
+        let currentCogs = 0;
+
         // Auto Search Trigger
         $(document).on('click', '#btnSearch', function() {
             let start = $('#start_date').val();
@@ -231,13 +268,19 @@
                 },
                 success: function(res) {
                     $("#loader").hide();
+
+                    let salesData = Array.isArray(res) ? res : (res.sales || []);
+                    let summary   = res.summary || {};
+                    currentExpenses = parseFloat(summary.expenses) || 0;
+                    currentCogs     = parseFloat(summary.cogs) || 0;
+
                     let html = "";
                     let grandQty = 0,
                         grandTotal = 0,
                         grandNet = 0,
                         grandReturn = 0;
 
-                    res.forEach((s, i) => {
+                    salesData.forEach((s, i) => {
                         let products = s.product.split(',').join('<br>');
                         let qtyArr = s.qty.split(',');
                         let qtyPiecesArr = s.total_pieces ? s.total_pieces.split(',') : (s.qty_decimal ? s.qty_decimal.split(',') : qtyArr);
@@ -291,19 +334,25 @@
 
                     $('#saleBody').html(html);
 
-                    // Update Top Header Summary Metric Cards
-                    updateHeaderCards(res.length, grandQty, grandTotal, grandNet, grandReturn);
+                    // Update Top Header Summary Metric Pills Bar
+                    updateSingleLineSummary(salesData.length, grandQty, grandTotal, grandReturn, grandNet);
                 }
             });
         });
 
-        // Function to update Header Cards
-        function updateHeaderCards(count, qty, gross, net, returns) {
-            $('#cardTotalInvoices').text(count.toLocaleString());
-            $('#cardTotalQty').text(qty.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + ' Pcs');
-            $('#cardTotalAmount').text('Rs ' + gross.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
-            $('#cardNetSales').text('Rs ' + net.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
-            $('#cardTotalReturns').text('Rs ' + returns.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
+        // Function to update Single Line Summary Bar
+        function updateSingleLineSummary(count, qty, gross, returns, net) {
+            let grossProfit   = net - currentCogs;
+            let currentProfit = grossProfit - currentExpenses;
+
+            $('#pillTotalInvoices').text(count.toLocaleString());
+            $('#pillTotalQty').text(qty.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + ' Pcs');
+            $('#pillGrossSale').text('Rs ' + gross.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
+            $('#pillTotalReturns').text('Rs ' + returns.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
+            $('#pillNetSale').text('Rs ' + net.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
+            $('#pillGrossProfit').text('Rs ' + grossProfit.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
+            $('#pillExpenses').text('Rs ' + currentExpenses.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
+            $('#pillCurrentProfit').text('Rs ' + currentProfit.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
         }
 
         // Real-time Search Filter Handler
@@ -345,8 +394,8 @@
             $('#grandNet').text(newNet.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
             $('#grandReturn').text(newReturn.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
 
-            // Update Header Cards dynamically based on filtered search
-            updateHeaderCards(visibleInvoices, newQty, newTotal, newNet, newReturn);
+            // Update Single Line Summary Pills dynamically based on filtered search
+            updateSingleLineSummary(visibleInvoices, newQty, newTotal, newReturn, newNet);
         });
 
         // Initialize default dates based on shop shift (2:00 PM to 12:00 PM next day)
