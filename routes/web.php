@@ -400,6 +400,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/accounts-head/store', [AccountsHeadController::class, 'storeHead'])->name('account-heads.store');
     Route::post('/accounts/store', [AccountsHeadController::class, 'storeAccount'])->name('accounts.store');
+    Route::post('/accounts/{id}/update', [AccountsHeadController::class, 'updateAccount'])->name('accounts.update');
     Route::post('/accounts/{id}/toggle-status', [AccountsHeadController::class, 'toggleStatus'])->name('accounts.toggleStatus');
 
     // reporting routes

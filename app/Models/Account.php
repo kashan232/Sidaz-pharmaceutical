@@ -15,4 +15,9 @@ class Account extends Model
     {
         return $this->belongsTo(AccountHead::class, 'head_id');
     }
+
+    public function histories()
+    {
+        return $this->hasMany(AccountHistory::class, 'account_id')->latest();
+    }
 }
