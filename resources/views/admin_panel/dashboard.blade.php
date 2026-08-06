@@ -338,17 +338,19 @@
     /* =============================================
        LEGEND LIST (CATEGORY/EXPENSE)
     ============================================= */
-    .legend-list { display: flex; flex-direction: column; gap: 0.35rem; }
+    .legend-list { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem; }
     .legend-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        font-size: 0.77rem;
+        font-size: 0.78rem;
+        padding: 0.15rem 0;
     }
     .legend-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
-    .legend-name { color: var(--text); font-weight: 600; }
-    .legend-pct { color: var(--muted); font-size: 0.7rem; }
-    .legend-amt { color: var(--text); font-weight: 700; }
+    .legend-name { color: var(--text); font-weight: 600; font-size: 0.78rem; }
+    .legend-right { display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; }
+    .legend-pct { color: var(--muted); font-size: 0.72rem; font-weight: 600; min-width: 30px; text-align: right; }
+    .legend-amt { color: var(--text); font-weight: 800; font-size: 0.78rem; white-space: nowrap; }
 
     /* =============================================
        ACTIVITY FEED
@@ -841,6 +843,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const baseOpts = {
         responsive: true, maintainAspectRatio: false,
+        legend: { display: false },
         plugins: { legend: { display: false }, tooltip: {
             backgroundColor: '#0f172a', cornerRadius: 8, padding: 10,
             titleFont: { family: 'Inter', size: 12, weight: 'bold' },
@@ -879,11 +882,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 ]
             },
             options: { ...baseOpts,
+                legend: { display: true, position: 'top', align: 'end',
+                    labels: { font: { family: 'Inter', size: 11, weight: '600' }, usePointStyle: true, boxWidth: 6, padding: 14 } },
                 plugins: { ...baseOpts.plugins,
                     legend: { display: true, position: 'top', align: 'end',
                         labels: { font: { family: 'Inter', size: 11, weight: '600' }, usePointStyle: true, boxWidth: 6, padding: 14 } },
                     tooltip: { ...baseOpts.plugins.tooltip,
-                        callbacks: { label: c => ` ${c.dataset.label}: Rs ${parseFloat(c.raw).toLocaleString()}` } }
+                        callbacks: { label: c => ` ${c.dataset.label}: Rs ${parseFloat(c.raw || c.value || 0).toLocaleString()}` } }
                 }
             }
         });
@@ -899,10 +904,11 @@ document.addEventListener("DOMContentLoaded", function () {
         new Chart(catCtx.getContext('2d'), {
             type: 'doughnut',
             data: { labels, datasets: [{ data: values, backgroundColor: COLORS, borderWidth: 3, borderColor: '#fff', hoverOffset: 6 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '74%',
+            options: { responsive: true, maintainAspectRatio: false, cutoutPercentage: 74, cutout: '74%',
+                legend: { display: false },
                 plugins: { legend: { display: false },
                     tooltip: { backgroundColor: '#0f172a', padding: 10, bodyFont: { family: 'Inter', size: 11 },
-                        callbacks: { label: c => ` ${c.label}: Rs ${parseFloat(c.raw).toLocaleString()}` } }
+                        callbacks: { label: c => ` ${c.label}: Rs ${parseFloat(c.raw || c.value || 0).toLocaleString()}` } }
                 }
             }
         });
@@ -913,11 +919,11 @@ document.addEventListener("DOMContentLoaded", function () {
             el.innerHTML = labels.map((l,i) => {
                 const pct = total > 0 ? Math.round((values[i]/total)*100) : 0;
                 return `<div class="legend-row">
-                    <div class="d-flex align-items-center gap-1">
+                    <div class="d-flex align-items-center gap-2">
                         <span class="legend-dot" style="background:${COLORS[i]};"></span>
                         <span class="legend-name">${l}</span>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="legend-right">
                         <span class="legend-pct">${pct}%</span>
                         <span class="legend-amt">Rs ${values[i].toLocaleString()}</span>
                     </div>
@@ -945,9 +951,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 ]
             },
             options: { ...baseOpts,
+                legend: { display: false },
                 plugins: { ...baseOpts.plugins,
+                    legend: { display: false },
                     tooltip: { ...baseOpts.plugins.tooltip,
-                        callbacks: { label: c => ` Rs ${parseFloat(c.raw).toLocaleString()}` } }
+                        callbacks: { label: c => ` Rs ${parseFloat(c.raw || c.value || 0).toLocaleString()}` } }
                 }
             }
         });
@@ -964,7 +972,8 @@ document.addEventListener("DOMContentLoaded", function () {
         new Chart(exCtx.getContext('2d'), {
             type: 'doughnut',
             data: { labels, datasets: [{ data: values, backgroundColor: EXP_COLORS, borderWidth: 3, borderColor: '#fff', hoverOffset: 5 }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '74%',
+            options: { responsive: true, maintainAspectRatio: false, cutoutPercentage: 74, cutout: '74%',
+                legend: { display: false },
                 plugins: { legend: { display: false } }
             }
         });
@@ -974,11 +983,11 @@ document.addEventListener("DOMContentLoaded", function () {
             el.innerHTML = labels.map((l,i) => {
                 const pct = total > 0 ? Math.round((values[i]/total)*100) : 0;
                 return `<div class="legend-row">
-                    <div class="d-flex align-items-center gap-1">
+                    <div class="d-flex align-items-center gap-2">
                         <span class="legend-dot" style="background:${EXP_COLORS[i]};"></span>
                         <span class="legend-name">${l}</span>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="legend-right">
                         <span class="legend-pct">${pct}%</span>
                         <span class="legend-amt">Rs ${values[i].toLocaleString()}</span>
                     </div>
@@ -993,11 +1002,20 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!el) return;
         new Chart(el.getContext('2d'), {
             type: 'line',
-            data: { labels: data.map((_,i) => i),
+            data: { labels: data.map(() => ''),
                 datasets: [{ data, borderColor: color, borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0 }] },
-            options: { responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display:false }, tooltip: { enabled:false } },
-                scales: { x: { display:false }, y: { display:false } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: { display: false },
+                tooltips: { enabled: false },
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: {
+                    xAxes: [{ display: false, gridLines: { display: false } }],
+                    yAxes: [{ display: false, gridLines: { display: false } }],
+                    x: { display: false, grid: { display: false } },
+                    y: { display: false, grid: { display: false } }
+                }
             }
         });
     }
