@@ -356,37 +356,29 @@ class HomeController extends Controller
             }
             $profitThisMonth = $totalRevenueThisMonth - $totalCostThisMonth;
 
-            // Accurate Accounting Receivables & Payables
-            $balanceService = app(\App\Services\BalanceService::class);
-            $customers = DB::table('customers')->get();
-            $totalReceivables = 0;
-            foreach ($customers as $c) {
-                $totalReceivables += $balanceService->getCustomerBalance($c->id);
-            }
+            // Accurate Accounting Receivables & Payables in Single SQL Queries (Instant Execution)
+            $totalReceivables = DB::table('journal_entries')
+                ->where('party_type', \App\Models\Customer::class)
+                ->selectRaw('COALESCE(SUM(debit) - SUM(credit), 0) as total')
+                ->value('total') ?? 0;
 
-            $vendors = DB::table('vendors')->get();
-            $totalPayables = 0;
-            foreach ($vendors as $v) {
-                $totalPayables += $balanceService->getVendorBalance($v->id);
-            }
+            $apId = app(\App\Services\BalanceService::class)->getAccountsPayableId();
+            $totalPayables = DB::table('journal_entries')
+                ->where('party_type', \App\Models\Vendor::class)
+                ->where('account_id', $apId)
+                ->selectRaw('COALESCE(SUM(credit) - SUM(debit), 0) as total')
+                ->value('total') ?? 0;
 
             // Expenses Today
             $expensesTodayV1 = DB::table('expense_vouchers')->whereDate('entry_date', \Carbon\Carbon::today())->sum('total_amount');
             $expensesTodayV2 = DB::table('voucher_masters')->where('voucher_type', 'expense')->whereDate('date', \Carbon\Carbon::today())->sum('total_amount');
             $expensesToday = $expensesTodayV1 + $expensesTodayV2;
 
-            // Total Stock Valuation
-            $productsForStock = DB::table('products')->get();
-            $totalStockValue = 0;
-            foreach ($productsForStock as $p) {
-                $stockPieces = DB::table('warehouse_stocks')->where('product_id', $p->id)->sum('total_pieces');
-                if ($stockPieces > 0) {
-                    $price = $p->size_mode === 'by_size' 
-                        ? ((float)($p->pieces_per_m2 ?? 0) * (float)($p->purchase_price_per_m2 ?? 0))
-                        : (float)($p->purchase_price_per_piece ?? 0);
-                    $totalStockValue += ($stockPieces * $price);
-                }
-            }
+            // Total Stock Valuation in Single SQL Query
+            $totalStockValue = DB::table('warehouse_stocks')
+                ->join('products', 'products.id', '=', 'warehouse_stocks.product_id')
+                ->selectRaw('COALESCE(SUM(warehouse_stocks.total_pieces * (CASE WHEN products.size_mode = "by_size" THEN COALESCE(products.pieces_per_m2, 0) * COALESCE(products.purchase_price_per_m2, 0) ELSE COALESCE(products.purchase_price_per_piece, 0) END)), 0) as total')
+                ->value('total') ?? 0;
 
             $vendorCount = DB::table('vendors')->count();
             $employeeCount = \Illuminate\Support\Facades\Schema::hasTable('hr_employees') ? DB::table('hr_employees')->count() : DB::table('users')->count();
