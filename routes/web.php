@@ -301,6 +301,9 @@ Route::middleware('auth')->group(function () {
     // Route::get('booking/system', [SaleController::class,'booking-system'])->name('booking.index');
     Route::get('sale', [SaleController::class, 'index'])->middleware('permission:sales.view')->name('sale.index');
     Route::get('sale/create', [SaleController::class, 'addsale'])->middleware('permission:sales.create')->name('sale.add');
+    Route::get('/invoice-series/fetch', [SaleController::class, 'fetchInvoiceSeries'])->name('invoice_series.fetch');
+    Route::post('/invoice-series/store', [SaleController::class, 'storeInvoiceSeries'])->name('invoice_series.store');
+    Route::get('/invoice-series/generate-no', [SaleController::class, 'generateInvoiceNoAjax'])->name('invoice_series.generate_no');
     Route::get('pos', [App\Http\Controllers\POSController::class, 'index'])->middleware('permission:sales.create')->name('pos.index');
     Route::post('/pos/search-invoice', [App\Http\Controllers\POSController::class, 'searchInvoice'])->middleware('permission:sales.create')->name('pos.search_invoice');
     Route::get('/products/search', [ProductController::class, 'searchProducts'])->name('products.search');
@@ -431,6 +434,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('report/sale', [ReportingController::class, 'sale_report'])->middleware('permission:sale.report.view')->name('report.sale');
     Route::get('report/sale/fetch', [ReportingController::class, 'fetchsaleReport'])->middleware('permission:sale.report.view')->name('report.sale.fetch');
+
+    Route::get('report/product-sale-customer-wise', [ReportingController::class, 'product_sale_customer_wise_report'])->middleware('permission:sale.report.view')->name('report.product_sale_customer_wise');
+    Route::get('report/product-sale-customer-wise/fetch', [ReportingController::class, 'fetchProductSaleCustomerWise'])->middleware('permission:sale.report.view')->name('report.product_sale_customer_wise.fetch');
 
     Route::get('report/customer/ledger', [ReportingController::class, 'customer_ledger_report'])->middleware('permission:customer.ledger.view')->name('report.customer.ledger');
     Route::get('report/customer-ledger/fetch', [ReportingController::class, 'fetch_customer_ledger'])->middleware('permission:customer.ledger.view')->name('report.customer.ledger.fetch');

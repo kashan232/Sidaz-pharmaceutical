@@ -520,10 +520,53 @@
                 <!-- TOP INFORMATION PANEL -->
                 <div class="card-panel mb-2">
                     <div class="row g-2 align-items-end w-100 m-0">
-                        <!-- Invoice No -->
-                        <div class="col-sm-2">
+                        <!-- Invoice No with Prefix Dropdown & Refresh -->
+                        <div class="col-sm-3 col-md-2">
                             <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.7rem;">Invoice No.</label>
-                            <input type="text" class="form-control input-readonly" name="Invoice_no" value="{{ $nextInvoiceNumber }}" readonly>
+                            <div class="input-group input-group-sm">
+                                <button class="btn btn-success dropdown-toggle fw-bold text-white px-2 d-flex align-items-center gap-1" 
+                                        type="button" 
+                                        id="btnInvoicePrefix" 
+                                        data-bs-toggle="dropdown" 
+                                        aria-expanded="false"
+                                        style="background-color: #20c997; border-color: #20c997;">
+                                    <span id="activePrefixLabel">{{ $activePrefix ?? 'INV' }}</span>
+                                </button>
+                                <ul class="dropdown-menu shadow-lg p-1 border-0" id="dropdownInvoiceSeriesList" aria-labelledby="btnInvoicePrefix" style="min-width: 155px; font-size: 0.8rem; z-index: 1050;">
+                                    @if(isset($allSeries) && count($allSeries) > 0)
+                                        @foreach($allSeries as $s)
+                                            <li>
+                                                <a class="dropdown-item fw-bold {{ ($activePrefix ?? 'INV') == $s->prefix ? 'text-success active bg-light' : '' }}" 
+                                                   href="#" 
+                                                   data-prefix="{{ $s->prefix }}" 
+                                                   data-next="{{ $s->next_number }}" 
+                                                   data-padding="{{ $s->padding }}">
+                                                    @if(($activePrefix ?? 'INV') == $s->prefix) <i class="fas fa-check text-success me-1"></i> @endif 
+                                                    {{ $s->prefix }} <span class="text-muted small font-monospace">({{ $s->padding }}d)</span>
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                    @else
+                                        <li><a class="dropdown-item fw-bold text-success active bg-light" href="#" data-prefix="INV"><i class="fas fa-check text-success me-1"></i> INV (4d)</a></li>
+                                    @endif
+                                    <li><hr class="dropdown-divider my-1"></li>
+                                    <li>
+                                        <a class="dropdown-item fw-bold text-success d-flex align-items-center gap-1" href="#" id="btnOpenAddSeriesModal">
+                                            <i class="fas fa-plus-circle me-1"></i> Add Series
+                                        </a>
+                                    </li>
+                                </ul>
+
+                                <input type="text" class="form-control text-center fw-bold input-readonly" name="Invoice_no" id="inputInvoiceNo" value="{{ $nextInvoiceNumber }}" readonly style="font-family: monospace;">
+
+                                <button class="btn btn-success px-2 text-white" 
+                                        type="button" 
+                                        id="btnRefreshInvoiceNo" 
+                                        title="Regenerate Invoice Number"
+                                        style="background-color: #20c997; border-color: #20c997;">
+                                    <i class="fas fa-sync-alt" id="iconRefreshInvoice"></i>
+                                </button>
+                            </div>
                         </div>
                         <!-- Date -->
                         <div class="col-sm-2">
@@ -1257,6 +1300,169 @@ $(document).ready(function() {
                     }
                 });
             });
+
+            // ══════════════════════════════════════════════════════════════
+            // DYNAMIC INVOICE SERIES & PREFIX GENERATOR LOGIC (INSTANT 0ms)
+            // ══════════════════════════════════════════════════════════════
+            let currentInvoicePrefix = "{{ $activePrefix ?? 'INV' }}";
+
+            function fetchNextInvoiceNo(prefix) {
+                $('#iconRefreshInvoice').addClass('fa-spin');
+                $.ajax({
+                    url: "{{ route('invoice_series.generate_no') }}",
+                    type: "GET",
+                    data: { prefix: prefix },
+                    success: function(res) {
+                        $('#iconRefreshInvoice').removeClass('fa-spin');
+                        if (res.invoice_no) {
+                            $('#inputInvoiceNo').val(res.invoice_no);
+                        }
+                    },
+                    error: function() {
+                        $('#iconRefreshInvoice').removeClass('fa-spin');
+                    }
+                });
+            }
+
+            // Prefix Selection Handler
+            $(document).on('click', '#dropdownInvoiceSeriesList a[data-prefix]', function(e) {
+                e.preventDefault();
+                let prefix = $(this).data('prefix');
+                if (!prefix) return;
+
+                currentInvoicePrefix = prefix;
+                $('#activePrefixLabel').text(prefix);
+
+                // Update active highlight in dropdown instantly
+                $('#dropdownInvoiceSeriesList a[data-prefix]').removeClass('text-success active bg-light').find('i.fa-check').remove();
+                $(this).addClass('text-success active bg-light').prepend('<i class="fas fa-check text-success me-1"></i>');
+
+                fetchNextInvoiceNo(prefix);
+            });
+
+            // Refresh Invoice No Handler
+            $(document).on('click', '#btnRefreshInvoiceNo', function() {
+                fetchNextInvoiceNo(currentInvoicePrefix);
+            });
+
+            // Open Add Series Modal
+            $(document).on('click', '#btnOpenAddSeriesModal', function(e) {
+                e.preventDefault();
+                $('#modalAddInvoiceSeries').modal('show');
+            });
+
+            // Submit Add Series Form via AJAX
+            $('#formAddInvoiceSeries').on('submit', function(e) {
+                e.preventDefault();
+                let formData = $(this).serialize();
+                let btn = $('#btnSaveSeries');
+
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Saving…');
+
+                $.ajax({
+                    url: "{{ route('invoice_series.store') }}",
+                    type: "POST",
+                    data: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(res) {
+                        btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Save &amp; Select');
+                        
+                        if (res.success) {
+                            $('#modalAddInvoiceSeries').modal('hide');
+                            $('#formAddInvoiceSeries')[0].reset();
+
+                            currentInvoicePrefix = res.prefix;
+                            $('#activePrefixLabel').text(res.prefix);
+                            $('#inputInvoiceNo').val(res.invoice_no);
+
+                            // Update or insert item in dropdown list instantly
+                            let existingItem = $(`#dropdownInvoiceSeriesList a[data-prefix="${res.prefix}"]`);
+                            if (existingItem.length > 0) {
+                                existingItem.data('next', res.series.next_number).data('padding', res.series.padding);
+                            } else {
+                                let newItemHtml = `<li>
+                                    <a class="dropdown-item fw-bold text-success active bg-light" href="#" data-prefix="${res.prefix}" data-next="${res.series.next_number}" data-padding="${res.series.padding}">
+                                        <i class="fas fa-check text-success me-1"></i> ${res.prefix} <span class="text-muted small font-monospace">(${res.series.padding}d)</span>
+                                    </a>
+                                </li>`;
+                                $('#dropdownInvoiceSeriesList li:has(hr)').before(newItemHtml);
+                            }
+
+                            // Update active highlight state
+                            $('#dropdownInvoiceSeriesList a[data-prefix]').removeClass('text-success active bg-light').find('i.fa-check').remove();
+                            $(`#dropdownInvoiceSeriesList a[data-prefix="${res.prefix}"]`).addClass('text-success active bg-light').prepend('<i class="fas fa-check text-success me-1"></i>');
+
+                            if (typeof showAlert === 'function') {
+                                showAlert('success', res.message);
+                            } else if (typeof Swal !== 'undefined') {
+                                Swal.fire({ icon: 'success', title: 'Saved!', text: res.message, timer: 1500, showConfirmButton: false });
+                            } else {
+                                alert(res.message);
+                            }
+                        }
+                    },
+                    error: function(err) {
+                        btn.prop('disabled', false).html('<i class="fas fa-save me-1"></i> Save &amp; Select');
+                        let msg = 'Error saving series. Please check form inputs.';
+                        if (err.responseJSON && err.responseJSON.errors) {
+                            msg = Object.values(err.responseJSON.errors).flat().join('\n');
+                        } else if (err.responseJSON && err.responseJSON.message) {
+                            msg = err.responseJSON.message;
+                        }
+                        
+                        if (typeof showAlert === 'function') {
+                            showAlert('error', msg);
+                        } else if (typeof Swal !== 'undefined') {
+                            Swal.fire('Error', msg, 'error');
+                        } else {
+                            alert(msg);
+                        }
+                    }
+                });
+            });
         });
     </script>
+
+    <!-- Modal: Add / Manage Invoice Series -->
+    <div class="modal fade" id="modalAddInvoiceSeries" tabindex="-1" aria-labelledby="modalAddInvoiceSeriesLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-bottom bg-light px-3 py-2">
+                    <h6 class="modal-title fw-bold text-dark mb-0" id="modalAddInvoiceSeriesLabel">
+                        <i class="fas fa-barcode text-success me-1"></i> Add Invoice Series
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="formAddInvoiceSeries">
+                    @csrf
+                    <div class="modal-body p-3">
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold text-secondary mb-1">Prefix (e.g., SQ, POS, INV)</label>
+                            <input type="text" name="prefix" id="seriesPrefixInput" class="form-control form-control-sm text-uppercase fw-bold" placeholder="e.g. SQ" required style="letter-spacing: 1px;">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold text-secondary mb-1">Starting Number (Counter)</label>
+                            <input type="number" name="next_number" id="seriesNextNumInput" class="form-control form-control-sm fw-bold text-primary" placeholder="e.g. 50" min="1" value="50" required>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small fw-bold text-secondary mb-1">Padding Length (Zero Digits)</label>
+                            <select name="padding" id="seriesPaddingSelect" class="form-select form-select-sm fw-bold">
+                                <option value="4">4 Digits (e.g., 0050)</option>
+                                <option value="6" selected>6 Digits (e.g., 000050)</option>
+                                <option value="8">8 Digits (e.g., 00000050)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-top p-2 px-3">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success btn-sm fw-bold px-3" id="btnSaveSeries">
+                            <i class="fas fa-save me-1"></i> Save &amp; Select
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection

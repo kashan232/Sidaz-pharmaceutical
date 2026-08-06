@@ -62,6 +62,30 @@
         line-height: 1.2;
     }
 
+    /* Mobile Cards Styling */
+    .mob-card {
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+    }
+    .mob-metric-card {
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        padding: 10px 6px;
+        text-align: center;
+        height: 100%;
+    }
+    .mob-metric-label {
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 600;
+    }
+    .mob-metric-val {
+        font-size: 14px;
+        font-weight: 800;
+    }
+
     /* Scrollable Table Wrapper with Sticky Header */
     .sale-table-wrap {
         height: calc(100vh - 250px);
@@ -109,10 +133,10 @@
 
 <div class="sale-report-container">
     
-    {{-- Filter Header Bar with Explicit Margins --}}
-    <div class="card border-0 shadow-sm mb-2" style="border-radius: 10px;">
+    {{-- DESKTOP FILTER HEADER BAR (d-none d-md-block) --}}
+    <div class="card border-0 shadow-sm mb-2 d-none d-md-block" style="border-radius: 10px;">
         <div class="card-body py-2 px-3">
-            <form id="SaleFilterForm" class="sale-filter-form">
+            <form id="SaleFilterFormDesk" class="sale-filter-form">
                 
                 {{-- Title Badge --}}
                 <div class="sale-filter-group" style="margin-right: 18px;">
@@ -123,30 +147,30 @@
 
                 {{-- Start Date --}}
                 <div class="sale-filter-group" style="margin-right: 18px;">
-                    <label for="start_date" class="sale-filter-label">Start:</label>
-                    <input type="datetime-local" name="start_date" id="start_date" class="form-control form-control-sm fw-bold" style="height: 36px; width: 185px; font-size: .78rem; border-radius: 6px;">
+                    <label for="start_date_desk" class="sale-filter-label">Start:</label>
+                    <input type="datetime-local" name="start_date" id="start_date_desk" class="form-control form-control-sm fw-bold startDateInput" style="height: 36px; width: 185px; font-size: .78rem; border-radius: 6px;">
                 </div>
 
                 {{-- End Date --}}
                 <div class="sale-filter-group" style="margin-right: 18px;">
-                    <label for="end_date" class="sale-filter-label">End:</label>
-                    <input type="datetime-local" name="end_date" id="end_date" class="form-control form-control-sm fw-bold" style="height: 36px; width: 185px; font-size: .78rem; border-radius: 6px;">
+                    <label for="end_date_desk" class="sale-filter-label">End:</label>
+                    <input type="datetime-local" name="end_date" id="end_date_desk" class="form-control form-control-sm fw-bold endDateInput" style="height: 36px; width: 185px; font-size: .78rem; border-radius: 6px;">
                 </div>
 
                 {{-- Search Input --}}
                 <div class="flex-grow-1" style="min-width: 210px; margin-right: 18px;">
                     <div class="position-relative">
                         <i class="fas fa-search position-absolute text-muted" style="left: 12px; top: 50%; transform: translateY(-50%); font-size: 12px; pointer-events: none;"></i>
-                        <input type="text" id="search_product" class="form-control form-control-sm" placeholder="Search Product / Size / Invoice / Customer…" style="height: 36px; font-size: .80rem; border-radius: 6px; padding-left: 34px;">
+                        <input type="text" class="form-control form-control-sm searchProductInput" placeholder="Search Product / Size / Invoice / Customer…" style="height: 36px; font-size: .80rem; border-radius: 6px; padding-left: 34px;">
                     </div>
                 </div>
 
                 {{-- Action Buttons --}}
                 <div class="d-flex align-items-center">
-                    <button type="button" id="btnSearch" class="btn btn-primary btn-sm px-3 fw-bold d-inline-flex align-items-center" style="height: 36px; border-radius: 6px; font-size: .80rem; margin-right: 10px;">
+                    <button type="button" class="btn btn-primary btn-sm px-3 fw-bold d-inline-flex align-items-center btnSearchTrigger" style="height: 36px; border-radius: 6px; font-size: .80rem; margin-right: 10px;">
                         <i class="fas fa-filter" style="margin-right: 6px;"></i> Search
                     </button>
-                    <button type="button" id="btnExportCsv" class="btn btn-outline-danger btn-sm px-3 fw-bold d-inline-flex align-items-center" style="height: 36px; border-radius: 6px; font-size: .80rem;">
+                    <button type="button" class="btn btn-outline-danger btn-sm px-3 fw-bold d-inline-flex align-items-center btnExportCsvTrigger" style="height: 36px; border-radius: 6px; font-size: .80rem;">
                         <i class="fas fa-file-csv" style="margin-right: 6px;"></i> CSV
                     </button>
                 </div>
@@ -154,54 +178,83 @@
         </div>
     </div>
 
-    {{-- Single Horizontal Line Summary Pill Metrics Bar --}}
-    <div class="card border-0 shadow-sm mb-2" style="border-radius: 10px; background: #ffffff;">
+    {{-- MOBILE FILTER HEADER BAR (d-md-none With Top Margin) --}}
+    <div class="card border-0 shadow-sm mb-3 no-print d-md-none mt-2" style="border-radius: 12px;">
+        <div class="card-body p-3">
+            <form id="SaleFilterFormMob">
+                <div class="row g-2">
+                    <div class="col-12 mb-1">
+                        <span class="fw-bold text-dark fs-6">
+                            <i class="fas fa-chart-line text-primary me-2"></i>Sale Report
+                        </span>
+                    </div>
+                    <div class="col-6 mb-1">
+                        <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 11px;">Start Date</label>
+                        <input type="datetime-local" name="start_date" id="start_date_mob" class="form-control form-control-sm startDateInput" style="font-size: 11px;">
+                    </div>
+                    <div class="col-6 mb-1">
+                        <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 11px;">End Date</label>
+                        <input type="datetime-local" name="end_date" id="end_date_mob" class="form-control form-control-sm endDateInput" style="font-size: 11px;">
+                    </div>
+                    <div class="col-12 mb-2">
+                        <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 11px;">Search</label>
+                        <input type="text" class="form-control form-control-sm searchProductInput" placeholder="Search Product / Invoice / Customer…" style="font-size: 11px;">
+                    </div>
+                    <div class="col-12 mb-1">
+                        <button type="button" class="btn btn-primary w-100 py-2 fw-bold rounded-3 shadow-sm btnSearchTrigger" style="font-size: 13px;">
+                            <i class="fas fa-filter me-1"></i> Search
+                        </button>
+                    </div>
+                    <div class="col-12">
+                        <button type="button" class="btn btn-outline-danger w-100 btn-sm fw-bold btnExportCsvTrigger" style="font-size: 11px;">
+                            <i class="fas fa-file-csv me-1"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- DESKTOP SUMMARY PILL METRICS BAR (d-none d-md-block) --}}
+    <div class="card border-0 shadow-sm mb-2 d-none d-md-block" style="border-radius: 10px; background: #ffffff;">
         <div class="card-body p-2">
             <div class="summary-pill-bar custom-scroll">
                 
-                {{-- 1. Total Invoices --}}
                 <div class="stat-pill" style="background: #f8fafc; border-color: #cbd5e1;">
                     <div class="stat-label text-muted">Invoices</div>
                     <div class="stat-val text-dark" id="pillTotalInvoices">0</div>
                 </div>
 
-                {{-- 2. Total Quantity --}}
                 <div class="stat-pill" style="background: #f0f9ff; border-color: #bae6fd;">
                     <div class="stat-label text-info">Total Qty</div>
                     <div class="stat-val text-info" id="pillTotalQty">0 Pcs</div>
                 </div>
 
-                {{-- 3. Gross Sale --}}
                 <div class="stat-pill" style="background: #f8fafc; border-color: #cbd5e1;">
                     <div class="stat-label text-secondary">Gross Sale</div>
                     <div class="stat-val text-secondary" id="pillGrossSale">Rs 0</div>
                 </div>
 
-                {{-- 4. Returns --}}
                 <div class="stat-pill" style="background: #fef2f2; border-color: #fca5a5;">
                     <div class="stat-label text-danger">Returns</div>
                     <div class="stat-val text-danger" id="pillTotalReturns">Rs 0</div>
                 </div>
 
-                {{-- 5. Net Sale --}}
                 <div class="stat-pill" style="background: #f0fdf4; border-color: #86efac;">
                     <div class="stat-label text-success">Net Sale</div>
                     <div class="stat-val text-success" id="pillNetSale">Rs 0</div>
                 </div>
 
-                {{-- 6. Total Profit --}}
                 <div class="stat-pill" style="background: #eff6ff; border-color: #93c5fd;">
                     <div class="stat-label text-primary">Total Profit</div>
                     <div class="stat-val text-primary" id="pillGrossProfit">Rs 0</div>
                 </div>
 
-                {{-- 7. Expense --}}
                 <div class="stat-pill" style="background: #fffbeb; border-color: #fde047;">
                     <div class="stat-label" style="color: #b45309;">Expense</div>
                     <div class="stat-val" style="color: #d97706;" id="pillExpenses">Rs 0</div>
                 </div>
 
-                {{-- 8. Current Profit --}}
                 <div class="stat-pill" style="background: #ecfdf5; border-color: #34d399;">
                     <div class="stat-label" style="color: #047857;">Current Profit</div>
                     <div class="stat-val" style="color: #059669;" id="pillCurrentProfit">Rs 0</div>
@@ -211,10 +264,62 @@
         </div>
     </div>
 
-    {{-- Table Container with Internal Vertical Scroll & Sticky Header --}}
-    <div class="card border-0 shadow-sm" style="border-radius: 8px;">
+    {{-- MOBILE SUMMARY METRIC GRID (2 Columns col-6 d-md-none) --}}
+    <div class="row g-2 mb-3 d-md-none no-print px-1">
+        <div class="col-6 mb-1">
+            <div class="mob-metric-card">
+                <span class="mob-metric-label"><i class="fas fa-file-invoice text-muted me-1"></i>Invoices</span>
+                <div class="mob-metric-val text-dark mt-1" id="mobPillTotalInvoices">0</div>
+            </div>
+        </div>
+        <div class="col-6 mb-1">
+            <div class="mob-metric-card">
+                <span class="mob-metric-label"><i class="fas fa-box text-info me-1"></i>Total Qty</span>
+                <div class="mob-metric-val text-info mt-1" id="mobPillTotalQty">0 Pcs</div>
+            </div>
+        </div>
+        <div class="col-6 mb-1">
+            <div class="mob-metric-card">
+                <span class="mob-metric-label"><i class="fas fa-wallet text-secondary me-1"></i>Gross Sale</span>
+                <div class="mob-metric-val text-secondary mt-1" id="mobPillGrossSale">Rs 0</div>
+            </div>
+        </div>
+        <div class="col-6 mb-1">
+            <div class="mob-metric-card">
+                <span class="mob-metric-label"><i class="fas fa-undo text-danger me-1"></i>Returns</span>
+                <div class="mob-metric-val text-danger mt-1" id="mobPillTotalReturns">Rs 0</div>
+            </div>
+        </div>
+        <div class="col-6 mb-1">
+            <div class="mob-metric-card">
+                <span class="mob-metric-label"><i class="fas fa-check-circle text-success me-1"></i>Net Sale</span>
+                <div class="mob-metric-val text-success mt-1" id="mobPillNetSale">Rs 0</div>
+            </div>
+        </div>
+        <div class="col-6 mb-1">
+            <div class="mob-metric-card">
+                <span class="mob-metric-label"><i class="fas fa-chart-line text-primary me-1"></i>Total Profit</span>
+                <div class="mob-metric-val text-primary mt-1" id="mobPillGrossProfit">Rs 0</div>
+            </div>
+        </div>
+        <div class="col-6 mb-1">
+            <div class="mob-metric-card">
+                <span class="mob-metric-label"><i class="fas fa-minus-circle text-warning me-1"></i>Expense</span>
+                <div class="mob-metric-val text-warning mt-1" id="mobPillExpenses">Rs 0</div>
+            </div>
+        </div>
+        <div class="col-6 mb-1">
+            <div class="mob-metric-card">
+                <span class="mob-metric-label"><i class="fas fa-coins text-success me-1"></i>Current Profit</span>
+                <div class="mob-metric-val text-success mt-1" id="mobPillCurrentProfit">Rs 0</div>
+            </div>
+        </div>
+    </div>
+
+    {{-- DESKTOP TABLE CONTAINER (d-none d-md-block) --}}
+    <div class="card border-0 shadow-sm d-none d-md-block" style="border-radius: 8px;">
         <div class="card-body p-0">
-            <div id="loader" style="display:none; text-align:center; padding: 20px;">
+            <div class="loader" style="display:none; text-align:center; padding: 20px;">
                 <div class="spinner-border text-primary" role="status"></div>
                 <div class="small text-muted mt-2">Loading sales data…</div>
             </div>
@@ -242,6 +347,16 @@
         </div>
     </div>
 
+    {{-- MOBILE SALE CARDS CONTAINER (d-md-none) --}}
+    <div class="d-md-none" id="saleMobileContainer">
+        <div class="text-center py-4 text-muted card border-0 shadow-sm rounded-3 bg-white">
+            <div class="card-body py-4">
+                <i class="fas fa-spinner fa-spin fa-2x mb-2 text-secondary"></i>
+                <p class="mb-0 small fw-bold">Loading sales data…</p>
+            </div>
+        </div>
+    </div>
+
 </div>
 @endsection
 
@@ -252,13 +367,18 @@
         let currentExpenses = 0;
         let currentCogs = 0;
 
-        // Auto Search Trigger
-        $(document).on('click', '#btnSearch', function() {
-            let start = $('#start_date').val();
-            let end   = $('#end_date').val();
-            $('#search_product').val(''); // Clear search input on new range search
+        // Sync Date Inputs between Desktop & Mobile
+        $('.startDateInput').on('change', function() { $('.startDateInput').val($(this).val()); });
+        $('.endDateInput').on('change', function() { $('.endDateInput').val($(this).val()); });
+        $('.searchProductInput').on('input', function() { $('.searchProductInput').val($(this).val()); });
 
-            $("#loader").show();
+        // Auto Search Trigger
+        $(document).on('click', '.btnSearchTrigger', function() {
+            let start = $('#start_date_desk').val() || $('#start_date_mob').val();
+            let end   = $('#end_date_desk').val() || $('#end_date_mob').val();
+            $('.searchProductInput').val('');
+
+            $(".loader").show();
             $.ajax({
                 url: "{{ route('report.sale.fetch') }}",
                 type: "GET",
@@ -267,7 +387,7 @@
                     end_date: end
                 },
                 success: function(res) {
-                    $("#loader").hide();
+                    $(".loader").hide();
 
                     let salesData = Array.isArray(res) ? res : (res.sales || []);
                     let summary   = res.summary || {};
@@ -275,6 +395,7 @@
                     currentCogs     = parseFloat(summary.cogs) || 0;
 
                     let html = "";
+                    let mobHtml = "";
                     let grandQty = 0,
                         grandTotal = 0,
                         grandNet = 0,
@@ -287,16 +408,13 @@
                         let price = s.per_price.split(',').join('<br>');
                         let total = s.per_total.split(',').join('<br>');
 
-                        // qty total per row (calculation only using pieces)
                         let rowQty = qtyPiecesArr.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
                         grandQty += rowQty;
 
-                        // calculate totals
                         let rowTotal = s.per_total.split(',').reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
                         grandTotal += parseFloat(rowTotal);
                         grandNet += parseFloat(s.total_net);
 
-                        // returns
                         let returnHtml = "";
                         let returnTotal = 0;
                         if (s.returns && s.returns.length > 0) {
@@ -307,161 +425,151 @@
                         }
                         grandReturn += returnTotal;
 
+                        // Desktop Row
                         html += `<tr data-qty="${rowQty}" data-total="${rowTotal}" data-net="${s.total_net}" data-return="${returnTotal}">
-                        <td>${i+1}</td>
-                        <td class="small text-nowrap">${s.created_at}</td>
-                        <td class="font-monospace fw-bold text-primary">INVSLE-${s.id}</td>
-                        <td>${s.customer_name ?? '-'}</td>
-                        <td>${s.reference ?? '-'}</td>
-                        <td>${products}</td>
-                        <td class="fw-semibold">${qtyArr.join('<br>')}</td>
-                        <td>${price}</td>
-                        <td>${total}</td>
-                        <td class="fw-bold text-dark">${parseFloat(s.total_net).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td>${returnHtml || '-'}</td>
-                    </tr>`;
+                            <td>${i+1}</td>
+                            <td class="small text-nowrap">${s.created_at}</td>
+                            <td class="font-monospace fw-bold text-primary">INVSLE-${s.id}</td>
+                            <td>${s.customer_name ?? '-'}</td>
+                            <td>${s.reference ?? '-'}</td>
+                            <td>${products}</td>
+                            <td class="fw-semibold">${qtyArr.join('<br>')}</td>
+                            <td>${price}</td>
+                            <td>${total}</td>
+                            <td class="fw-bold text-dark">${parseFloat(s.total_net).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                            <td>${returnHtml || '-'}</td>
+                        </tr>`;
+
+                        // Mobile Card
+                        mobHtml += `
+                        <div class="mob-card p-2.5 p-2 mb-2 mob-sale-card" data-search="${(s.product + ' INVSLE-' + s.id + ' ' + (s.customer_name||'') + ' ' + (s.reference||'')).toLowerCase()}">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="badge bg-light text-muted border" style="font-size: 10px;">#${i+1}</span>
+                                    <span class="badge bg-light text-primary border font-monospace fw-bold" style="font-size: 11px;">INVSLE-${s.id}</span>
+                                </div>
+                                <small class="text-muted" style="font-size: 10.5px;">${s.created_at}</small>
+                            </div>
+                            <div class="mb-1">
+                                <strong class="text-dark d-block" style="font-size: 12.5px;">${s.customer_name ?? 'Walking Customer'}</strong>
+                                <small class="text-muted" style="font-size: 10.5px;">Ref: ${s.reference ?? '-'}</small>
+                            </div>
+                            <div class="bg-light rounded p-2 mb-1" style="font-size: 11px;">
+                                <span class="fw-semibold text-secondary d-block mb-1">Products:</span>
+                                <div>${products}</div>
+                            </div>
+                            <div class="border-top pt-2">
+                                <div class="row g-1 text-center" style="font-size: 11px;">
+                                    <div class="col-4 border-end">
+                                        <span class="text-muted d-block" style="font-size: 10px;">Qty</span>
+                                        <strong class="text-dark">${rowQty}</strong>
+                                    </div>
+                                    <div class="col-4 border-end">
+                                        <span class="text-muted d-block" style="font-size: 10px;">Gross</span>
+                                        <strong class="text-dark">Rs ${parseFloat(rowTotal).toLocaleString(undefined, {minimumFractionDigits:2})}</strong>
+                                    </div>
+                                    <div class="col-4">
+                                        <span class="text-muted d-block" style="font-size: 10px;">Net Sale</span>
+                                        <strong class="text-success">Rs ${parseFloat(s.total_net).toLocaleString(undefined, {minimumFractionDigits:2})}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
                     });
 
-                    // Grand total row inside table
+                    // Grand total row inside desktop table
                     html += `<tr class="fw-bold bg-light" id="grandTotalRow">
-                    <td colspan="6" class="text-end">Grand Total:</td>
-                    <td id="grandQty">${grandQty.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td>-</td>
-                    <td id="grandTotal">${grandTotal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td id="grandNet">${grandNet.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td id="grandReturn">${grandReturn.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                </tr>`;
+                        <td colspan="6" class="text-end">Grand Total:</td>
+                        <td id="grandQty">${grandQty.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td>-</td>
+                        <td id="grandTotal">${grandTotal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td id="grandNet">${grandNet.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td id="grandReturn">${grandReturn.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                    </tr>`;
 
                     $('#saleBody').html(html);
+                    $('#saleMobileContainer').html(mobHtml || '<div class="card border-0 shadow-sm rounded-3 text-center py-4 bg-white"><div class="card-body py-4 text-muted"><i class="fas fa-folder-open fa-2x mb-2 text-secondary"></i><p class="small fw-bold mb-0">No Sales Data Found</p></div></div>');
 
-                    // Update Top Header Summary Metric Pills Bar
                     updateSingleLineSummary(salesData.length, grandQty, grandTotal, grandReturn, grandNet);
                 }
             });
         });
 
-        // Function to update Single Line Summary Bar
+        // Function to update Summary Metrics (Desktop & Mobile)
         function updateSingleLineSummary(count, qty, gross, returns, net) {
             let grossProfit   = net - currentCogs;
             let currentProfit = grossProfit - currentExpenses;
 
-            $('#pillTotalInvoices').text(count.toLocaleString());
-            $('#pillTotalQty').text(qty.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + ' Pcs');
-            $('#pillGrossSale').text('Rs ' + gross.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
-            $('#pillTotalReturns').text('Rs ' + returns.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
-            $('#pillNetSale').text('Rs ' + net.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
-            $('#pillGrossProfit').text('Rs ' + grossProfit.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
-            $('#pillExpenses').text('Rs ' + currentExpenses.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
-            $('#pillCurrentProfit').text('Rs ' + currentProfit.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
+            let formattedCount = count.toLocaleString();
+            let formattedQty   = qty.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + ' Pcs';
+            let formattedGross = 'Rs ' + gross.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            let formattedRet   = 'Rs ' + returns.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            let formattedNet   = 'Rs ' + net.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            let formattedGP    = 'Rs ' + grossProfit.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            let formattedExp   = 'Rs ' + currentExpenses.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+            let formattedNP    = 'Rs ' + currentProfit.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+
+            // Desktop Pills
+            $('#pillTotalInvoices').text(formattedCount);
+            $('#pillTotalQty').text(formattedQty);
+            $('#pillGrossSale').text(formattedGross);
+            $('#pillTotalReturns').text(formattedRet);
+            $('#pillNetSale').text(formattedNet);
+            $('#pillGrossProfit').text(formattedGP);
+            $('#pillExpenses').text(formattedExp);
+            $('#pillCurrentProfit').text(formattedNP);
+
+            // Mobile Cards
+            $('#mobPillTotalInvoices').text(formattedCount);
+            $('#mobPillTotalQty').text(formattedQty);
+            $('#mobPillGrossSale').text(formattedGross);
+            $('#mobPillTotalReturns').text(formattedRet);
+            $('#mobPillNetSale').text(formattedNet);
+            $('#mobPillGrossProfit').text(formattedGP);
+            $('#mobPillExpenses').text(formattedExp);
+            $('#mobPillCurrentProfit').text(formattedNP);
         }
 
         // Real-time Search Filter Handler
-        $(document).on('input', '#search_product', function() {
+        $(document).on('input', '.searchProductInput', function() {
             let val = $(this).val().toLowerCase();
-            let visibleInvoices = 0;
 
+            // Desktop Table Filter
             $('#saleBody tr').each(function() {
                 if ($(this).attr('id') === 'grandTotalRow') return;
-
-                let productText  = $(this).find('td:eq(5)').text().toLowerCase();
-                let invoiceText  = $(this).find('td:eq(2)').text().toLowerCase();
-                let customerText = $(this).find('td:eq(3)').text().toLowerCase();
-                let refText      = $(this).find('td:eq(4)').text().toLowerCase();
-
-                if (productText.indexOf(val) > -1 || invoiceText.indexOf(val) > -1 || customerText.indexOf(val) > -1 || refText.indexOf(val) > -1) {
-                    $(this).show();
-                    visibleInvoices++;
-                } else {
-                    $(this).hide();
-                }
+                let text = $(this).text().toLowerCase();
+                $(this).toggle(text.indexOf(val) > -1);
             });
 
-            // Recalculate grand totals from visible rows
-            let newQty = 0, newTotal = 0, newNet = 0, newReturn = 0;
-            $('#saleBody tr').each(function() {
-                if ($(this).attr('id') === 'grandTotalRow') return;
-                if ($(this).is(':visible')) {
-                    newQty += parseFloat($(this).data('qty')) || 0;
-                    newTotal += parseFloat($(this).data('total')) || 0;
-                    newNet += parseFloat($(this).data('net')) || 0;
-                    newReturn += parseFloat($(this).data('return')) || 0;
-                }
+            // Mobile Card Filter
+            $('.mob-sale-card').each(function() {
+                let searchStr = $(this).attr('data-search') || $(this).text().toLowerCase();
+                $(this).toggle(searchStr.indexOf(val) > -1);
             });
-
-            // Update grand total table elements
-            $('#grandQty').text(newQty.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
-            $('#grandTotal').text(newTotal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
-            $('#grandNet').text(newNet.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
-            $('#grandReturn').text(newReturn.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
-
-            // Update Single Line Summary Pills dynamically based on filtered search
-            updateSingleLineSummary(visibleInvoices, newQty, newTotal, newReturn, newNet);
         });
 
-        // Initialize default dates based on shop shift (2:00 PM to 12:00 PM next day)
-        let now = new Date();
-        let startDt = new Date();
-        let endDt = new Date();
-
-        if (now.getHours() < 12) {
-            startDt.setDate(now.getDate() - 1);
-            startDt.setHours(14, 0, 0, 0);
-            endDt.setHours(12, 0, 0, 0);
-        } else {
-            startDt.setHours(14, 0, 0, 0);
-            endDt.setDate(now.getDate() + 1);
-            endDt.setHours(12, 0, 0, 0);
-        }
-
-        function formatDateTimeLocal(date) {
-            let year = date.getFullYear();
-            let month = String(date.getMonth() + 1).padStart(2, '0');
-            let day = String(date.getDate()).padStart(2, '0');
-            let hours = String(date.getHours()).padStart(2, '0');
-            let minutes = String(date.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
-        }
-
-        $('#start_date').val(formatDateTimeLocal(startDt));
-        $('#end_date').val(formatDateTimeLocal(endDt));
-
-        // Auto trigger initial search
-        $('#btnSearch').trigger('click');
-
-        // CSV export
-        $(document).on('click', '#btnExportCsv', function() {
+        // Export CSV Handler
+        $(document).on('click', '.btnExportCsvTrigger', function() {
             let csv = [];
-            $("#saleReport tr").each(function() {
+            csv.push(['#', 'Date & Time', 'Invoice', 'Customer', 'Reference', 'Products', 'Qty', 'Price', 'Total', 'Net Amount', 'Returns'].join(','));
+            $('#saleBody tr').each(function() {
+                if ($(this).attr('id') === 'grandTotalRow') return;
                 let row = [];
-                $(this).find('th,td').each(function() {
-                    let cellHtml = $(this).html();
-
-                    let cellText = cellHtml
-                        .replace(/<br\s*\/?>/gi, " | ")
-                        .replace(/&nbsp;/gi, " ")
-                        .replace(/<[^>]*>/g, "")
-                        .trim();
-
-                    row.push('"' + cellText.replace(/"/g, '""') + '"');
+                $(this).find('td').each(function() {
+                    let text = $(this).text().trim().replace(/,/g, '').replace(/\n/g, ' ');
+                    row.push('"' + text + '"');
                 });
-                csv.push(row.join(","));
+                if (row.length) csv.push(row.join(','));
             });
-
-            let csvString = csv.join("\n");
-            let blob = new Blob([csvString], {
-                type: 'text/csv;charset=utf-8;'
-            });
-
-            let link = document.createElement("a");
-            if (link.download !== undefined) {
-                let url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", "sale_report.csv");
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
+            let blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Sale_Report.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         });
+
     });
 </script>
 @endsection

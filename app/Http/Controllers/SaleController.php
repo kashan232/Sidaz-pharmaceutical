@@ -88,7 +88,12 @@ class SaleController extends Controller
     {
         $customer = Customer::all();
         $warehouse = Warehouse::all();
-        $nextInvoiceNumber = Sale::generateInvoiceNo();
+        
+        $allSeries = \App\Models\InvoiceSeries::orderBy('prefix', 'asc')->get();
+        $defaultSeries = $allSeries->where('is_default', 1)->first() ?: $allSeries->first();
+        $activePrefix = $defaultSeries ? $defaultSeries->prefix : 'INV';
+        $nextInvoiceNumber = \App\Models\InvoiceSeries::generateNextNo($activePrefix);
+
         $recentProducts = Product::latest()->take(12)->get();
 
         // Filter accounts (Cash/Bank) for Payment Voucher
@@ -98,7 +103,10 @@ class SaleController extends Controller
             ->orderBy('title')
             ->get();
 
-        return view('admin_panel.sale.add_sale222', compact('warehouse', 'customer', 'nextInvoiceNumber', 'accounts', 'recentProducts'));
+        return view('admin_panel.sale.add_sale222', compact(
+            'warehouse', 'customer', 'nextInvoiceNumber', 'accounts', 
+            'recentProducts', 'allSeries', 'activePrefix'
+        ));
     }
 
     public function searchpname(Request $request)
@@ -1059,22 +1067,23 @@ class SaleController extends Controller
             }
 
             if ($isNew) {
-                // Check if user provided manual invoice number
-                if ($request->filled('invoice_no')) {
-                    $manualInvoice = trim($request->invoice_no);
+                // Check if user provided manual invoice number or selected series
+                $invInput = $request->input('Invoice_no') ?: $request->input('invoice_no');
+                if (!empty($invInput)) {
+                    $manualInvoice = trim($invInput);
 
                     // Check for duplicates
                     $exists = Sale::where('invoice_no', $manualInvoice)->exists();
                     if ($exists) {
                         throw \Illuminate\Validation\ValidationException::withMessages([
-                            'invoice_no' => "Invoice number '{$manualInvoice}' already exists. Please use a different number or leave blank for auto-generation.",
+                            'invoice_no' => "Invoice number '{$manualInvoice}' already exists. Please use a different number or click refresh.",
                         ]);
                     }
 
                     $sale->invoice_no = $manualInvoice;
                 } else {
                     // Auto-generate unique invoice number
-                    $sale->invoice_no = $this->generateUniqueInvoiceNo();
+                    $sale->invoice_no = Sale::generateInvoiceNo();
                 }
             }
 
@@ -1094,6 +1103,9 @@ class SaleController extends Controller
             }
 
             $sale->save(); // Save first to get ID
+
+            // Increment Invoice Series counter if matching series prefix
+            \App\Models\InvoiceSeries::incrementCounterForInvoice($sale->invoice_no);
 
             // 3. Process Items
             // Delete old items if updating
@@ -2060,5 +2072,66 @@ class SaleController extends Controller
             \Log::error('Booking Confirmation Error: '.$e->getMessage());
             return redirect()->back()->with('error', 'Failed to confirm booking: '.$e->getMessage());
         }
+    }
+
+    /**
+     * Fetch all invoice series and generated number
+     */
+    public function fetchInvoiceSeries(Request $request)
+    {
+        $seriesList = \App\Models\InvoiceSeries::orderBy('prefix', 'asc')->get();
+        $activePrefix = $request->prefix ?: ($seriesList->where('is_default', 1)->first()->prefix ?? ($seriesList->first()->prefix ?? 'INV'));
+        $invoiceNo = \App\Models\InvoiceSeries::generateNextNo($activePrefix);
+
+        return response()->json([
+            'series' => $seriesList,
+            'active_prefix' => strtoupper($activePrefix),
+            'invoice_no' => $invoiceNo
+        ]);
+    }
+
+    /**
+     * Create or update invoice series prefix
+     */
+    public function storeInvoiceSeries(Request $request)
+    {
+        $request->validate([
+            'prefix' => 'required|string|max:20',
+            'next_number' => 'required|numeric|min:1',
+            'padding' => 'nullable|numeric|min:1|max:10',
+        ]);
+
+        $prefix = strtoupper(trim($request->prefix));
+        $padding = (int) ($request->padding ?: 4);
+        $nextNum = (int) $request->next_number;
+
+        $series = \App\Models\InvoiceSeries::updateOrCreate(
+            ['prefix' => $prefix],
+            [
+                'next_number' => $nextNum,
+                'padding' => $padding,
+                'updated_at' => now()
+            ]
+        );
+
+        $generatedNo = \App\Models\InvoiceSeries::generateNextNo($prefix);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Invoice Series {$prefix} saved successfully!",
+            'series' => $series,
+            'prefix' => $prefix,
+            'invoice_no' => $generatedNo
+        ]);
+    }
+
+    /**
+     * AJAX endpoint to generate next invoice number for selected prefix
+     */
+    public function generateInvoiceNoAjax(Request $request)
+    {
+        $prefix = $request->prefix;
+        $invoiceNo = \App\Models\InvoiceSeries::generateNextNo($prefix);
+        return response()->json(['invoice_no' => $invoiceNo]);
     }
 }

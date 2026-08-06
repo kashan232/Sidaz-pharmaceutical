@@ -1774,18 +1774,32 @@ class ReportingController extends Controller
         $totalFinal = 0;
 
         foreach ($customers as $index => $c) {
-            $opening = $balanceService->getCustomerBalanceBeforeDate($c->id, $startDate);
-            
+            $initialOpening = (float) ($c->opening_balance ?? 0);
+
+            $priorStats = DB::table('journal_entries')
+                ->where('party_type', \App\Models\Customer::class)
+                ->where('party_id', $c->id)
+                ->where('entry_date', '<', $startDate)
+                ->where('description', 'NOT LIKE', 'Opening Balance%')
+                ->selectRaw('COALESCE(SUM(debit), 0) as debits, COALESCE(SUM(credit), 0) as credits')
+                ->first();
+
+            $priorDebits = (float) ($priorStats->debits ?? 0);
+            $priorCredits = (float) ($priorStats->credits ?? 0);
+
+            $opening = $initialOpening + $priorDebits - $priorCredits;
+
             $periodStats = DB::table('journal_entries')
                 ->where('party_type', \App\Models\Customer::class)
                 ->where('party_id', $c->id)
                 ->whereBetween('entry_date', [$startDate, $dateEndParams])
+                ->where('description', 'NOT LIKE', 'Opening Balance%')
                 ->selectRaw('COALESCE(SUM(debit), 0) as debits, COALESCE(SUM(credit), 0) as credits')
                 ->first();
 
-            $sales = (float) $periodStats->debits;
-            $received = (float) $periodStats->credits;
-            
+            $sales = (float) ($periodStats->debits ?? 0);
+            $received = (float) ($periodStats->credits ?? 0);
+
             $final = $opening + $sales - $received;
 
             if (abs($opening) > 0 || abs($sales) > 0 || abs($received) > 0 || abs($final) > 0) {
@@ -1839,30 +1853,39 @@ class ReportingController extends Controller
         $totalFinal = 0;
 
         foreach ($vendors as $v) {
-            // Opening: Balance before Start Date
-            $opening = $balanceService->getVendorBalanceBeforeDate($v->id, $startDate);
+            $initialOpening = (float) ($v->opening_balance ?? 0);
+
+            $priorStats = DB::table('journal_entries')
+                ->where('party_type', \App\Models\Vendor::class)
+                ->where('party_id', $v->id)
+                ->where('entry_date', '<', $startDate)
+                ->where('description', 'NOT LIKE', 'Opening Balance%')
+                ->selectRaw('COALESCE(SUM(credit), 0) as credits, COALESCE(SUM(debit), 0) as debits')
+                ->first();
+
+            $priorCredits = (float) ($priorStats->credits ?? 0);
+            $priorDebits = (float) ($priorStats->debits ?? 0);
+
+            $opening = $initialOpening + $priorCredits - $priorDebits;
             
-            // Purchases in range (Table-based)
             $purchasesRaw = DB::table('purchases')
                 ->where('vendor_id', $v->id)
                 ->where('status_purchase', 'approved')
                 ->whereBetween('purchase_date', [$startDate, $endDate])
                 ->sum('net_amount');
 
-            // Returns in range (Table-based)
             $returnsRaw = DB::table('purchase_returns')
                 ->where('vendor_id', $v->id)
                 ->whereBetween('return_date', [$startDate, $endDate])
                 ->sum('net_amount');
             
-            // Net Purchases (Purchases - Returns)
             $purchases = (float) $purchasesRaw - (float) $returnsRaw;
 
-            // Payments in range (Journal-based, only for Accounts Payable account)
             $paid = (float) \App\Models\JournalEntry::where('party_type', \App\Models\Vendor::class)
                 ->where('party_id', $v->id)
                 ->where('account_id', $apId)
                 ->whereBetween('entry_date', [$startDate, $dateEndParams])
+                ->where('description', 'NOT LIKE', 'Opening Balance%')
                 ->sum('debit');
             
             $final = $opening + $purchases - $paid;
@@ -2232,15 +2255,14 @@ class ReportingController extends Controller
                 ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
                 ->join('products', 'products.id', '=', 'sale_items.product_id')
                 ->where('sales.customer_id', $c->id)
-                ->where('sales.sale_status', 'posted')
                 ->selectRaw('
                     SUM(sale_items.total) as revenue, 
                     SUM(sale_items.total_pieces * products.purchase_price_per_piece) as cogs
                 ')
                 ->first();
 
-            $revenue = (float) $saleStats->revenue;
-            $cogs = (float) $saleStats->cogs;
+            $revenue = (float) ($saleStats->revenue ?? 0);
+            $cogs = (float) ($saleStats->cogs ?? 0);
             $profit = $revenue - $cogs;
 
             if ($revenue > 0) {
@@ -2390,5 +2412,223 @@ class ReportingController extends Controller
         }
 
         return $sizeMatch && $colorMatch;
+    }
+
+    /**
+     * Product Sale Customer Wise Report View
+     */
+    public function product_sale_customer_wise_report(Request $request)
+    {
+        $customers  = \App\Models\Customer::orderBy('customer_name')->get();
+        $products   = \App\Models\Product::orderBy('item_name')->get();
+        $categories = \App\Models\Category::orderBy('name')->get();
+        $brands     = \App\Models\Brand::orderBy('name')->get();
+
+        return view('admin_panel.reporting.product_sale_customer_wise_report', compact('customers', 'products', 'categories', 'brands'));
+    }
+
+    /**
+     * Fetch Product Sale Customer Wise Report Data (AJAX with Multi-Select)
+     */
+    public function fetchProductSaleCustomerWise(Request $request)
+    {
+        $fromDate = $request->from_date;
+        $toDate   = $request->to_date;
+
+        // Normalize filters into arrays for Multi-Select support
+        $customerIds = is_array($request->customer_id) ? $request->customer_id : ($request->customer_id && $request->customer_id !== 'all' ? [$request->customer_id] : []);
+        $productIds  = is_array($request->product_id) ? $request->product_id : ($request->product_id && $request->product_id !== 'all' ? [$request->product_id] : []);
+        $categoryIds = is_array($request->category_id) ? $request->category_id : ($request->category_id && $request->category_id !== 'all' ? [$request->category_id] : []);
+        $brandIds    = is_array($request->brand_id) ? $request->brand_id : ($request->brand_id && $request->brand_id !== 'all' ? [$request->brand_id] : []);
+
+        // Filter out 'all' values
+        $customerIds = array_filter($customerIds, fn($v) => $v !== 'all' && !empty($v));
+        $productIds  = array_filter($productIds, fn($v) => $v !== 'all' && !empty($v));
+        $categoryIds = array_filter($categoryIds, fn($v) => $v !== 'all' && !empty($v));
+        $brandIds    = array_filter($brandIds, fn($v) => $v !== 'all' && !empty($v));
+
+        // 1. Query Sales Items
+        $salesQuery = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->leftJoin('customers', 'sales.customer_id', '=', 'customers.id')
+            ->leftJoin('products', 'sale_items.product_id', '=', 'products.id')
+            ->leftJoin('brands', 'products.brand_id', '=', 'brands.id')
+            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+            ->select(
+                'sales.customer_id',
+                DB::raw("COALESCE(customers.customer_name, 'Walking Customer') as customer_name"),
+                DB::raw("COALESCE(customers.customer_id, 'N/A') as customer_code"),
+                'customers.mobile as customer_mobile',
+                'customers.address as customer_city',
+                'sale_items.product_id',
+                DB::raw("COALESCE(products.item_code, 'MANUAL') as product_code"),
+                DB::raw("COALESCE(sale_items.product_name, products.item_name) as product_name"),
+                DB::raw("COALESCE(brands.name, '-') as brand_name"),
+                DB::raw("COALESCE(categories.name, '-') as category_name"),
+                DB::raw("SUM(sale_items.total_pieces) as sold_qty"),
+                DB::raw("SUM(sale_items.total) as gross_amount"),
+                DB::raw("COUNT(DISTINCT sales.id) as invoice_count")
+            )
+            ->whereIn('sales.sale_status', ['posted', 'completed', 'booked', 'draft']);
+
+        if ($fromDate) {
+            $salesQuery->whereDate('sales.created_at', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $salesQuery->whereDate('sales.created_at', '<=', $toDate);
+        }
+        if (!empty($customerIds)) {
+            $salesQuery->whereIn('sales.customer_id', $customerIds);
+        }
+        if (!empty($productIds)) {
+            $salesQuery->whereIn('sale_items.product_id', $productIds);
+        }
+        if (!empty($categoryIds)) {
+            $salesQuery->whereIn('products.category_id', $categoryIds);
+        }
+        if (!empty($brandIds)) {
+            $salesQuery->whereIn('products.brand_id', $brandIds);
+        }
+
+        $salesData = $salesQuery->groupBy(
+            'sales.customer_id',
+            'customers.customer_name',
+            'customers.customer_id',
+            'customers.mobile',
+            'customers.address',
+            'sale_items.product_id',
+            'products.item_code',
+            'sale_items.product_name',
+            'products.item_name',
+            'brands.name',
+            'categories.name'
+        )->get();
+
+        // 2. Query Returns Data
+        $returnQuery = DB::table('sale_return_items')
+            ->join('sale_returns', 'sale_return_items.sale_return_id', '=', 'sale_returns.id')
+            ->select(
+                'sale_returns.customer_id',
+                'sale_return_items.product_id',
+                DB::raw("SUM(sale_return_items.qty) as return_qty"),
+                DB::raw("SUM(sale_return_items.line_total) as return_amount")
+            )
+            ->whereIn('sale_returns.status', ['approved', 'posted', 'completed']);
+
+        if ($fromDate) {
+            $returnQuery->whereDate('sale_returns.created_at', '>=', $fromDate);
+        }
+        if ($toDate) {
+            $returnQuery->whereDate('sale_returns.created_at', '<=', $toDate);
+        }
+        if (!empty($customerIds)) {
+            $returnQuery->whereIn('sale_returns.customer_id', $customerIds);
+        }
+        if (!empty($productIds)) {
+            $returnQuery->whereIn('sale_return_items.product_id', $productIds);
+        }
+
+        $returnsData = $returnQuery->groupBy('sale_returns.customer_id', 'sale_return_items.product_id')->get();
+
+        // Build Lookup key for returns: "cust_id_prod_id"
+        $returnsLookup = [];
+        foreach ($returnsData as $r) {
+            $key = ($r->customer_id ?? 0) . '_' . ($r->product_id ?? 0);
+            $returnsLookup[$key] = [
+                'return_qty' => (float) $r->return_qty,
+                'return_amount' => (float) $r->return_amount,
+            ];
+        }
+
+        // 3. Group by Customer
+        $grouped = [];
+        $totalInvoicesCount = 0;
+        $totalSoldQty = 0;
+        $totalReturnQty = 0;
+        $totalNetQty = 0;
+        $totalGrossAmount = 0;
+        $totalReturnAmount = 0;
+        $totalNetSaleAmount = 0;
+
+        foreach ($salesData as $row) {
+            $custId = $row->customer_id ?? 0;
+            $custName = $row->customer_name ?: 'Walking Customer';
+
+            if (!isset($grouped[$custId])) {
+                $grouped[$custId] = [
+                    'customer_id' => $custId,
+                    'customer_name' => $custName,
+                    'customer_code' => $row->customer_code,
+                    'customer_mobile' => $row->customer_mobile ?: '-',
+                    'customer_city' => $row->customer_city ?: '-',
+                    'gross_amount' => 0,
+                    'return_amount' => 0,
+                    'net_amount' => 0,
+                    'sold_qty' => 0,
+                    'return_qty' => 0,
+                    'net_qty' => 0,
+                    'products' => [],
+                ];
+            }
+
+            $prodId = $row->product_id ?? 0;
+            $lookupKey = $custId . '_' . $prodId;
+            $retQty = isset($returnsLookup[$lookupKey]) ? $returnsLookup[$lookupKey]['return_qty'] : 0;
+            $retAmt = isset($returnsLookup[$lookupKey]) ? $returnsLookup[$lookupKey]['return_amount'] : 0;
+
+            $soldQty = (float) $row->sold_qty;
+            $grossAmt = (float) $row->gross_amount;
+            $netQty = $soldQty - $retQty;
+            $netAmt = $grossAmt - $retAmt;
+            $avgPrice = $soldQty > 0 ? ($grossAmt / $soldQty) : 0;
+
+            $grouped[$custId]['products'][] = [
+                'product_id' => $prodId,
+                'product_code' => $row->product_code,
+                'product_name' => $row->product_name,
+                'brand_name' => $row->brand_name,
+                'category_name' => $row->category_name,
+                'sold_qty' => $soldQty,
+                'avg_price' => $avgPrice,
+                'gross_amount' => $grossAmt,
+                'return_qty' => $retQty,
+                'return_amount' => $retAmt,
+                'net_qty' => $netQty,
+                'net_amount' => $netAmt,
+            ];
+
+            $grouped[$custId]['gross_amount'] += $grossAmt;
+            $grouped[$custId]['return_amount'] += $retAmt;
+            $grouped[$custId]['net_amount'] += $netAmt;
+            $grouped[$custId]['sold_qty'] += $soldQty;
+            $grouped[$custId]['return_qty'] += $retQty;
+            $grouped[$custId]['net_qty'] += $netQty;
+
+            $totalSoldQty += $soldQty;
+            $totalReturnQty += $retQty;
+            $totalNetQty += $netQty;
+            $totalGrossAmount += $grossAmt;
+            $totalReturnAmount += $retAmt;
+            $totalNetSaleAmount += $netAmt;
+            $totalInvoicesCount += (int) $row->invoice_count;
+        }
+
+        $totalCustomersCount = count($grouped);
+
+        $summary = [
+            'total_customers' => $totalCustomersCount,
+            'total_invoices' => $totalInvoicesCount,
+            'total_qty' => number_format($totalSoldQty, 2),
+            'total_return_qty' => number_format($totalReturnQty, 2),
+            'net_qty' => number_format($totalNetQty, 2),
+            'gross_amount' => 'Rs ' . number_format($totalGrossAmount, 2),
+            'return_amount' => 'Rs ' . number_format($totalReturnAmount, 2),
+            'net_sale_amount' => 'Rs ' . number_format($totalNetSaleAmount, 2),
+        ];
+
+        return response()->json([
+            'summary' => $summary,
+            'customers' => array_values($grouped)
+        ]);
     }
 }

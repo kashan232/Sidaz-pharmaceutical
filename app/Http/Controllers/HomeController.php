@@ -343,13 +343,103 @@ class HomeController extends Controller
                 $totalCostThisMonth    -= $purchPrice * $qty;
             }
             $profitThisMonth = $totalRevenueThisMonth - $totalCostThisMonth;
-            $totalReceivables = DB::table('customers')->sum('previous_balance');
+
+            // Accurate Accounting Receivables & Payables
+            $balanceService = app(\App\Services\BalanceService::class);
+            $customers = DB::table('customers')->get();
+            $totalReceivables = 0;
+            foreach ($customers as $c) {
+                $totalReceivables += $balanceService->getCustomerBalance($c->id);
+            }
+
+            $vendors = DB::table('vendors')->get();
+            $totalPayables = 0;
+            foreach ($vendors as $v) {
+                $totalPayables += $balanceService->getVendorBalance($v->id);
+            }
+
+            // Expenses Today
+            $expensesTodayV1 = DB::table('expense_vouchers')->whereDate('entry_date', \Carbon\Carbon::today())->sum('total_amount');
+            $expensesTodayV2 = DB::table('voucher_masters')->where('voucher_type', 'expense')->whereDate('date', \Carbon\Carbon::today())->sum('total_amount');
+            $expensesToday = $expensesTodayV1 + $expensesTodayV2;
+
+            // Total Stock Valuation
+            $productsForStock = DB::table('products')->get();
+            $totalStockValue = 0;
+            foreach ($productsForStock as $p) {
+                $stockPieces = DB::table('warehouse_stocks')->where('product_id', $p->id)->sum('total_pieces');
+                if ($stockPieces > 0) {
+                    $price = $p->size_mode === 'by_size' 
+                        ? ((float)($p->pieces_per_m2 ?? 0) * (float)($p->purchase_price_per_m2 ?? 0))
+                        : (float)($p->purchase_price_per_piece ?? 0);
+                    $totalStockValue += ($stockPieces * $price);
+                }
+            }
+
+            $vendorCount = DB::table('vendors')->count();
+            $employeeCount = \Illuminate\Support\Facades\Schema::hasTable('hr_employees') ? DB::table('hr_employees')->count() : DB::table('users')->count();
+
+            // Sales by Category
+            $salesByCategory = DB::table('sale_items')
+                ->join('products', 'products.id', '=', 'sale_items.product_id')
+                ->leftJoin('categories', 'categories.id', '=', 'products.category_id')
+                ->select(DB::raw('COALESCE(categories.name, "General") as category_name'), DB::raw('SUM(sale_items.total) as total_amount'))
+                ->groupBy('category_name')
+                ->orderByDesc('total_amount')
+                ->limit(5)
+                ->get();
+
+            // Expenses This Month
+            $startOfMonth = \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d');
+            $endOfMonth = \Carbon\Carbon::now()->endOfMonth()->format('Y-m-d');
+
+            $expensesThisMonthV1 = DB::table('expense_vouchers')->whereBetween('entry_date', [$startOfMonth, $endOfMonth])->sum('total_amount');
+            $expensesThisMonthV2 = DB::table('voucher_masters')->where('voucher_type', 'expense')->whereBetween('date', [$startOfMonth, $endOfMonth])->sum('total_amount');
+            $expensesThisMonth = $expensesThisMonthV1 + $expensesThisMonthV2;
+
+            $grossProfitThisMonth = $profitThisMonth;
+            $netProfitThisMonth = $grossProfitThisMonth - $expensesThisMonth;
+
+            // Expense Breakdown by type (column name is 'type', not 'expense_type')
+            $expenseBreakdown = DB::table('expense_vouchers')
+                ->select('type as name', DB::raw('SUM(total_amount) as total'))
+                ->groupBy('type')
+                ->orderByDesc('total')
+                ->limit(5)
+                ->get();
+
+            // Recent Activities Feed
+            $recentSales = DB::table('sales')->latest()->limit(3)->get()->map(function($s) {
+                return [
+                    'icon' => 'fa-receipt text-success',
+                    'bg' => '#ecfdf5',
+                    'title' => 'New Sale Invoice #' . $s->invoice_no,
+                    'subtitle' => 'Sale Transaction',
+                    'amount' => 'Rs ' . number_format($s->total_net, 0),
+                    'time' => \Carbon\Carbon::parse($s->created_at)->diffForHumans()
+                ];
+            });
+
+            $recentPurchases = DB::table('purchases')->latest()->limit(2)->get()->map(function($p) {
+                return [
+                    'icon' => 'fa-cart-shopping text-primary',
+                    'bg' => '#eef2ff',
+                    'title' => 'Purchase Bill #' . $p->invoice_no,
+                    'subtitle' => 'Procurement',
+                    'amount' => 'Rs ' . number_format($p->net_amount, 0),
+                    'time' => \Carbon\Carbon::parse($p->created_at)->diffForHumans()
+                ];
+            });
+
+            $recentActivities = $recentSales->concat($recentPurchases)->values();
 
             return view('admin_panel.dashboard', compact(
                 'categoryCount',
                 'subcategoryCount',
                 'productCount',
                 'customerscount',
+                'vendorCount',
+                'employeeCount',
                 'totalPurchases',
                 'totalPurchaseReturns',
                 'totalSales',
@@ -371,7 +461,16 @@ class HomeController extends Controller
                 'profitThisMonth',
                 'totalRevenueThisMonth',
                 'totalCostThisMonth',
-                'totalReceivables'
+                'totalReceivables',
+                'totalPayables',
+                'expensesToday',
+                'expensesThisMonth',
+                'grossProfitThisMonth',
+                'netProfitThisMonth',
+                'totalStockValue',
+                'salesByCategory',
+                'expenseBreakdown',
+                'recentActivities'
             ));
         } else {
             return redirect()->back()->with('error', 'Unauthorized access');
