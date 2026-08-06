@@ -228,20 +228,32 @@ class HomeController extends Controller
                     ->values();
             }
 
+            $startOfMonth = \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d 00:00:00');
+            $endOfMonth   = \Carbon\Carbon::now()->endOfMonth()->format('Y-m-d 23:59:59');
+
             $salesThisMonth = DB::table('sales')
-                ->whereDate('created_at', \Carbon\Carbon::today())
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
                 ->whereNotIn('sale_status', ['cancelled', 'returned'])
                 ->sum('total_net');
 
             $purchasesThisMonth = DB::table('purchases')
-                ->whereDate('purchase_date', \Carbon\Carbon::today())
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
                 ->sum('net_amount');
 
-            // Calculate real profit from sale items (sale price - purch_price from variant JSON)
+            $salesToday = DB::table('sales')
+                ->whereDate('created_at', \Carbon\Carbon::today())
+                ->whereNotIn('sale_status', ['cancelled', 'returned'])
+                ->sum('total_net');
+
+            $purchasesToday = DB::table('purchases')
+                ->whereDate('created_at', \Carbon\Carbon::today())
+                ->sum('net_amount');
+
+            // Calculate real profit for current month (matching Profit & Loss Report)
             $saleItemsThisMonth = DB::table('sale_items')
                 ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
                 ->leftJoin('products', 'products.id', '=', 'sale_items.product_id')
-                ->whereDate('sales.created_at', \Carbon\Carbon::today())
+                ->whereBetween('sales.created_at', [$startOfMonth, $endOfMonth])
                 ->where('sales.sale_status', '!=', 'cancelled')
                 ->select(
                     'sale_items.price',
@@ -296,11 +308,11 @@ class HomeController extends Controller
                 $totalCostThisMonth    += $purchPrice * $qty;
             }
 
-            // Accurately deduct any returned items today
+            // Accurately deduct any returned items in current month
             $saleReturnsThisMonth = DB::table('sale_return_items')
                 ->join('sale_returns', 'sale_returns.id', '=', 'sale_return_items.sale_return_id')
                 ->leftJoin('products', 'products.id', '=', 'sale_return_items.product_id')
-                ->whereDate('sale_returns.created_at', \Carbon\Carbon::today())
+                ->whereBetween('sale_returns.created_at', [$startOfMonth, $endOfMonth])
                 ->select(
                     'sale_return_items.qty',
                     'sale_return_items.line_total',
@@ -379,10 +391,13 @@ class HomeController extends Controller
             $vendorCount = DB::table('vendors')->count();
             $employeeCount = \Illuminate\Support\Facades\Schema::hasTable('hr_employees') ? DB::table('hr_employees')->count() : DB::table('users')->count();
 
-            // Sales by Category
+            // Sales by Category (Current Month)
             $salesByCategory = DB::table('sale_items')
+                ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
                 ->join('products', 'products.id', '=', 'sale_items.product_id')
                 ->leftJoin('categories', 'categories.id', '=', 'products.category_id')
+                ->whereBetween('sales.created_at', [$startOfMonth, $endOfMonth])
+                ->where('sales.sale_status', '!=', 'cancelled')
                 ->select(DB::raw('COALESCE(categories.name, "General") as category_name'), DB::raw('SUM(sale_items.total) as total_amount'))
                 ->groupBy('category_name')
                 ->orderByDesc('total_amount')
@@ -390,10 +405,7 @@ class HomeController extends Controller
                 ->get();
 
             // Expenses This Month
-            $startOfMonth = \Carbon\Carbon::now()->startOfMonth()->format('Y-m-d');
-            $endOfMonth = \Carbon\Carbon::now()->endOfMonth()->format('Y-m-d');
-
-            $expensesThisMonthV1 = DB::table('expense_vouchers')->whereBetween('entry_date', [$startOfMonth, $endOfMonth])->sum('total_amount');
+            $expensesThisMonthV1 = DB::table('expense_vouchers')->whereBetween('entry_date', [substr($startOfMonth, 0, 10), substr($endOfMonth, 0, 10)])->sum('total_amount');
             $expensesThisMonthV2 = DB::table('voucher_masters')->where('voucher_type', 'expense')->whereBetween('date', [$startOfMonth, $endOfMonth])->sum('total_amount');
             $expensesThisMonth = $expensesThisMonthV1 + $expensesThisMonthV2;
 

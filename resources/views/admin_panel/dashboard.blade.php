@@ -463,7 +463,7 @@
 
         <div class="kpi-card" style="--kpi-color: var(--purple); --kpi-icon-bg: #f5f3ff;">
             <div class="kpi-top">
-                <span class="kpi-label">Total Sales (Today)</span>
+                <span class="kpi-label">Total Sales (This Month)</span>
                 <div class="kpi-icon"><i class="fa-solid fa-cart-shopping"></i></div>
             </div>
             <div class="kpi-value">Rs {{ number_format($salesThisMonth, 0) }}</div>
@@ -472,7 +472,7 @@
 
         <div class="kpi-card" style="--kpi-color: var(--red); --kpi-icon-bg: #fff1f2;">
             <div class="kpi-top">
-                <span class="kpi-label">Total Purchases (Today)</span>
+                <span class="kpi-label">Total Purchases (This Month)</span>
                 <div class="kpi-icon"><i class="fa-solid fa-bag-shopping"></i></div>
             </div>
             <div class="kpi-value">Rs {{ number_format($purchasesThisMonth, 0) }}</div>
@@ -481,7 +481,7 @@
 
         <div class="kpi-card" style="--kpi-color: var(--amber); --kpi-icon-bg: #fffbeb;">
             <div class="kpi-top">
-                <span class="kpi-label">Gross Profit (Today)</span>
+                <span class="kpi-label">Gross Profit (This Month)</span>
                 <div class="kpi-icon"><i class="fa-solid fa-chart-line"></i></div>
             </div>
             <div class="kpi-value">Rs {{ number_format($grossProfitThisMonth, 0) }}</div>
@@ -490,7 +490,7 @@
 
         <div class="kpi-card" style="--kpi-color: var(--red); --kpi-icon-bg: #fff1f2;">
             <div class="kpi-top">
-                <span class="kpi-label">Total Expenses (Month)</span>
+                <span class="kpi-label">Total Expenses (This Month)</span>
                 <div class="kpi-icon"><i class="fa-solid fa-file-invoice"></i></div>
             </div>
             <div class="kpi-value">Rs {{ number_format($expensesThisMonth, 0) }}</div>
@@ -499,7 +499,7 @@
 
         <div class="kpi-card" style="--kpi-color: var(--green); --kpi-icon-bg: #ecfdf5;">
             <div class="kpi-top">
-                <span class="kpi-label">Net Profit (Today)</span>
+                <span class="kpi-label">Net Profit (This Month)</span>
                 <div class="kpi-icon"><i class="fa-solid fa-circle-dollar-to-slot"></i></div>
             </div>
             <div class="kpi-value">Rs {{ number_format($netProfitThisMonth, 0) }}</div>
