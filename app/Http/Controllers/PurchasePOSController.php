@@ -200,8 +200,15 @@ class PurchasePOSController extends Controller
         $accounts = Account::whereIn("head_id", $cashAndBankHeads)->where("status", 1)->orderBy("title")->get();
 
         $balanceService = app(\App\Services\BalanceService::class);
-        $vendors = Vendor::orderBy("name")->get()->map(function($vendor) use ($balanceService) {
-            $vendor->balance = $balanceService->getVendorBalance($vendor->id);
+        $apId = $balanceService->getAccountsPayableId();
+        $vendorBalances = \App\Models\JournalEntry::where('party_type', Vendor::class)
+            ->where('account_id', $apId)
+            ->selectRaw('party_id, COALESCE(SUM(credit) - SUM(debit), 0) as balance')
+            ->groupBy('party_id')
+            ->pluck('balance', 'party_id');
+
+        $vendors = Vendor::orderBy("name")->get()->map(function($vendor) use ($vendorBalances) {
+            $vendor->balance = (float) ($vendorBalances[$vendor->id] ?? 0);
             return $vendor;
         });
 

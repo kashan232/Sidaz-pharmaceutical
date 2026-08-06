@@ -228,10 +228,17 @@ class POSController extends Controller
         $cashAndBankHeads = AccountHead::whereIn('name', ['Cash', 'Bank'])->pluck('id');
         $accounts = Account::whereIn('head_id', $cashAndBankHeads)->where('status', 1)->orderBy('title')->get();
 
-        // 4. Fetch all Vendors with balances
+        // 4. Fetch all Vendors with balances (Instant Batch Query)
         $balanceService = app(\App\Services\BalanceService::class);
-        $vendors = \App\Models\Vendor::orderBy('name')->get()->map(function($vendor) use ($balanceService) {
-            $vendor->balance = $balanceService->getVendorBalance($vendor->id);
+        $apId = $balanceService->getAccountsPayableId();
+        $vendorBalances = \App\Models\JournalEntry::where('party_type', \App\Models\Vendor::class)
+            ->where('account_id', $apId)
+            ->selectRaw('party_id, COALESCE(SUM(credit) - SUM(debit), 0) as balance')
+            ->groupBy('party_id')
+            ->pluck('balance', 'party_id');
+
+        $vendors = \App\Models\Vendor::orderBy('name')->get()->map(function($vendor) use ($vendorBalances) {
+            $vendor->balance = (float) ($vendorBalances[$vendor->id] ?? 0);
             return $vendor;
         });
 

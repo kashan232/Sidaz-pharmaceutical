@@ -1932,17 +1932,24 @@ class ReportingController extends Controller
         $searchMobile = $request->mobile;
         
         $balanceService = app(\App\Services\BalanceService::class);
+        $apId = $balanceService->getAccountsPayableId();
         
         $parties = [];
         
-        // Fetch Customers
+        // Fetch Customers in 1 Batch Query
         if ($reportType == 'BOTH' || $reportType == 'RECEIVABLE') {
+            $custBalances = DB::table('journal_entries')
+                ->where('party_type', \App\Models\Customer::class)
+                ->selectRaw('party_id, COALESCE(SUM(debit) - SUM(credit), 0) as balance')
+                ->groupBy('party_id')
+                ->pluck('balance', 'party_id');
+
             $customers = DB::table('customers')->get();
             foreach ($customers as $c) {
                 if ($searchParty && stripos($c->customer_name, $searchParty) === false) continue;
                 if ($searchMobile && stripos($c->mobile, $searchMobile) === false) continue;
                 
-                $balance = $balanceService->getCustomerBalance($c->id);
+                $balance = (float) ($custBalances[$c->id] ?? 0);
                 $parties[] = [
                     'code' => sprintf("C%04d", $c->id),
                     'title' => $c->customer_name,
@@ -1953,22 +1960,26 @@ class ReportingController extends Controller
             }
         }
 
-        // Fetch Vendors
+        // Fetch Vendors in 1 Batch Query
         if ($reportType == 'BOTH' || $reportType == 'PAYABLE') {
+            $vendorBalances = DB::table('journal_entries')
+                ->where('party_type', \App\Models\Vendor::class)
+                ->where('account_id', $apId)
+                ->selectRaw('party_id, COALESCE(SUM(credit) - SUM(debit), 0) as balance')
+                ->groupBy('party_id')
+                ->pluck('balance', 'party_id');
+
             $vendors = DB::table('vendors')->get();
             foreach ($vendors as $v) {
                 if ($searchParty && stripos($v->name, $searchParty) === false) continue;
                 if ($searchMobile && stripos($v->phone, $searchMobile) === false) continue;
                 
-                $balance = $balanceService->getVendorBalance($v->id);
-                // For vendors, positive balance means we owe them (Payable)
-                // Let's invert it for standard representation: positive = receivable, negative = payable
-                // Actually vendor $balance > 0 means Payable, < 0 means Receivable.
+                $balance = (float) ($vendorBalances[$v->id] ?? 0);
                 $parties[] = [
                     'code' => sprintf("V%04d", $v->id),
                     'title' => $v->name,
                     'mobile' => $v->phone,
-                    'balance' => -$balance, // so negative is Payable, positive is Receivable
+                    'balance' => -$balance,
                     'type' => 'vendor'
                 ];
             }
@@ -2234,21 +2245,22 @@ class ReportingController extends Controller
 
         $balanceService = app(\App\Services\BalanceService::class);
         
-        // Receivables (Customers)
-        $customers = DB::table('customers')->get();
-        $totalReceivables = 0;
-        foreach ($customers as $c) {
-            $totalReceivables += $balanceService->getCustomerBalance($c->id);
-        }
+        // Receivables (Customers) in Single Query
+        $totalReceivables = DB::table('journal_entries')
+            ->where('party_type', \App\Models\Customer::class)
+            ->selectRaw('COALESCE(SUM(debit) - SUM(credit), 0) as total')
+            ->value('total') ?? 0;
 
-        // Payables (Vendors)
-        $vendors = DB::table('vendors')->get();
-        $totalPayables = 0;
-        foreach ($vendors as $v) {
-            $totalPayables += $balanceService->getVendorBalance($v->id);
-        }
+        // Payables (Vendors) in Single Query
+        $apId = $balanceService->getAccountsPayableId();
+        $totalPayables = DB::table('journal_entries')
+            ->where('party_type', \App\Models\Vendor::class)
+            ->where('account_id', $apId)
+            ->selectRaw('COALESCE(SUM(credit) - SUM(debit), 0) as total')
+            ->value('total') ?? 0;
 
         // Top 10 Customers by Profit
+        $customers = DB::table('customers')->get();
         $customerProfits = [];
         foreach ($customers as $c) {
             $saleStats = DB::table('sale_items')

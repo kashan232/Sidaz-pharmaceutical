@@ -374,10 +374,15 @@ class CustomerController extends Controller
             })
             ->get();
 
-        $balanceService = app(\App\Services\BalanceService::class);
+        $customerIds = $customers->pluck('id')->toArray();
+        $balances = \App\Models\JournalEntry::where('party_type', Customer::class)
+            ->whereIn('party_id', $customerIds)
+            ->selectRaw('party_id, COALESCE(SUM(debit) - SUM(credit), 0) as balance')
+            ->groupBy('party_id')
+            ->pluck('balance', 'party_id');
 
-        $reminders = $customers->map(function($c) use ($balanceService) {
-            $balance = $balanceService->getCustomerBalance($c->id);
+        $reminders = $customers->map(function($c) use ($balances) {
+            $balance = (float) ($balances[$c->id] ?? 0);
             if ($balance > 0) {
                 return [
                     'id' => $c->id,

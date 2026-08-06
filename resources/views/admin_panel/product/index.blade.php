@@ -3,31 +3,30 @@
 
 <style>
     /* ── LAYOUT RESET: make sure page uses full width cleanly ── */
-    .erp-page .container-fluid { max-width: 100%; }
+    .erp-page { background: #f8fafc; min-height: calc(100vh - 80px); padding: 20px 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    .erp-page .container-fluid { max-width: 100%; box-sizing: border-box; }
+
     /* ── ERP Product Page – Premium Design System ── */
     :root {
-        --erp-primary:    #4f46e5;
+        --erp-primary:    #6366f1;
         --erp-primary-lt: #eef2ff;
-        --erp-success:    #059669;
+        --erp-success:    #10b981;
         --erp-success-lt: #ecfdf5;
-        --erp-warning:    #d97706;
+        --erp-warning:    #f59e0b;
         --erp-warning-lt: #fffbeb;
-        --erp-danger:     #dc2626;
+        --erp-danger:     #ef4444;
         --erp-danger-lt:  #fef2f2;
-        --erp-info:       #0284c7;
-        --erp-info-lt:    #e0f2fe;
+        --erp-info:       #3b82f6;
+        --erp-info-lt:    #eff6ff;
         --erp-border:     #e2e8f0;
         --erp-bg:         #f8fafc;
         --erp-card-bg:    #ffffff;
-        --erp-text:       #1e293b;
+        --erp-text:       #0f172a;
         --erp-muted:      #64748b;
-        --erp-radius:     12px;
-        --erp-shadow:     0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
-        --erp-shadow-md:  0 4px 24px rgba(0,0,0,.08);
+        --erp-radius:     14px;
+        --erp-shadow:     0 2px 8px rgba(15,23,42,0.04), 0 1px 3px rgba(15,23,42,0.02);
+        --erp-shadow-md:  0 8px 30px rgba(15,23,42,0.08);
     }
-
-    /* Page wrapper */
-    .erp-page { background: var(--erp-bg); min-height: calc(100vh - 80px); padding: 24px 0; }
 
     /* ── Stats Cards ── */
     .stat-card {
@@ -35,20 +34,20 @@
         border-radius: var(--erp-radius);
         border: 1px solid var(--erp-border);
         box-shadow: var(--erp-shadow);
-        padding: 20px 22px;
+        padding: 16px 18px;
         display: flex;
         align-items: center;
-        gap: 16px;
-        transition: transform .18s ease, box-shadow .18s ease;
+        gap: 14px;
+        transition: transform .2s ease, box-shadow .2s ease;
     }
     .stat-card:hover { transform: translateY(-2px); box-shadow: var(--erp-shadow-md); }
     .stat-icon {
-        width: 48px; height: 48px; border-radius: 10px;
+        width: 44px; height: 44px; border-radius: 12px;
         display: flex; align-items: center; justify-content: center;
-        font-size: 20px; flex-shrink: 0;
+        font-size: 18px; flex-shrink: 0;
     }
-    .stat-card .stat-label { font-size: .75rem; font-weight: 600; color: var(--erp-muted); text-transform: uppercase; letter-spacing: .5px; }
-    .stat-card .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--erp-text); line-height: 1.2; }
+    .stat-card .stat-label { font-size: .73rem; font-weight: 700; color: var(--erp-muted); text-transform: uppercase; letter-spacing: .5px; }
+    .stat-card .stat-value { font-size: 1.4rem; font-weight: 800; color: var(--erp-text); line-height: 1.2; }
     .stat-card .stat-sub   { font-size: .72rem; color: var(--erp-muted); margin-top: 2px; }
 
     /* ── Main Card ── */
@@ -60,285 +59,57 @@
         overflow: hidden;
     }
     .erp-card-header {
-        padding: 14px 20px;
+        padding: 16px 20px;
         border-bottom: 1px solid var(--erp-border);
         display: flex;
         align-items: center;
         justify-content: space-between;
         flex-wrap: wrap;
-        gap: 10px;
+        gap: 12px;
     }
-    .erp-card-header .page-title { font-size: 1rem; font-weight: 700; color: var(--erp-text); margin: 0; }
-    .erp-card-header .page-sub   { font-size: .76rem; color: var(--erp-muted); margin: 0; }
+    .erp-card-header .page-title { font-size: 1.05rem; font-weight: 800; color: var(--erp-text); margin: 0; display: flex; align-items: center; gap: 8px; }
+    .erp-card-header .page-sub   { font-size: .78rem; color: var(--erp-muted); margin: 2px 0 0 0; }
+    
     /* ── Header action buttons group ── */
     .erp-hdr-actions {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        gap: 8px;           /* <-- space between every button */
+        gap: 8px;
     }
 
     /* ── Filter Panel ── */
     .filter-panel {
-        background: var(--erp-bg);
+        background: #f8fafc;
         border-bottom: 1px solid var(--erp-border);
-        padding: 16px 24px;
+        padding: 16px 20px;
     }
     .filter-panel .filter-heading {
-        font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+        font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .6px;
         color: var(--erp-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
     }
     .filter-panel label.form-label {
-        font-size: .72rem; font-weight: 600; color: var(--erp-muted);
+        font-size: .72rem; font-weight: 700; color: var(--erp-muted);
         text-transform: uppercase; letter-spacing: .4px; margin-bottom: 5px;
     }
-    .filter-panel .form-control,
-    .filter-panel .form-select {
-        border: 1px solid var(--erp-border);
-        border-radius: 8px;
-        font-size: .83rem;
-        color: var(--erp-text);
-        background: #fff;
-        height: 36px;
-        padding: 0 10px;
-        transition: border-color .15s, box-shadow .15s;
-    }
-    .filter-panel .form-control:focus,
-    .filter-panel .form-select:focus {
-        border-color: var(--erp-primary);
-        box-shadow: 0 0 0 3px rgba(79,70,229,.12);
-        outline: none;
-    }
-    .filter-panel .search-wrap { position: relative; }
-    .filter-panel .search-wrap .search-icon {
-        position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-        color: var(--erp-muted); font-size: 13px; pointer-events: none;
-    }
-    .filter-panel .search-wrap .form-control { padding-left: 30px; }
-
-    /* Filter action buttons */
-    .btn-erp-filter {
-        background: var(--erp-primary); color: #fff; border: none;
-        border-radius: 8px; height: 36px; padding: 0 16px;
-        font-size: .83rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
-        transition: background .15s, transform .1s;
-    }
-    .btn-erp-filter:hover { background: #4338ca; color: #fff; transform: translateY(-1px); }
-    .btn-erp-clear {
-        background: #fff; color: var(--erp-muted); border: 1px solid var(--erp-border);
-        border-radius: 8px; height: 36px; padding: 0 14px;
-        font-size: .83rem; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
-        transition: all .15s; text-decoration: none;
-    }
-    .btn-erp-clear:hover { border-color: var(--erp-danger); color: var(--erp-danger); background: var(--erp-danger-lt); }
-
-    /* Active filter badges */
-    .active-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-    .filter-chip {
-        background: var(--erp-primary-lt); color: var(--erp-primary);
-        border: 1px solid #c7d2fe; border-radius: 20px;
-        padding: 2px 10px; font-size: .72rem; font-weight: 600;
-        display: inline-flex; align-items: center; gap: 4px;
-    }
-
-    /* ── Bulk Edit Bar ── */
-    .bulk-bar {
-        background: #fff; border-bottom: 1px solid var(--erp-border);
-        padding: 10px 24px; display: flex; align-items: center;
-        justify-content: space-between; flex-wrap: wrap; gap: 10px;
-    }
-    .bulk-bar .bulk-label { font-size: .78rem; font-weight: 700; color: var(--erp-muted); text-transform: uppercase; letter-spacing: .4px; }
-    .bulk-toggle {
-        display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
-        padding: 5px 10px; border-radius: 6px; border: 1px solid var(--erp-border);
-        background: #fff; font-size: .8rem; font-weight: 500; color: var(--erp-text);
-        transition: all .15s; user-select: none;
-    }
-    .bulk-toggle input[type="checkbox"] { width: 14px; height: 14px; margin: 0; cursor: pointer; accent-color: var(--erp-primary); }
-    .bulk-toggle:has(input:checked) { background: var(--erp-primary-lt); border-color: var(--erp-primary); color: var(--erp-primary); }
-    .btn-bulk-save {
-        background: var(--erp-primary); color: #fff; border: none;
-        border-radius: 8px; padding: 7px 18px; font-size: .83rem; font-weight: 600;
-        display: inline-flex; align-items: center; gap: 6px; transition: all .15s;
-    }
-    .btn-bulk-save:hover { background: #4338ca; transform: translateY(-1px); }
-
-    /* ── Table ── */
-    .erp-table-wrap { padding: 0; overflow-x: auto; }
-    #productTable {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        font-size: .82rem;
-        table-layout: auto;
-    }
-    #productTable thead th {
-        background: #f8fafc !important;
-        color: #475569 !important;
-        font-weight: 700;
-        text-transform: uppercase;
-        font-size: .67rem;
-        letter-spacing: .5px;
-        padding: 10px 12px;
-        border-bottom: 2px solid var(--erp-border) !important;
-        border-top: none !important;
-        border-left: none !important;
-        border-right: none !important;
-        white-space: nowrap;
-        position: sticky; top: 0; z-index: 2;
-    }
-    #productTable tbody td {
-        padding: 8px 12px;
-        border: none !important;
-        border-bottom: 1px solid #f1f5f9 !important;
-        color: var(--erp-text);
-        vertical-align: middle;
-        white-space: nowrap;
-    }
-    /* Allow item-details cell to wrap */
-    #productTable tbody td.td-item-details { white-space: normal; min-width: 180px; max-width: 260px; }
-    #productTable tbody tr { transition: background .12s ease; }
-    #productTable tbody tr:hover { background: #f8fafc !important; }
-    #productTable tbody tr.row-inactive { opacity: .6; background: #fafafa; }
-
-    /* Image cell */
-    .product-img {
-        width: 38px; height: 38px; object-fit: cover;
-        border-radius: 7px; border: 1px solid var(--erp-border);
-        transition: transform .2s ease;
-        cursor: pointer; display: block;
-    }
-    .product-img:hover { transform: scale(1.4); z-index: 10; position: relative; box-shadow: var(--erp-shadow-md); }
-    .no-img-badge {
-        width: 38px; height: 38px; border-radius: 7px;
-        background: #f1f5f9; border: 1px dashed #cbd5e1;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 16px; color: #94a3b8;
-    }
-
-    /* Item details cell */
-    .item-name { font-weight: 600; color: var(--erp-text); margin-bottom: 3px; font-size: .84rem; line-height: 1.3; }
-    .item-meta { font-size: .7rem; color: var(--erp-muted); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 2px; }
-    .item-meta .meta-chip {
-        background: #f1f5f9; border-radius: 4px; padding: 1px 5px;
-        font-size: .67rem; font-weight: 500; color: #475569;
-        display: inline-flex; align-items: center; gap: 3px;
-    }
-    .item-code { font-family: 'Courier New', monospace; background: #f8fafc; border: 1px solid var(--erp-border); border-radius: 4px; padding: 1px 5px; font-size: .7rem; color: #334155; }
-
-    /* Stock badge */
-    .stock-badge {
-        display: inline-flex; align-items: center; gap: 3px;
-        background: var(--erp-success-lt); color: var(--erp-success);
-        border: 1px solid #a7f3d0; border-radius: 5px;
-        padding: 2px 7px; font-size: .75rem; font-weight: 600;
-        white-space: nowrap;
-    }
-    .stock-badge.low  { background: var(--erp-danger-lt); color: var(--erp-danger); border-color: #fecaca; }
-    .stock-badge.zero { background: #fef3c7; color: #b45309; border-color: #fde68a; }
-    .stock-unit { font-weight: 400; font-size: .66rem; opacity: .8; }
-
-    /* Price cells */
-    .price-purchase { color: var(--erp-muted); font-weight: 500; font-size: .81rem; white-space: nowrap; }
-    .price-sale     { color: var(--erp-success); font-weight: 700; font-size: .83rem; white-space: nowrap; }
-
-    /* Status badge */
-    .status-active {
-        background: var(--erp-success-lt); color: var(--erp-success);
-        border: 1px solid #a7f3d0; border-radius: 20px;
-        padding: 2px 9px; font-size: .7rem; font-weight: 700;
-        letter-spacing: .2px; white-space: nowrap;
-    }
-    .status-inactive {
-        background: #f1f5f9; color: #64748b;
-        border: 1px solid #cbd5e1; border-radius: 20px;
-        padding: 2px 9px; font-size: .7rem; font-weight: 700;
-        white-space: nowrap;
-    }
-
-    /* Action buttons – single row, compact */
-    .action-group {
-        display: flex; align-items: center; gap: 3px;
-        flex-wrap: nowrap;  /* NEVER wrap */
-        justify-content: flex-start;
-    }
-    .btn-act {
-        border-radius: 5px; padding: 3px 8px; font-size: .72rem;
-        font-weight: 600; display: inline-flex; align-items: center; gap: 3px;
-        border: 1px solid transparent; transition: all .12s; cursor: pointer;
-        line-height: 1.5; white-space: nowrap; flex-shrink: 0;
-    }
-    .btn-act-view    { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; }
-    .btn-act-view:hover    { background: #0284c7; color: #fff; }
-    .btn-act-edit    { background: var(--erp-primary-lt); color: var(--erp-primary); border-color: #c7d2fe; }
-    .btn-act-edit:hover    { background: var(--erp-primary); color: #fff; }
-    .btn-act-barcode { background: var(--erp-success-lt); color: var(--erp-success); border-color: #a7f3d0; }
-    .btn-act-barcode:hover { background: var(--erp-success); color: #fff; }
-    .btn-act-deact   { background: var(--erp-danger-lt); color: var(--erp-danger); border-color: #fecaca; }
-    .btn-act-deact:hover   { background: var(--erp-danger); color: #fff; }
-    .btn-act-act     { background: var(--erp-success-lt); color: var(--erp-success); border-color: #a7f3d0; }
-    .btn-act-act:hover     { background: var(--erp-success); color: #fff; }
-
-    /* ── Header action buttons ── */
-    .btn-hdr {
-        border-radius: 8px; padding: 7px 14px; font-size: .8rem; font-weight: 600;
-        display: inline-flex; align-items: center; gap: 6px; transition: all .15s;
-        border: 1px solid transparent;
-    }
-    .btn-hdr-outline { background: #fff; color: var(--erp-muted); border-color: var(--erp-border); }
-    .btn-hdr-outline:hover { border-color: #94a3b8; color: var(--erp-text); background: var(--erp-bg); }
-    .btn-hdr-success { background: var(--erp-success); color: #fff; border-color: var(--erp-success); }
-    .btn-hdr-success:hover { background: #047857; border-color: #047857; color: #fff; transform: translateY(-1px); }
-    .btn-hdr-warning { background: var(--erp-warning-lt); color: var(--erp-warning); border-color: #fde68a; }
-    .btn-hdr-warning:hover { background: var(--erp-warning); color: #fff; border-color: var(--erp-warning); }
-    .btn-hdr-primary { background: var(--erp-primary); color: #fff; border-color: var(--erp-primary); }
-    .btn-hdr-primary:hover { background: #4338ca; border-color: #4338ca; color: #fff; transform: translateY(-1px); }
-
-    /* ── Pagination ── */
-    .erp-pagination { padding: 12px 20px; border-top: 1px solid var(--erp-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-    .erp-pagination .showing { font-size: .76rem; color: var(--erp-muted); }
-    .erp-pagination .page-link { border-radius: 6px !important; border-color: var(--erp-border) !important; color: var(--erp-text) !important; font-size: .78rem; padding: 4px 10px; }
-    .erp-pagination .page-item.active .page-link { background: var(--erp-primary) !important; border-color: var(--erp-primary) !important; color: #fff !important; }
-
-    /* ── Actions column – force min-width so buttons never wrap ── */
-    #productTable th:last-child,
-    #productTable td:last-child { min-width: 200px; }
-
-    /* ── Select checkbox ── */
-    input[type="checkbox"].row-check { width: 15px; height: 15px; accent-color: var(--erp-primary); cursor: pointer; }
-
-    /* ── DataTable override ── */
-    div.dataTables_wrapper div.dataTables_length select { width: 75px !important; }
-    .dataTables_wrapper .dataTables_info,
-    .dataTables_wrapper .dataTables_paginate { display: none !important; }
-    .dataTables_wrapper { overflow-x: visible !important; }
-
-    /* ═══════════════════════════════════════════════════
-       FILTER ROW  – pure flexbox (no Bootstrap grid)
-    ═══════════════════════════════════════════════════ */
-    .filter-panel {
-        padding: 14px 20px;
-        background: var(--erp-bg);
-        border-bottom: 1px solid var(--erp-border);
-    }
-    .filter-panel .filter-heading { margin-bottom: 10px; }
 
     .erp-filter-row {
         display: flex;
         align-items: flex-end;
-        flex-wrap: wrap;          /* wraps on small screens */
+        flex-wrap: wrap;
         gap: 10px;
         width: 100%;
     }
     .erp-filter-field {
         display: flex;
-        flex-direction: column;   /* label ABOVE input */
-        flex: 1 1 160px;          /* grow/shrink, basis 160px */
-        min-width: 140px;
+        flex-direction: column;
+        flex: 1 1 150px;
+        min-width: 130px;
         max-width: 240px;
         box-sizing: border-box;
     }
-    .erp-filter-search { flex: 1 1 200px; max-width: 300px; }
-    .erp-filter-btns   { flex: 0 0 auto;  max-width: none; min-width: 0; }
+    .erp-filter-search { flex: 1 1 220px; max-width: 320px; }
+    .erp-filter-btns   { flex: 0 0 auto; max-width: none; min-width: 0; }
 
     .erp-flabel {
         display: block;
@@ -353,128 +124,319 @@
     .erp-finput {
         display: block;
         width: 100%;
-        height: 35px;
-        padding: 0 10px;
+        height: 38px;
+        padding: 0 12px;
         border: 1px solid var(--erp-border);
-        border-radius: 7px;
-        font-size: .82rem;
+        border-radius: 8px;
+        font-size: .83rem;
+        font-weight: 500;
         color: var(--erp-text);
         background: #fff;
         outline: none;
         transition: border-color .15s, box-shadow .15s;
         box-sizing: border-box;
-        -webkit-appearance: auto;
-        appearance: auto;
     }
     .erp-finput:focus {
         border-color: var(--erp-primary);
-        box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
     }
-    .search-wrap { position: relative; }
+    .search-wrap { position: relative; width: 100%; }
     .search-wrap .search-icon {
-        position: absolute; left: 10px; top: 50%;
+        position: absolute; left: 12px; top: 50%;
         transform: translateY(-50%);
-        color: var(--erp-muted); font-size: 12px; pointer-events: none;
+        color: var(--erp-muted); font-size: 13px; pointer-events: none;
         z-index: 1;
     }
-    .search-wrap .erp-finput { padding-left: 30px; }
+    .search-wrap .erp-finput { padding-left: 34px; }
 
-    /* ── Bulk bar ── */
-    .bulk-bar { padding: 8px 20px; }
-    .bulk-toggle { padding: 4px 9px; font-size: .76rem; }
+    /* Filter action buttons */
+    .btn-erp-filter {
+        background: var(--erp-primary); color: #fff; border: none;
+        border-radius: 8px; height: 38px; padding: 0 16px;
+        font-size: .83rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
+        transition: background .15s, transform .1s; cursor: pointer;
+    }
+    .btn-erp-filter:hover { background: #4f46e5; color: #fff; transform: translateY(-1px); }
+    .btn-erp-clear {
+        background: #fff; color: var(--erp-muted); border: 1px solid var(--erp-border);
+        border-radius: 8px; height: 38px; padding: 0 14px;
+        font-size: .83rem; font-weight: 500; display: inline-flex; align-items: center; gap: 6px;
+        transition: all .15s; text-decoration: none; cursor: pointer;
+    }
+    .btn-erp-clear:hover { border-color: var(--erp-danger); color: var(--erp-danger); background: var(--erp-danger-lt); }
 
-    /* ── Stat cards ── */
-    .stat-card { padding: 14px 16px; gap: 12px; }
-    .stat-icon { width: 40px; height: 40px; font-size: 17px; border-radius: 8px; }
-    .stat-card .stat-value { font-size: 1.3rem; }
+    /* Active filter badges */
+    .active-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .filter-chip {
+        background: var(--erp-primary-lt); color: var(--erp-primary);
+        border: 1px solid #c7d2fe; border-radius: 20px;
+        padding: 3px 10px; font-size: .72rem; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 4px;
+    }
+
+    /* ── Header action buttons ── */
+    .btn-hdr {
+        border-radius: 8px; padding: 8px 14px; font-size: .82rem; font-weight: 600;
+        display: inline-flex; align-items: center; gap: 6px; transition: all .15s;
+        border: 1px solid transparent; text-decoration: none; cursor: pointer;
+    }
+    .btn-hdr-outline { background: #fff; color: var(--erp-muted); border-color: var(--erp-border); }
+    .btn-hdr-outline:hover { border-color: #94a3b8; color: var(--erp-text); background: var(--erp-bg); }
+    .btn-hdr-success { background: #10b981; color: #fff; border-color: #10b981; }
+    .btn-hdr-success:hover { background: #059669; border-color: #059669; color: #fff; transform: translateY(-1px); }
+    .btn-hdr-warning { background: #fffbeb; color: #d97706; border-color: #fde68a; }
+    .btn-hdr-warning:hover { background: #f59e0b; color: #fff; border-color: #f59e0b; }
+    .btn-hdr-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff; border-color: #6366f1; box-shadow: 0 2px 6px rgba(99,102,241,0.25); }
+    .btn-hdr-primary:hover { background: #4338ca; border-color: #4338ca; color: #fff; transform: translateY(-1px); }
+
+    /* ── Table ── */
+    .erp-table-wrap { padding: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #productTable {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: .82rem;
+    }
+    #productTable thead th {
+        background: #f8fafc !important;
+        color: #475569 !important;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: .67rem;
+        letter-spacing: .5px;
+        padding: 12px 14px;
+        border-bottom: 2px solid var(--erp-border) !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        white-space: nowrap;
+        position: sticky; top: 0; z-index: 2;
+    }
+    #productTable tbody td {
+        padding: 10px 14px;
+        border: none !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        color: var(--erp-text);
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+    #productTable tbody td.td-item-details { white-space: normal; min-width: 180px; max-width: 260px; }
+    #productTable tbody tr { transition: background .12s ease; }
+    #productTable tbody tr:hover { background: #f8fafc !important; }
+    #productTable tbody tr.row-inactive { opacity: .6; background: #fafafa; }
+
+    /* Image cell */
+    .product-img {
+        width: 40px; height: 40px; object-fit: cover;
+        border-radius: 8px; border: 1px solid var(--erp-border);
+        transition: transform .2s ease, box-shadow .2s ease;
+        cursor: pointer; display: block;
+    }
+    .product-img:hover { transform: scale(1.35); z-index: 10; position: relative; box-shadow: var(--erp-shadow-md); }
+    .no-img-badge {
+        width: 40px; height: 40px; border-radius: 8px;
+        background: #f1f5f9; border: 1px dashed #cbd5e1;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; color: #94a3b8;
+    }
+
+    /* Item details cell */
+    .item-name { font-weight: 700; color: var(--erp-text); margin-bottom: 3px; font-size: .85rem; line-height: 1.3; }
+    .item-meta { font-size: .7rem; color: var(--erp-muted); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 2px; }
+    .item-meta .meta-chip {
+        background: #f1f5f9; border-radius: 4px; padding: 2px 6px;
+        font-size: .67rem; font-weight: 600; color: #475569;
+        display: inline-flex; align-items: center; gap: 3px;
+    }
+    .item-code { font-family: 'Courier New', monospace; background: #f8fafc; border: 1px solid var(--erp-border); border-radius: 4px; padding: 1px 6px; font-size: .7rem; font-weight: 600; color: #334155; }
+
+    /* Stock badge */
+    .stock-badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: var(--erp-success-lt); color: var(--erp-success);
+        border: 1px solid #a7f3d0; border-radius: 6px;
+        padding: 3px 8px; font-size: .75rem; font-weight: 700;
+        white-space: nowrap;
+    }
+    .stock-badge.low  { background: var(--erp-danger-lt); color: var(--erp-danger); border-color: #fecaca; }
+    .stock-badge.zero { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+    .stock-unit { font-weight: 500; font-size: .67rem; opacity: .85; }
+
+    /* Price cells */
+    .price-purchase { color: var(--erp-muted); font-weight: 600; font-size: .81rem; white-space: nowrap; }
+    .price-sale     { color: var(--erp-success); font-weight: 800; font-size: .84rem; white-space: nowrap; }
+
+    /* Status badge */
+    .status-active {
+        background: var(--erp-success-lt); color: var(--erp-success);
+        border: 1px solid #a7f3d0; border-radius: 20px;
+        padding: 3px 10px; font-size: .7rem; font-weight: 700;
+        letter-spacing: .2px; white-space: nowrap;
+    }
+    .status-inactive {
+        background: #f1f5f9; color: #64748b;
+        border: 1px solid #cbd5e1; border-radius: 20px;
+        padding: 3px 10px; font-size: .7rem; font-weight: 700;
+        white-space: nowrap;
+    }
+
+    /* Action buttons – single row, compact */
+    .action-group {
+        display: flex; align-items: center; gap: 4px;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+    }
+    .btn-act {
+        border-radius: 6px; padding: 4px 9px; font-size: .72rem;
+        font-weight: 600; display: inline-flex; align-items: center; gap: 4px;
+        border: 1px solid transparent; transition: all .12s; cursor: pointer;
+        line-height: 1.5; white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-act-view    { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; }
+    .btn-act-view:hover    { background: #0284c7; color: #fff; }
+    .btn-act-edit    { background: var(--erp-primary-lt); color: var(--erp-primary); border-color: #c7d2fe; }
+    .btn-act-edit:hover    { background: var(--erp-primary); color: #fff; }
+    .btn-act-barcode { background: var(--erp-success-lt); color: var(--erp-success); border-color: #a7f3d0; }
+    .btn-act-barcode:hover { background: var(--erp-success); color: #fff; }
+    .btn-act-deact   { background: var(--erp-danger-lt); color: var(--erp-danger); border-color: #fecaca; }
+    .btn-act-deact:hover   { background: var(--erp-danger); color: #fff; }
+    .btn-act-act     { background: var(--erp-success-lt); color: var(--erp-success); border-color: #a7f3d0; }
+    .btn-act-act:hover     { background: var(--erp-success); color: #fff; }
+
+    /* ── Pagination ── */
+    .erp-pagination { padding: 14px 20px; border-top: 1px solid var(--erp-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .erp-pagination .showing { font-size: .78rem; color: var(--erp-muted); }
+    .erp-pagination .page-link { border-radius: 6px !important; border-color: var(--erp-border) !important; color: var(--erp-text) !important; font-size: .8rem; padding: 5px 12px; }
+    .erp-pagination .page-item.active .page-link { background: var(--erp-primary) !important; border-color: var(--erp-primary) !important; color: #fff !important; }
+
+    /* ── Actions column – force min-width so buttons never wrap ── */
+    #productTable th:last-child,
+    #productTable td:last-child { min-width: 190px; }
+
+    /* ── Select checkbox ── */
+    input[type="checkbox"].row-check { width: 16px; height: 16px; accent-color: var(--erp-primary); cursor: pointer; }
+
+    /* ── DataTable override ── */
+    div.dataTables_wrapper div.dataTables_length select { width: 75px !important; }
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate { display: none !important; }
+    .dataTables_wrapper { overflow-x: visible !important; }
 
     /* ════════════════════════════════════════════════════
        MOBILE RESPONSIVE  ≤ 768px
     ════════════════════════════════════════════════════ */
     @media (max-width: 768px) {
-
-        /* Page spacing */
-        .erp-page { padding: 10px 0; }
-        .container-fluid { padding-left: 8px !important; padding-right: 8px !important; }
+        .erp-page { padding: 12px 0; }
+        .container-fluid { padding-left: 10px !important; padding-right: 10px !important; }
 
         /* Stats: 2-col grid */
-        .stat-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-        .stat-card { padding: 10px 12px; gap: 8px; }
-        .stat-icon { width: 32px; height: 32px; font-size: 14px; }
-        .stat-card .stat-value { font-size: 1.1rem; }
-        .stat-card .stat-label { font-size: .62rem; }
+        .stat-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+        .stat-card { padding: 12px; gap: 10px; }
+        .stat-icon { width: 36px; height: 36px; font-size: 15px; border-radius: 10px; }
+        .stat-card .stat-value { font-size: 1.15rem; }
+        .stat-card .stat-label { font-size: .65rem; }
         .stat-card .stat-sub   { display: none; }
 
-        /* Card header: stack title + buttons vertically */
-        .erp-card-header { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 14px; }
-        .erp-hdr-actions { width: 100%; }
+        /* Card header: title + buttons */
+        .erp-card-header { flex-direction: column; align-items: flex-start; gap: 12px; padding: 14px; }
+        .erp-hdr-actions {
+            width: 100% !important;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 8px !important;
+        }
         .btn-hdr {
-            flex: 1 1 auto;
-            text-align: center;
-            justify-content: center;
-            font-size: .72rem;
-            padding: 5px 8px;
+            width: 100% !important;
+            justify-content: center !important;
+            text-align: center !important;
+            font-size: .78rem !important;
+            padding: 9px 10px !important;
+            box-sizing: border-box !important;
+            border-radius: 10px !important;
+            height: 38px !important;
         }
 
-        /* Filter panel: each field full-width */
-        .filter-panel { padding: 10px 14px; }
-        .erp-filter-row { gap: 8px; }
+        /* Filter panel: stack fields */
+        .filter-panel { padding: 12px 14px; }
+        .erp-filter-row { gap: 10px; }
         .erp-filter-field,
         .erp-filter-search { flex: 1 1 100%; max-width: 100%; }
-        .erp-filter-btns { flex: 1 1 100%; }
-        .erp-filter-btns > div { width: 100%; gap: 8px; }
+        .erp-filter-btns { flex: 1 1 100%; width: 100%; }
+        .erp-filter-btns > div { width: 100%; display: flex; gap: 8px; }
         .btn-erp-filter,
-        .btn-erp-clear { flex: 1; text-align: center; justify-content: center; }
+        .btn-erp-clear { flex: 1; text-align: center; justify-content: center; height: 40px; }
 
-        /* TABLE: horizontal scroll, never collapse */
+        /* Table wrap */
         .erp-table-wrap {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             border-radius: 0;
         }
         #productTable {
-            min-width: 680px !important;  /* forces scroll, never collapses */
-            font-size: .78rem;
+            min-width: 720px !important;
+            font-size: .8rem;
         }
-        #productTable thead th { padding: 8px 8px; font-size: .62rem; }
-        #productTable tbody td { padding: 7px 8px; }
-
-        /* Action buttons: tighter on mobile */
-        .action-group { gap: 2px; }
-        .btn-act { padding: 3px 6px; font-size: .68rem; }
-        #productTable th:last-child,
-        #productTable td:last-child { min-width: 160px; }
-
-        /* Item details: allow wrap on small screen */
-        .item-name { font-size: .78rem; }
-        .item-meta { gap: 3px; }
-        .meta-chip { font-size: .62rem; }
+        #productTable thead th { padding: 10px 10px; font-size: .64rem; }
+        #productTable tbody td { padding: 8px 10px; }
 
         /* Pagination */
         .erp-pagination {
             flex-direction: column;
             align-items: flex-start;
-            gap: 8px;
-            padding: 10px 14px;
+            gap: 10px;
+            padding: 12px 14px;
         }
         .erp-pagination nav { width: 100%; }
-        .erp-pagination .page-link { padding: 3px 8px; font-size: .72rem; }
     }
 
-    /* ════════════════════════════════════════════════════
-       EXTRA SMALL  ≤ 480px
-    ════════════════════════════════════════════════════ */
+    /* ── Mobile Product Cards ── */
+    .mobile-product-cards { display: none; padding: 14px; }
+
+    @media (max-width: 768px) {
+        .erp-table-wrap { display: none !important; }
+        .mobile-product-cards { display: flex; flex-direction: column; gap: 12px; }
+    }
+
+    .prod-mcard {
+        background: #ffffff;
+        border: 1px solid var(--erp-border);
+        border-radius: 12px;
+        padding: 14px;
+        box-shadow: 0 2px 8px rgba(15,23,42,0.03);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .prod-mcard.row-inactive { opacity: 0.65; background: #f8fafc; }
+    .prod-mcard-hd { display: flex; align-items: flex-start; gap: 12px; }
+    .prod-mcard-body {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px dashed #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .prod-mcard-price { font-size: 1.05rem; font-weight: 800; color: #10b981; }
+    .prod-mcard-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        margin-top: 12px;
+        width: 100%;
+    }
+    .prod-mcard-actions .btn-act {
+        width: 100% !important;
+        justify-content: center !important;
+        height: 38px !important;
+        font-size: .78rem !important;
+        border-radius: 8px !important;
+    }
+
     @media (max-width: 480px) {
-        .stat-grid { grid-template-columns: 1fr 1fr !important; gap: 6px !important; }
-        .stat-card .stat-value { font-size: 1rem; }
-        .erp-hdr-actions { flex-wrap: wrap; }
-        .btn-hdr { min-width: 0; font-size: .68rem; }
-        #productTable { min-width: 620px !important; }
-        .btn-act { padding: 2px 5px; font-size: .64rem; }
+        .stat-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+        .stat-card { padding: 10px; }
+        .stat-card .stat-value { font-size: 1.05rem; }
+        #productTable { min-width: 660px !important; }
+        .btn-act { padding: 3px 6px; font-size: .68rem; }
     }
-
-    /* ── Number row highlight ── */
-    #productTable tbody tr td:first-child { color: var(--erp-muted); font-size: .72rem; }
 </style>
 
 <div class="erp-page">
@@ -764,6 +726,99 @@
                 </table>
         </div>{{-- /erp-table-wrap --}}
 
+        {{-- ── Mobile Product Cards (Shown only on mobile < 768px for 100% user-friendly view) ── --}}
+        <div class="mobile-product-cards">
+            @foreach ($products as $product)
+                @php
+                    $stockPieces = (float) ($product->warehouse_stocks_sum_total_pieces ?? 0);
+                    $ppb = $product->pieces_per_box > 0 ? $product->pieces_per_box : 1;
+                    if (($product->size_mode === 'by_cartons' || $product->size_mode === 'by_size') && $ppb > 1) {
+                        $boxes = floor($stockPieces / $ppb);
+                        $loose = $stockPieces % $ppb;
+                        $stockDisplay = $loose > 0 ? "{$boxes}.{$loose}" : "{$boxes}";
+                        $stockUnit    = $loose > 0 ? 'Box.Loose' : 'Boxes';
+                    } else {
+                        $stockDisplay = $stockPieces;
+                        $stockUnit    = 'Pcs';
+                    }
+                    $stockClass = $stockPieces == 0 ? 'zero' : (($product->alert_carton_quantity && $stockPieces <= $product->alert_carton_quantity) ? 'low' : '');
+
+                    if ($product->size_mode === 'by_size') {
+                        $m2 = ($product->height * $product->width) / 10000;
+                        $tradePrice  = $m2 * (float)$product->purchase_price_per_m2;
+                        $retailPrice = $m2 * (float)$product->price_per_m2;
+                    } else {
+                        $tradePrice  = (float)$product->purchase_price_per_piece;
+                        $retailPrice = (float)$product->sale_price_per_piece ?: (float)$product->sale_price_per_box;
+                    }
+                @endphp
+                <div class="prod-mcard {{ $product->is_active ? '' : 'row-inactive' }}" id="pmcard-{{ $product->id }}">
+                    <div class="prod-mcard-hd">
+                        <input type="checkbox" class="selectProduct row-check mt-1" value="{{ $product->id }}">
+                        @if ($product->image)
+                            <img src="{{ asset('uploads/products/' . $product->image) }}" alt="{{ $product->item_name }}" class="product-img">
+                        @else
+                            <div class="no-img-badge"><i class="fas fa-image"></i></div>
+                        @endif
+                        <div style="flex:1; min-width:0;">
+                            <div class="d-flex align-items-center justify-content-between gap-1">
+                                <div class="item-name mb-0 text-truncate">{{ $product->item_name }}</div>
+                                @if($product->is_active)
+                                    <span class="status-active" id="mstatus-badge-{{ $product->id }}">Active</span>
+                                @else
+                                    <span class="status-inactive" id="mstatus-badge-{{ $product->id }}">Inactive</span>
+                                @endif
+                            </div>
+                            <div class="item-meta mt-1">
+                                <span class="item-code">{{ $product->item_code }}</span>
+                                @if($product->category_relation)
+                                    <span class="meta-chip"><i class="fas fa-list"></i> {{ $product->category_relation->name }}</span>
+                                @endif
+                                @if($product->brand)
+                                    <span class="meta-chip"><i class="fas fa-trademark"></i> {{ $product->brand->name }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prod-mcard-body">
+                        <div>
+                            <div style="font-size:.68rem; font-weight:700; color:var(--erp-muted); text-transform:uppercase;">Sale Price</div>
+                            <div class="prod-mcard-price">Rs. {{ number_format($retailPrice, 2) }}</div>
+                            <div style="font-size:.7rem; color:var(--erp-muted);">Cost: Rs. {{ number_format($tradePrice, 2) }}</div>
+                        </div>
+                        <div class="text-end">
+                            <div style="font-size:.68rem; font-weight:700; color:var(--erp-muted); text-transform:uppercase; margin-bottom:2px;">Stock</div>
+                            <span class="stock-badge {{ $stockClass }}">
+                                <i class="fas fa-cubes"></i> {{ $stockDisplay }} <span class="stock-unit">{{ $stockUnit }}</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="prod-mcard-actions">
+                        <button type="button" class="btn-act btn-act-view viewProductBtn" data-id="{{ $product->id }}">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
+                            <a href="{{ route('products.edit', $product->id) }}" class="btn-act btn-act-edit">
+                                <i class="fas fa-pencil-alt"></i> Edit
+                            </a>
+                        @endif
+                        <a href="{{ route('generate-barcode-image', $product->id) }}" class="btn-act btn-act-barcode">
+                            <i class="fas fa-barcode"></i> Barcode
+                        </a>
+                        @if (auth()->user()->can('products.edit') || auth()->user()->email === 'admin@admin.com')
+                            <button type="button"
+                                class="btn-act {{ $product->is_active ? 'btn-act-deact' : 'btn-act-act' }} toggle-active-btn"
+                                data-id="{{ $product->id }}"
+                                data-active="{{ $product->is_active ? '1' : '0' }}"
+                                data-name="{{ $product->item_name }}">
+                                <i class="fas {{ $product->is_active ? 'fa-ban' : 'fa-check' }}"></i>
+                            </button>
+                        @endif
+                    </div>
+                </div>
+            @endforeach
+        </div>{{-- /mobile-product-cards --}}
+
 
         {{-- ── Pagination ── --}}
         <div class="erp-pagination">
@@ -952,13 +1007,24 @@ $(document).ready(function () {
                 let colorList = ['-'];
                 let variants  = [];
                 if (product.color) {
-                    try {
-                        let parsed = JSON.parse(product.color);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                            if (typeof parsed[0] === 'object') variants = parsed;
-                            else colorList = parsed;
-                        } else if (typeof parsed === 'string') colorList = [parsed];
-                    } catch (e) { colorList = [product.color]; }
+                    let parsed = product.color;
+                    if (typeof parsed === 'string') {
+                        try { parsed = JSON.parse(parsed); } catch (e) {}
+                    }
+                    if (typeof parsed === 'string') {
+                        try { parsed = JSON.parse(parsed); } catch (e) {}
+                    }
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        if (typeof parsed[0] === 'object' && parsed[0] !== null) {
+                            variants = parsed;
+                        } else {
+                            colorList = parsed;
+                        }
+                    } else if (typeof parsed === 'object' && parsed !== null) {
+                        variants = [parsed];
+                    } else if (typeof parsed === 'string') {
+                        colorList = [parsed];
+                    }
                 }
 
                 let sizeStr = '-';
@@ -979,23 +1045,31 @@ $(document).ready(function () {
 
                 if (variants.length > 0) {
                     variants.forEach(v => {
-                        let barcode   = v.barcode || (product.barcode_path ?? product.item_code);
-                        let colorBadge = (v.color && v.color !== '-') ? `<span style="background:#e2e8f0;border-radius:4px;padding:2px 6px;font-size:.72rem;">${v.color}</span>` : '<span style="color:#94a3b8;">—</span>';
-                        let alertQty  = (v.alert != null && v.alert != 0) ? v.alert : '-';
+                        let vName     = v.name || v.variant_name || product.item_name;
+                        let vSize     = v.size || v.variant_size || '-';
+                        let vColorVal = v.color || v.variant_color || '-';
+                        let vStock    = (v.stock !== undefined && v.stock !== null && v.stock !== '') ? v.stock : (v.variant_stock ?? 0);
+                        let vSale     = (v.sale_price !== undefined && v.sale_price !== null && v.sale_price !== '') ? v.sale_price : (v.variant_sale_price ?? 0);
+                        let vPurch    = (v.purch_price !== undefined && v.purch_price !== null && v.purch_price !== '') ? v.purch_price : (v.purchase_price ?? v.variant_purchase_price ?? 0);
+                        let vAlert    = (v.alert !== undefined && v.alert !== null && v.alert !== '') ? v.alert : (v.variant_alert_qty ?? 0);
+                        let vBarcode  = v.barcode || v.variant_barcode || (product.barcode_path ?? product.item_code);
+                        let vUnit     = v.unit || v.variant_unit || (product.unit ? product.unit.name : 'Pcs');
+
+                        let colorBadge = (vColorVal && vColorVal !== '-') ? `<span style="background:#e2e8f0;border-radius:4px;padding:2px 6px;font-size:.72rem;">${vColorVal}</span>` : '<span style="color:#94a3b8;">—</span>';
+                        let alertQty  = (vAlert != null && vAlert != 0) ? vAlert : '-';
                         
-                        let vUnit = v.unit || (product.unit ? product.unit.name : 'pc');
-                        if (product.size_mode === 'by_kg' && v.conv_factor != 1 && !v.unit) vUnit = 'Pcs'; // Fallback
+                        if (product.size_mode === 'by_kg' && v.conv_factor != 1 && !v.unit) vUnit = 'Pcs';
                         let vPriceLabel = product.size_mode === 'by_size' ? '/m²' : '/' + vUnit;
 
                         tbody.append(`<tr>
-                            <td class="text-start ps-4 fw-semibold">${v.name || product.item_name}</td>
-                            <td>${v.size || '-'}</td>
+                            <td class="text-start ps-4 fw-semibold">${vName}</td>
+                            <td>${vSize}</td>
                             <td>${colorBadge}</td>
-                            <td>${stockBadgeHtml(v.stock, v.alert)}</td>
-                            <td class="fw-bold" style="color:#059669;">Rs. ${parseFloat(v.sale_price||0).toFixed(2)} <small class="fw-normal text-muted">${vPriceLabel}</small></td>
-                            <td class="text-muted">Rs. ${parseFloat(v.purch_price||0).toFixed(2)} <small>${vPriceLabel}</small></td>
+                            <td>${stockBadgeHtml(vStock, vAlert)}</td>
+                            <td class="fw-bold" style="color:#059669;">Rs. ${parseFloat(vSale||0).toFixed(2)} <small class="fw-normal text-muted">${vPriceLabel}</small></td>
+                            <td class="text-muted">Rs. ${parseFloat(vPurch||0).toFixed(2)} <small>${vPriceLabel}</small></td>
                             <td><span style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:2px 6px;font-size:.72rem;">${alertQty}</span></td>
-                            <td class="text-end pe-4"><code style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:2px 6px;font-size:.75rem;">${barcode}</code></td>
+                            <td class="text-end pe-4"><code style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:2px 6px;font-size:.75rem;">${vBarcode}</code></td>
                         </tr>`);
                     });
                 } else {
@@ -1046,17 +1120,23 @@ $(document).ready(function () {
                 data: { _token: '{{ csrf_token() }}' },
                 success: function (res) {
                     if (!res.success) return;
-                    const row   = $(`#product-row-${productId}`);
-                    const badge = $(`#status-badge-${productId}`);
+                    const row    = $(`#product-row-${productId}`);
+                    const card   = $(`#pmcard-${productId}`);
+                    const badge  = $(`#status-badge-${productId}`);
+                    const mbadge = $(`#mstatus-badge-${productId}`);
                     if (res.is_active) {
                         row.removeClass('row-inactive');
+                        card.removeClass('row-inactive');
                         badge.attr('class', 'status-active').text('Active');
+                        mbadge.attr('class', 'status-active').text('Active');
                         btn.removeClass('btn-act-act').addClass('btn-act-deact')
                            .attr('title','Deactivate').html('<i class="fas fa-ban"></i>')
                            .data('active','1');
                     } else {
                         row.addClass('row-inactive');
+                        card.addClass('row-inactive');
                         badge.attr('class', 'status-inactive').text('Inactive');
+                        mbadge.attr('class', 'status-inactive').text('Inactive');
                         btn.removeClass('btn-act-deact').addClass('btn-act-act')
                            .attr('title','Activate').html('<i class="fas fa-check"></i>')
                            .data('active','0');

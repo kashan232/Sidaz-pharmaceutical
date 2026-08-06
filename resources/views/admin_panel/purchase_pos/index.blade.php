@@ -473,6 +473,27 @@
         transform: none;
     }
     
+    .btn-back-to-products {
+        border-radius: 8px !important;
+        border: 1.5px solid #cbd5e1 !important;
+        color: #475569 !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.3px !important;
+        transition: all 0.2s !important;
+        background: #ffffff !important;
+        height: 38px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .btn-back-to-products:hover {
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        border-color: #94a3b8 !important;
+    }
+    
     .Vendor-toggle-btns {
         display: flex;
         border: 1px solid #e5e7eb;
@@ -512,12 +533,57 @@
         border-radius: 6px;
     }
     
+    /* ── MOBILE POS SPECIFIC STYLES (< 768px) ── */
+    .mobile-pos-bottom-bar {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1040;
+        background: #ffffff;
+        border-top: 1.5px solid #e2e8f0;
+        padding: 10px 16px;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .cat-pills-scroll {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 4px 0 10px 0;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 10px;
+    }
+    .cat-pill {
+        flex: 0 0 auto;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        padding: 6px 14px;
+        border-radius: 99px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .cat-pill.active {
+        background: #4f46e5;
+        color: #ffffff;
+        border-color: #4f46e5;
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    }
+
     /* RESPONSIVE DESIGN */
     @media (max-width: 991.98px) {
+        body { padding-bottom: 75px !important; }
+
         .pos-wrapper {
-            flex-direction: column;
+            flex-direction: column !important;
             height: auto !important;
-            overflow: visible;
+            overflow: visible !important;
         }
         html, body {
             overflow: auto !important;
@@ -528,16 +594,48 @@
             overflow: visible !important;
         }
         .pos-products-panel {
-            min-height: 500px;
+            min-height: 400px;
             height: auto;
+            padding: 12px !important;
+            border-radius: 12px !important;
         }
+        .pos-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px !important;
+        }
+        .product-card-image { height: 75px !important; }
+        .product-card-title { font-size: 11px !important; }
+        .product-card-price { font-size: 11.5px !important; }
+
+        /* Slide-up Cart Drawer on Mobile */
         .pos-cart-panel {
+            position: fixed !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
-            flex: none;
-            height: auto !important;
-            min-height: 600px;
+            height: 100% !important;
+            z-index: 1050 !important;
+            border-radius: 0 !important;
+            display: none !important;
+            box-shadow: none !important;
+            overflow-y: auto !important;
         }
+        .pos-cart-panel.mobile-drawer-open {
+            display: flex !important;
+            animation: slideUpMob 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .mobile-pos-bottom-bar {
+            display: flex !important;
+        }
+    }
+
+    @keyframes slideUpMob {
+        from { transform: translateY(100%); }
+        to   { transform: translateY(0); }
     }
 </style>
 
@@ -568,6 +666,15 @@
                 <div class="pos-search-box">
                     <input type="text" id="posSearch" placeholder="Search base product by name or code...">
                     <i class="fas fa-search pos-search-icon"></i>
+                </div>
+
+                <!-- Category Filter Pills Bar -->
+                <div class="cat-pills-scroll" id="categoryPillsRow">
+                    <button type="button" class="cat-pill active" data-mode="all"><i class="fas fa-cubes me-1"></i> All Items</button>
+                    <button type="button" class="cat-pill" data-mode="by_cartons">📦 Cartons</button>
+                    <button type="button" class="cat-pill" data-mode="by_pieces">🧩 Pieces</button>
+                    <button type="button" class="cat-pill" data-mode="by_size">📐 By Size</button>
+                    <button type="button" class="cat-pill" data-mode="by_kg">⚖ Weight (Kg)</button>
                 </div>
                 
                 <div class="pos-grid-container">
@@ -649,6 +756,7 @@
                                 <label class="btn btn-outline-light py-0 px-2" for="pos_mode_wholesale" style="font-size: 10px; line-height: 18px; border-color: rgba(255,255,255,0.2);">Wholesale</label>
                             </div>
                             <span class="cart-count" id="cartCountBadge">0</span>
+                            <button type="button" class="btn-close btn-close-white d-md-none ms-2" id="btnCloseMobileCartDrawer" aria-label="Close"></button>
                         </div>
                     </div>
                     
@@ -774,9 +882,14 @@
                         <input type="hidden" name="total_extra_cost" id="backendExtraDiscount" value="0">
                         <input type="hidden" name="warehouse_id[]" id="backendWarehouseId" value="1">
                         
-                        <button type="submit" class="btn-checkout" id="btnPOSSubmit" disabled>
-                            <i class="fas fa-check-circle me-1"></i> Submit & Print
-                        </button>
+                        <div class="d-flex flex-column gap-2 mt-2">
+                            <button type="submit" class="btn-checkout" id="btnPOSSubmit" disabled>
+                                <i class="fas fa-check-circle me-1"></i> Submit & Print
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary w-100 py-2 fw-bold btn-back-to-products" id="btnBackToProducts">
+                                <i class="fas fa-arrow-left me-1"></i> Back / Add More Products
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -787,37 +900,22 @@
 
 <!-- VARIANTS SELECTION POPUP MODAL -->
 <div class="modal fade" id="variantsModal" tabindex="-1" aria-labelledby="variantsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-dark text-white py-2">
-                <h5 class="modal-title fs-6" id="variantsModalLabel">Select Product Variant</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="border: none; background: transparent; font-size: 24px;">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+            <div class="modal-header bg-dark text-white py-3 px-4">
+                <h5 class="modal-title fw-bold text-white fs-6 mb-0" id="variantsModalLabel">Select Product Variant</h5>
+                <button type="button" class="btn-close btn-close-white" data-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body p-0">
-                <div class="p-2 bg-light border-bottom">
-                    <input type="text" id="variantSearchInput" class="form-control form-control-sm" placeholder="Search variant size / color...">
+            <div class="modal-body p-3 bg-light" style="max-height: 70vh; overflow-y: auto;">
+                <div class="mb-3">
+                    <input type="text" id="variantSearchInput" class="form-control px-3 py-2" placeholder="Search variant size / color..." style="border-radius: 10px; border: 1.5px solid #cbd5e1;">
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="ps-3" style="font-size: 12px;">Variant Size / Color</th>
-                                <th class="text-center" style="font-size: 12px;">Stock</th>
-                                <th class="text-end" style="font-size: 12px;">Price</th>
-                                <th class="text-center" style="width: 140px; font-size: 12px;">Quantity</th>
-                                <th class="text-center" style="width: 120px; font-size: 12px;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="variantsModalList">
-                            <!-- Populated dynamically via JS -->
-                        </tbody>
-                    </table>
+                <div id="variantsModalList" class="d-flex flex-column gap-2">
+                    <!-- Populated dynamically via JS -->
                 </div>
             </div>
-            <div class="modal-footer py-2">
-                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Close</button>
+            <div class="modal-footer py-2 bg-white border-top">
+                <button type="button" class="btn btn-secondary btn-sm px-4 fw-semibold" data-dismiss="modal" style="border-radius: 8px;">Close</button>
             </div>
         </div>
     </div>
@@ -1116,6 +1214,23 @@
         </div>
     </div>
 </div>
+
+<!-- STICKY FLOATING CART BAR FOR MOBILE -->
+<div class="mobile-pos-bottom-bar" id="mobilePosBottomBar">
+    <div class="d-flex align-items-center gap-2">
+        <div class="position-relative">
+            <i class="fas fa-shopping-cart text-primary fs-4"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="mobileCartCountBadge" style="font-size: 10px;">0</span>
+        </div>
+        <div class="ms-1">
+            <div class="text-muted small" style="font-size: 9px; font-weight: 700; text-transform: uppercase;">Total Payable</div>
+            <div class="fw-extrabold text-dark" id="mobileCartTotal" style="font-size: 1rem; font-weight: 800; color: #0f172a;">Rs 0.00</div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-primary fw-bold px-3 py-2" id="btnOpenMobileCart" style="border-radius: 10px; background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%); border: none; font-size: 0.85rem;">
+        View Cart <i class="fas fa-arrow-right ms-1"></i>
+    </button>
+</div>
 @endsection
 
 @section('js')
@@ -1231,35 +1346,40 @@
                     let price = (activePriceMode === 'wholesale' && wholesalePrice > 0) ? wholesalePrice : retailPrice;
 
                     let row = `
-                        <tr data-id="${v.id}" 
-                            data-name="${v.name}" 
-                            data-price="${retailPrice}" 
-                            data-wholesale-price="${wholesalePrice}"
-                            data-weight-per-piece="${weightPerPiece}"
-                            data-stock-pieces="${v.stock_pieces}"
-                            data-size-mode="${sizeMode}"
-                            data-pieces-per-box="${piecesPerBox}"
-                            data-variant-data="${v.variant_data}">
-                            <td class="ps-3 fw-bold" style="font-size: 13px;">${desc}</td>
-                            <td class="text-center">
-                                <span class="badge ${isOut ? 'bg-danger' : 'bg-success'}" style="font-size: 11px;">
-                                    ${v.stock}
+                        <div class="variant-mobile-card p-3 bg-white rounded-3 border" 
+                             data-id="${v.id}" 
+                             data-name="${v.name}" 
+                             data-price="${retailPrice}" 
+                             data-wholesale-price="${wholesalePrice}"
+                             data-weight-per-piece="${weightPerPiece}"
+                             data-stock-pieces="${v.stock_pieces}"
+                             data-size-mode="${sizeMode}"
+                             data-pieces-per-box="${piecesPerBox}"
+                             data-variant-data="${v.variant_data}">
+                             
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-dark variant-title-text" style="font-size: 0.92rem;">${desc}</span>
+                                <span class="badge ${isOut ? 'bg-danger-subtle text-danger border-danger-subtle' : 'bg-success-subtle text-success border-success-subtle'} border px-2 py-1" style="font-size: 0.75rem; font-weight: 700;">
+                                    Stock: ${v.stock}
                                 </span>
-                            </td>
-                            <td class="text-end fw-bold">Rs ${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                            <td class="text-center">
-                                <div class="qty-controls mx-auto" style="width: 100px;">
-                                    <button type="button" class="qty-btn modal-qty-minus" ${isOut ? 'disabled' : ''}>-</button>
-                                    <input type="number" class="qty-input modal-qty-val" value="1" min="1" ${isOut ? 'disabled' : ''}>
-                                    <button type="button" class="qty-btn modal-qty-plus" ${isOut ? 'disabled' : ''}>+</button>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                                <div class="fw-extrabold text-primary" style="font-size: 0.95rem; font-weight: 800;">
+                                    Rs ${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                                 </div>
-                            </td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-primary btn-sm variant-add-btn add-to-cart-modal-btn" ${isOut ? 'disabled' : ''}>
-                                    <i class="fas fa-plus me-1"></i> Add
-                                </button>
-                            </td>
-                        </tr>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="qty-controls" style="width: 85px;">
+                                        <button type="button" class="qty-btn modal-qty-minus" ${isOut ? 'disabled' : ''}>-</button>
+                                        <input type="number" class="qty-input modal-qty-val" value="1" min="1" ${isOut ? 'disabled' : ''}>
+                                        <button type="button" class="qty-btn modal-qty-plus" ${isOut ? 'disabled' : ''}>+</button>
+                                    </div>
+                                    <button type="button" class="btn btn-primary btn-sm variant-add-btn add-to-cart-modal-btn px-3 fw-bold" style="border-radius: 8px;" ${isOut ? 'disabled' : ''}>
+                                        <i class="fas fa-plus me-1"></i> Add
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     `;
                     $tbody.append(row);
                 });
@@ -1302,7 +1422,7 @@
         });
 
         $(document).on('click', '.add-to-cart-modal-btn', function() {
-            let $row = $(this).closest('tr');
+            let $row = $(this).closest('.variant-mobile-card');
             let id = $row.data('id');
             let name = $row.data('name');
             let retailPrice = parseFloat($row.data('price'));
@@ -1554,6 +1674,7 @@
             let $list = $('#cartItemsList');
             let $empty = $('#cartEmptyPlaceholder');
             
+            updateMobileCartBar();
             if (cart.length === 0) {
                 $list.html($empty);
                 $('#cartCountBadge').text('0');
@@ -1808,7 +1929,57 @@
             $('#backendSubTotal2').val(subtotal.toFixed(2));
             $('#backendTotalNet').val(payable.toFixed(2));
             $('#backendCash').val(totalPaid.toFixed(2));
+
+            updateMobileCartBar();
         }
+
+        function updateMobileCartBar() {
+            let totalQty = cart.reduce((sum, item) => sum + (parseInt(item.qty) || 0), 0);
+            let totalAmount = 0;
+            cart.forEach(item => {
+                let price = parseFloat(item.price) || 0;
+                totalAmount += (item.qty * price);
+            });
+            
+            $('#mobileCartCountBadge').text(totalQty);
+            $('#mobileCartTotal').text('Rs ' + totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            
+            if (totalQty > 0) {
+                $('#btnOpenMobileCart').html(`Cart (${totalQty}) <i class="fas fa-arrow-right ms-1"></i>`);
+            } else {
+                $('#btnOpenMobileCart').html(`Cart (0) <i class="fas fa-arrow-right ms-1"></i>`);
+            }
+        }
+
+        // Category Pills Filtering
+        $(document).on('click', '.cat-pill', function() {
+            $('.cat-pill').removeClass('active');
+            $(this).addClass('active');
+            let mode = $(this).data('mode');
+            if (mode === 'all') {
+                $('.product-card').show();
+            } else {
+                $('.product-card').each(function() {
+                    let smode = $(this).data('size-mode');
+                    if (smode === mode) $(this).show();
+                    else $(this).hide();
+                });
+            }
+        });
+
+        // Mobile Cart Drawer Open/Close
+        $('#btnOpenMobileCart, #mobilePosBottomBar').on('click', function(e) {
+            $('.pos-cart-panel').addClass('mobile-drawer-open');
+        });
+
+        $('#btnCloseMobileCartDrawer, #btnBackToProducts').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $('.pos-cart-panel').removeClass('mobile-drawer-open');
+            if (window.innerWidth < 768) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
 
         // Form Submit
         $('#posCheckoutForm').on('submit', function(e) {
@@ -1882,8 +2053,8 @@
         // Variant Search Filter
         $('#variantSearchInput').on('input', function() {
             let searchTerm = $(this).val().toLowerCase();
-            $('#variantsModalList tr').each(function() {
-                let variantName = $(this).find('td:first').text().toLowerCase();
+            $('#variantsModalList .variant-mobile-card').each(function() {
+                let variantName = $(this).find('.variant-title-text').text().toLowerCase();
                 if (variantName.indexOf(searchTerm) > -1) {
                     $(this).show();
                 } else {
@@ -1895,7 +2066,7 @@
         // Clear search when modal opens
         $('#variantsModal').on('show.bs.modal', function () {
             $('#variantSearchInput').val('');
-            $('#variantsModalList tr').show();
+            $('#variantsModalList .variant-mobile-card').show();
         });
 
         // Discount Distribution Modal Trigger

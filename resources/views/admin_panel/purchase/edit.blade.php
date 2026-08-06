@@ -253,6 +253,32 @@
             border-color: #198754;
         }
 
+        /* Mobile Breakpoints (< 768px) */
+        @media (max-width: 768px) {
+            .header-text {
+                font-size: 1.1rem !important;
+            }
+            .main-container {
+                padding: 12px !important;
+                border-radius: 8px !important;
+            }
+            .sales-table {
+                min-width: 780px !important;
+            }
+            .discount-wrapper {
+                min-width: 70px !important;
+            }
+            .btn-submit-update {
+                width: 100% !important;
+                height: 46px !important;
+                font-size: 1rem !important;
+            }
+            .payment-row select, .payment-row input {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+        }
+
         .section-title {
             font-weight: 700;
             color: #6c757d;
@@ -637,7 +663,7 @@
                 </div>
 
                 <div class="text-end mt-4">
-                    <button type="submit" class="btn btn-success px-5 fw-bold shadow-sm">
+                    <button type="submit" class="btn btn-success btn-submit-update px-5 fw-bold shadow-sm">
                         <i class="bi bi-save me-2"></i> Update Purchase
                     </button>
                 </div>

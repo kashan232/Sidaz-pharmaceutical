@@ -299,7 +299,7 @@
                                 <div class="col-12 mt-3 pt-3 border-top">
                                     <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                                         <h6 class="form-label-pro text-primary mb-0"><i class="fas fa-cubes me-1"></i>Product Variants & Units</h6>
-                                        <button type="button" class="btn btn-sm btn-primary d-none d-md-inline-block" id="enableVariantsBtn"><i class="fas fa-plus me-1"></i>Add Variant Row</button>
+                                        <button type="button" class="btn btn-sm btn-primary" id="enableVariantsBtn"><i class="fas fa-plus me-1"></i>Add Variant Row</button>
                                     </div>
                                     <div id="variantsContainer">
                                         <div class="table-responsive">
@@ -1206,6 +1206,12 @@
                     addBaseVariantRow();
                 } else {
                     addVariantRow();
+                }
+                if (typeof isMobile === 'function' && isMobile()) {
+                    if (typeof rebuildMobileCards === 'function') rebuildMobileCards();
+                    const cards = document.querySelectorAll('.mob-variant-card');
+                    document.querySelectorAll('.mob-variant-card.is-open').forEach(c => c.classList.remove('is-open'));
+                    if (cards.length) cards[cards.length - 1].classList.add('is-open');
                 }
             });
 

@@ -171,10 +171,13 @@ class PurchaseController extends Controller
         $categories = \App\Models\Category::get();
 
         $balanceService = app(\App\Services\BalanceService::class);
-        $vendorBalances = [];
-        foreach ($Vendor as $v) {
-            $vendorBalances[$v->id] = $balanceService->getVendorBalance($v->id);
-        }
+        $apId = $balanceService->getAccountsPayableId();
+        $vendorBalances = \App\Models\JournalEntry::where('party_type', \App\Models\Vendor::class)
+            ->where('account_id', $apId)
+            ->selectRaw('party_id, COALESCE(SUM(credit) - SUM(debit), 0) as balance')
+            ->groupBy('party_id')
+            ->pluck('balance', 'party_id')
+            ->toArray();
 
         return view('admin_panel.purchase.quick_create', compact('Vendor', 'Warehouse', 'accounts', 'categories', 'vendorBalances'));
     }

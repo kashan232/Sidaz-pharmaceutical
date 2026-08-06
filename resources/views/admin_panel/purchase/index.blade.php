@@ -210,31 +210,70 @@
             background-color: #f1f5f9 !important;
             color: #0f172a !important;
         }
+
+        /* Mobile Breakpoints (< 768px) */
+        @media (max-width: 768px) {
+            .purch-hdr-actions {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                width: 100%;
+            }
+            .purch-hdr-actions .btn {
+                width: 100%;
+                justify-content: center;
+                height: 38px;
+                font-size: 0.8rem;
+            }
+            .purch-status-pills {
+                display: flex !important;
+                gap: 6px;
+                overflow-x: auto;
+                padding-bottom: 6px;
+                -webkit-overflow-scrolling: touch;
+            }
+            .purch-status-pills .btn {
+                flex: 0 0 auto;
+                white-space: nowrap;
+            }
+            .table-responsive {
+                display: none !important;
+            }
+        }
+        @media (min-width: 769px) {
+            .purch-hdr-actions {
+                display: flex;
+                gap: 8px;
+            }
+            .purch-status-pills {
+                display: flex;
+                gap: 8px;
+            }
+        }
     </style>
 
     <div class="main-content">
         <div class="main-content-inner">
             <div class="container-fluid py-4">
 
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
                     <div>
                         <h4 class="fw-bold mb-0 text-dark">Purchase Management</h4>
                         <p class="text-muted mb-0 small">View and manage your purchase invoices</p>
                     </div>
-                    <div>
-                        {{-- Purchase Returns Button --}}
-                        <a class="btn btn-outline-danger px-3 shadow-sm fw-medium me-2 animate__animated animate__fadeIn"
-                            href="{{ route('purchase.return.index') }}">
-                            <i class="fas fa-undo"></i> Purchase Returns
+                    <div class="purch-hdr-actions">
+                        <a class="btn btn-outline-danger px-3 shadow-sm fw-medium d-inline-flex align-items-center gap-1 justify-content-center"
+                            href="{{ route('purchase.return.index') }}" style="border-radius: 8px;">
+                            <i class="fas fa-undo"></i> Returns
                         </a>
 
                         @can('purchases.create')
-                            <a class="btn btn-success px-4 shadow-sm fw-medium align-items-center gap-2 animate__animated animate__fadeIn me-2"
-                                href="{{ route('purchase.quick_create') }}">
+                            <a class="btn btn-success px-3 shadow-sm fw-medium d-inline-flex align-items-center gap-1 justify-content-center"
+                                href="{{ route('purchase.quick_create') }}" style="border-radius: 8px;">
                                 <i class="fas fa-bolt"></i> Quick Purchase
                             </a>
-                            <a class="btn btn-primary px-4 shadow-sm fw-medium align-items-center gap-2 animate__animated animate__fadeIn"
-                                href="{{ route('add_purchase') }}">
+                            <a class="btn btn-primary px-3 shadow-sm fw-medium d-inline-flex align-items-center gap-1 justify-content-center"
+                                href="{{ route('add_purchase') }}" style="border-radius: 8px;">
                                 <i class="fas fa-plus"></i> Add Purchase
                             </a>
                         @endcan
@@ -242,21 +281,21 @@
                 </div>
 
                 {{-- Status Filters --}}
-                <div class="mb-4 d-flex gap-2">
+                <div class="mb-4 purch-status-pills">
                     <a href="{{ route('Purchase.home', ['status' => 'all']) }}"
-                        class="btn btn-sm {{ request('status') == 'all' || !request('status') ? 'btn-secondary' : 'btn-outline-secondary' }} rounded-3 shadow-sm">
+                        class="btn btn-sm {{ request('status') == 'all' || !request('status') ? 'btn-secondary' : 'btn-outline-secondary' }} rounded-3 shadow-sm px-3">
                         All
                     </a>
                     <a href="{{ route('Purchase.home', ['status' => 'approved']) }}"
-                        class="btn btn-sm {{ request('status') == 'approved' ? 'btn-success' : 'btn-outline-success' }} rounded-3 shadow-sm">
+                        class="btn btn-sm {{ request('status') == 'approved' ? 'btn-success' : 'btn-outline-success' }} rounded-3 shadow-sm px-3">
                         Approved
                     </a>
                     <a href="{{ route('Purchase.home', ['status' => 'draft']) }}"
-                        class="btn btn-sm {{ request('status') == 'draft' ? 'btn-warning text-dark' : 'btn-outline-warning' }} rounded-3 shadow-sm">
+                        class="btn btn-sm {{ request('status') == 'draft' ? 'btn-warning text-dark' : 'btn-outline-warning' }} rounded-3 shadow-sm px-3">
                         Draft
                     </a>
                     <a href="{{ route('Purchase.home', ['status' => 'Returned']) }}"
-                        class="btn btn-sm {{ request('status') == 'Returned' ? 'btn-danger' : 'btn-outline-danger' }} rounded-3 shadow-sm">
+                        class="btn btn-sm {{ request('status') == 'Returned' ? 'btn-danger' : 'btn-outline-danger' }} rounded-3 shadow-sm px-3">
                         Returned
                     </a>
                 </div>
