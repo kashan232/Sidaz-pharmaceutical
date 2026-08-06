@@ -29,6 +29,10 @@
         min-height: 100vh;
         padding: 1.75rem 2rem 3rem;
         color: var(--text);
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow-x: hidden;
     }
 
     /* =============================================
@@ -154,6 +158,7 @@
         overflow: hidden;
         transition: all 0.25s;
         box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        box-sizing: border-radius;
     }
     .kpi-card:hover {
         transform: translateY(-3px);
@@ -201,6 +206,7 @@
         margin-bottom: 0.3rem;
         letter-spacing: -0.02em;
         line-height: 1.2;
+        word-break: break-word;
     }
     .kpi-trend {
         font-size: 0.72rem;
@@ -229,11 +235,17 @@
         box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         display: flex;
         flex-direction: column;
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
     }
     .panel-hd {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.5rem;
         margin-bottom: 1.1rem;
     }
     .panel-title {
@@ -242,6 +254,7 @@
         color: var(--text);
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 0.5rem;
     }
     .panel-badge {
@@ -253,7 +266,7 @@
         border-radius: 99px;
         border: 1px solid var(--border);
     }
-    .panel-body-flex { flex: 1; }
+    .panel-body-flex { flex: 1; min-width: 0; width: 100%; }
 
     /* =============================================
        MAIN GRID LAYOUTS
@@ -287,6 +300,7 @@
         justify-content: space-between;
         padding: 0.7rem 0;
         border-bottom: 1px solid #f8fafc;
+        gap: 0.5rem;
     }
     .rank-item:last-child { border-bottom: none; }
     .rank-num {
@@ -302,9 +316,9 @@
     .rank-item:nth-child(2) .rank-num { background: #e2e8f0; color: #64748b; }
     .rank-item:nth-child(3) .rank-num { background: #ffe4cc; color: #ea580c; }
 
-    .rank-name { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+    .rank-name { font-size: 0.82rem; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .rank-sub  { font-size: 0.7rem; color: var(--muted); font-weight: 500; }
-    .rank-val  { font-size: 0.82rem; font-weight: 800; color: var(--indigo); }
+    .rank-val  { font-size: 0.82rem; font-weight: 800; color: var(--indigo); white-space: nowrap; }
 
     /* =============================================
        BUSINESS SUMMARY BOXES
@@ -323,6 +337,7 @@
         display: flex;
         align-items: center;
         gap: 0.6rem;
+        min-width: 0;
     }
     .biz-icon {
         width: 32px; height: 32px;
@@ -332,7 +347,7 @@
         flex-shrink: 0;
     }
     .biz-val  { font-size: 1.1rem; font-weight: 800; color: var(--text); line-height: 1; }
-    .biz-lbl  { font-size: 0.68rem; color: var(--muted); font-weight: 600; }
+    .biz-lbl  { font-size: 0.68rem; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .biz-trend { font-size: 0.65rem; font-weight: 700; }
 
     /* =============================================
@@ -345,10 +360,11 @@
         justify-content: space-between;
         font-size: 0.78rem;
         padding: 0.15rem 0;
+        gap: 0.5rem;
     }
     .legend-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
-    .legend-name { color: var(--text); font-weight: 600; font-size: 0.78rem; }
-    .legend-right { display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; }
+    .legend-name { color: var(--text); font-weight: 600; font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .legend-right { display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; flex-shrink: 0; }
     .legend-pct { color: var(--muted); font-size: 0.72rem; font-weight: 600; min-width: 30px; text-align: right; }
     .legend-amt { color: var(--text); font-weight: 800; font-size: 0.78rem; white-space: nowrap; }
 
@@ -362,7 +378,8 @@
         justify-content: space-between;
         padding: 0.65rem 0;
         border-bottom: 1px solid #f8fafc;
-        gap: 0.75rem;
+        gap: 0.5rem;
+        min-width: 0;
     }
     .act-row:last-child { border-bottom: none; }
     .act-ico {
@@ -372,10 +389,10 @@
         font-size: 0.8rem;
         flex-shrink: 0;
     }
-    .act-title { font-size: 0.79rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+    .act-title { font-size: 0.79rem; font-weight: 700; color: var(--text); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .act-sub   { font-size: 0.68rem; color: var(--muted); }
     .act-amt   { font-size: 0.79rem; font-weight: 800; color: var(--text); white-space: nowrap; }
-    .act-time  { font-size: 0.66rem; color: var(--muted); text-align: right; }
+    .act-time  { font-size: 0.66rem; color: var(--muted); text-align: right; white-space: nowrap; }
 
     /* =============================================
        SPARKLINE CARDS (BOTTOM ROW)
@@ -397,6 +414,8 @@
         gap: 0.75rem;
         box-shadow: 0 1px 4px rgba(0,0,0,0.04);
         transition: all 0.2s;
+        box-sizing: border-box;
+        width: 100%;
     }
     .spark-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.07); }
     .spark-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); margin-bottom: 0.2rem; }
@@ -407,19 +426,40 @@
     /* =============================================
        RESPONSIVE
     ============================================= */
-    @media (max-width: 1300px) {
+    @media (max-width: 1400px) {
         .kpi-grid { grid-template-columns: repeat(3, 1fr); }
     }
-    @media (max-width: 1100px) {
-        .grid-3col, .grid-4col, .grid-2col { grid-template-columns: 1fr; }
-        .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-        .spark-grid { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 991px) {
+        .db-wrap { padding: 1.25rem 1rem 2.5rem; }
+        .grid-3col, .grid-4col, .grid-2col { grid-template-columns: 1fr; gap: 1rem; }
+        .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
+        .spark-grid { grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
+        .db-nav-pills { margin-bottom: 1.25rem; }
     }
-    @media (max-width: 600px) {
-        .db-wrap { padding: 1rem; }
-        .kpi-grid { grid-template-columns: 1fr 1fr; }
-        .spark-grid { grid-template-columns: 1fr 1fr; }
-        .biz-grid { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 768px) {
+        .spark-grid { grid-template-columns: 1fr !important; gap: 0.75rem; }
+        .kpi-grid { grid-template-columns: 1fr !important; gap: 0.75rem; }
+    }
+    @media (max-width: 576px) {
+        .db-wrap { padding: 0.75rem 0.5rem 2rem; }
+        .db-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.25rem; }
+        .db-header-left h1 { font-size: 1.25rem; }
+        .db-header-left p { font-size: 0.78rem; }
+        .db-btn-sync { width: 100%; justify-content: center; padding: 0.5rem 1rem; }
+        .kpi-card { padding: 0.9rem 1rem; }
+        .kpi-value { font-size: 1.15rem; }
+        .biz-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+        .biz-box { padding: 0.65rem; }
+        .biz-val { font-size: 1rem; }
+        .panel { padding: 0.9rem 0.75rem; border-radius: 12px; }
+        .panel-hd { margin-bottom: 0.75rem; }
+        .panel-title { font-size: 0.85rem; }
+        .legend-row { font-size: 0.74rem; }
+        .legend-amt { font-size: 0.74rem; }
+        .act-row { padding: 0.55rem 0; }
+        .act-title { font-size: 0.74rem; max-width: 110px; }
+        .act-amt { font-size: 0.74rem; }
+        .db-section-label { font-size: 0.68rem; margin-bottom: 0.75rem; }
     }
 </style>
 
@@ -850,7 +890,9 @@ document.addEventListener("DOMContentLoaded", function () {
             bodyFont:  { family: 'Inter', size: 11 }
         }},
         scales: {
-            x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8' } },
+            xAxes: [{ gridLines: { display: false }, ticks: { fontColor: '#94a3b8', fontSize: 10, autoSkip: true } }],
+            yAxes: [{ gridLines: { color: 'rgba(0,0,0,0.04)' }, ticks: { fontColor: '#94a3b8', fontSize: 10, callback: v => 'Rs ' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } }],
+            x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8', autoSkip: true } },
             y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { family: 'Inter', size: 10 }, color: '#94a3b8', callback: v => 'Rs ' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) } }
         }
     };
@@ -943,11 +985,11 @@ document.addEventListener("DOMContentLoaded", function () {
         new Chart(cfCtx.getContext('2d'), {
             type: 'bar',
             data: {
-                labels: ['Today Inflow', 'Today Outflow', 'Total Inflow', 'Total Outflow'],
+                labels: ['Today In', 'Today Out', 'Total In', 'Total Out'],
                 datasets: [
                     { data: [payIn, payOut, inAll, outAll],
                       backgroundColor: ['#10b981','#f43f5e','rgba(16,185,129,0.4)','rgba(244,63,94,0.4)'],
-                      borderRadius: 6, barThickness: 28 }
+                      borderRadius: 6, barThickness: 24 }
                 ]
             },
             options: { ...baseOpts,
