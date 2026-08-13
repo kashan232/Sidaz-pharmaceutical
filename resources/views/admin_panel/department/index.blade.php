@@ -23,14 +23,14 @@
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-    .unit-page {
+    .dept-page {
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
         color: #1e293b;
         padding-bottom: 40px;
     }
 
     /* Page Header */
-    .unit-header {
+    .dept-header {
         background: #ffffff;
         border: 1px solid #e2e8f0;
         padding: 20px 24px;
@@ -38,20 +38,20 @@
         margin-bottom: 20px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
-    .unit-title {
+    .dept-title {
         font-weight: 800;
         font-size: 1.35rem;
         color: #0f172a;
         margin-bottom: 2px;
         letter-spacing: -0.02em;
     }
-    .unit-sub {
+    .dept-sub {
         font-size: 0.82rem;
         color: #64748b;
     }
 
     /* Stat Cards */
-    .unit-stat-card {
+    .dept-stat-card {
         background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 14px;
@@ -62,64 +62,64 @@
         gap: 16px;
         height: 100%;
     }
-    .unit-stat-icon {
+    .dept-stat-icon {
         width: 46px;
         height: 46px;
         border-radius: 12px;
-        background: #fdf4ff; /* Light Pink/Purple for Units */
-        color: #c026d3; 
+        background: #e0f2fe; /* Light Blue for Manufacturing */
+        color: #0284c7; 
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 1.2rem;
         flex-shrink: 0;
     }
-    .unit-stat-icon.active {
+    .dept-stat-icon.active {
         background: #dcfce7;
         color: #16a34a;
     }
-    .unit-stat-val {
+    .dept-stat-val {
         font-weight: 800;
         font-size: 1.25rem;
         color: #0f172a;
         line-height: 1.2;
     }
-    .unit-stat-lbl {
+    .dept-stat-lbl {
         font-size: 0.78rem;
         color: #64748b;
         font-weight: 500;
     }
 
     /* Primary Gradient Button */
-    .btn-unit-primary {
-        background: linear-gradient(135deg, #c026d3 0%, #9333ea 100%);
+    .btn-dept-primary {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         color: #ffffff !important;
         border: none;
         padding: 10px 20px;
         font-size: 0.86rem;
         font-weight: 600;
         border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(192, 38, 211, 0.22);
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.22);
         transition: all 0.2s ease;
         display: inline-flex;
         align-items: center;
         gap: 8px;
         cursor: pointer;
     }
-    .btn-unit-primary:hover {
+    .btn-dept-primary:hover {
         transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(192, 38, 211, 0.35);
+        box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35);
     }
 
     /* Card & Table */
-    .unit-card {
+    .dept-card {
         background: #ffffff;
         border: 1px solid #e2e8f0;
         border-radius: 16px;
         box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
         overflow: hidden;
     }
-    .unit-card-header {
+    .dept-card-header {
         padding: 18px 24px;
         border-bottom: 1px solid #e2e8f0;
         background: #ffffff;
@@ -128,7 +128,7 @@
         justify-content: space-between;
     }
 
-    .unit-table-wrap {
+    .dept-table-wrap {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
@@ -157,7 +157,7 @@
     }
 
     /* Badges */
-    .unit-id-badge {
+    .dept-id-badge {
         background: #f1f5f9;
         color: #475569;
         font-weight: 700;
@@ -166,30 +166,14 @@
         border-radius: 6px;
         font-family: monospace;
     }
-    .unit-code-badge {
-        background: #fdf4ff;
-        color: #c026d3;
-        font-weight: 600;
-        font-size: 0.75rem;
-        padding: 3px 8px;
-        border-radius: 4px;
-        letter-spacing: 0.5px;
-    }
-    .type-badge {
+    .dept-code-badge {
         background: #eef2ff;
         color: #4f46e5;
         font-weight: 600;
         font-size: 0.75rem;
         padding: 3px 8px;
         border-radius: 4px;
-    }
-    .base-badge {
-        background: #fffbeb;
-        color: #b45309;
-        font-weight: 600;
-        font-size: 0.75rem;
-        padding: 3px 8px;
-        border-radius: 4px;
+        letter-spacing: 0.5px;
     }
     .status-badge {
         padding: 4px 10px;
@@ -208,8 +192,8 @@
 
     /* Form UI */
     .form-control:focus, .form-select:focus {
-        border-color: #c026d3;
-        box-shadow: 0 0 0 0.2rem rgba(192, 38, 211, 0.15);
+        border-color: #0284c7;
+        box-shadow: 0 0 0 0.2rem rgba(2, 132, 199, 0.15);
     }
     
     /* Toggle Switch */
@@ -250,19 +234,73 @@
         transform: translateX(26px);
     }
 
+    /* Mobile Cards View */
+    .mobile-dept-cards {
+        display: none;
+        padding: 14px;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .dept-mcard {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 14px;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+    }
+    .dept-mcard-hdr {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+    .dept-mcard-title {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #0f172a;
+    }
+    .dept-mcard-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px dashed #e2e8f0;
+    }
+
+    /* Responsive Breakpoints */
+    @media (max-width: 768px) {
+        .dept-card-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            padding: 16px;
+        }
+        .btn-dept-primary {
+            width: 100%;
+            justify-content: center;
+            height: 42px;
+        }
+        .dept-table-wrap {
+            display: none !important;
+        }
+        .mobile-dept-cards {
+            display: flex;
+        }
+    }
 </style>
 
-<div class="unit-page container-fluid px-3 px-md-4 pt-3">
+<div class="dept-page container-fluid px-3 px-md-4 pt-3">
     
     {{-- Header Row --}}
-    <div class="unit-header d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    <div class="dept-header d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
         <div>
-            <h3 class="unit-title"><i class="fas fa-balance-scale text-primary me-2" style="color: #c026d3 !important;"></i>Unit Management</h3>
-            <div class="unit-sub">Define physical units and mathematical conversions for raw materials & products</div>
+            <h3 class="dept-title"><i class="fas fa-industry text-primary me-2" style="color: #0284c7 !important;"></i>Department Management</h3>
+            <div class="dept-sub">Manage manufacturing departments, raw materials, and production units</div>
         </div>
-        @can('units.add')
-            <button type="button" class="btn-unit-primary" data-toggle="modal" data-target="#exampleModal" id="reset">
-                <i class="fas fa-plus"></i> Add Unit
+        @can('departments.create')
+            <button type="button" class="btn-dept-primary" data-toggle="modal" data-target="#exampleModal" id="reset">
+                <i class="fas fa-plus"></i> Add Department
             </button>
         @endcan
     </div>
@@ -270,67 +308,54 @@
     {{-- Stats Row --}}
     <div class="row g-3 mb-4">
         <div class="col-12 col-sm-6 col-md-4">
-            <div class="unit-stat-card">
-                <div class="unit-stat-icon"><i class="fas fa-weight-hanging"></i></div>
+            <div class="dept-stat-card">
+                <div class="dept-stat-icon"><i class="fas fa-building"></i></div>
                 <div>
-                    <div class="unit-stat-val">{{ count($units) }}</div>
-                    <div class="unit-stat-lbl">Total Units</div>
+                    <div class="dept-stat-val">{{ count($departments) }}</div>
+                    <div class="dept-stat-lbl">Total Departments</div>
                 </div>
             </div>
         </div>
         <div class="col-12 col-sm-6 col-md-4">
-            <div class="unit-stat-card">
-                <div class="unit-stat-icon active"><i class="fas fa-check-circle"></i></div>
+            <div class="dept-stat-card">
+                <div class="dept-stat-icon active"><i class="fas fa-check-circle"></i></div>
                 <div>
-                    <div class="unit-stat-val">{{ $units->where('status', 1)->count() }}</div>
-                    <div class="unit-stat-lbl">Active Units</div>
+                    <div class="dept-stat-val">{{ $departments->where('status', 1)->count() }}</div>
+                    <div class="dept-stat-lbl">Active Departments</div>
                 </div>
             </div>
         </div>
     </div>
 
     {{-- Main Content Card --}}
-    <div class="unit-card">
-        <div class="unit-card-header">
-            <div class="fw-bold text-dark"><i class="fas fa-list me-1 text-muted"></i> All Units</div>
-            <div class="text-muted small">Showing {{ count($units) }} entries</div>
+    <div class="dept-card">
+        <div class="dept-card-header">
+            <div class="fw-bold text-dark"><i class="fas fa-list me-1 text-muted"></i> All Departments</div>
+            <div class="text-muted small">Showing {{ count($departments) }} entries</div>
         </div>
 
         {{-- Desktop Table View --}}
-        <div class="unit-table-wrap">
+        <div class="dept-table-wrap">
             <table id="default-datatable" class="table">
                 <thead>
                     <tr>
-                        <th class="text-center" style="width: 70px;">Id</th>
-                        <th class="text-start">Name</th>
-                        <th class="text-start">Short Code</th>
-                        <th class="text-start">Type</th>
-                        <th class="text-start">Base Unit</th>
-                        <th class="text-start">Conv. Factor</th>
+                        <th class="text-center" style="width: 90px;">Id</th>
+                        <th class="text-start">Department Code</th>
+                        <th class="text-start">Department Name</th>
+                        <th class="text-start">Description</th>
                         <th class="text-center">Status</th>
                         <th class="text-end pe-4" style="width: 140px;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($units as $unit)
+                    @foreach ($departments as $dept)
                         <tr>
-                            <td class="text-center id"><span class="unit-id-badge">#{{ $unit->id }}</span></td>
-                            <td class="text-start name fw-semibold text-dark">{{ $unit->name }}</td>
-                            <td class="text-start code"><span class="unit-code-badge">{{ $unit->short_code }}</span></td>
-                            <td class="text-start type"><span class="type-badge">{{ $unit->unit_type }}</span></td>
-                            
-                            <td class="text-start base" data-baseid="{{ $unit->base_unit }}">
-                                @if($unit->baseUnit)
-                                    <span class="base-badge">{{ $unit->baseUnit->name }} ({{ $unit->baseUnit->short_code }})</span>
-                                @else
-                                    <span class="text-muted small">None (Base)</span>
-                                @endif
-                            </td>
-
-                            <td class="text-start factor fw-semibold text-dark">{{ $unit->conversion_factor }}</td>
-
-                            <td class="text-center status" data-status="{{ $unit->status }}">
-                                @if($unit->status)
+                            <td class="text-center id"><span class="dept-id-badge">#{{ $dept->id }}</span></td>
+                            <td class="text-start code"><span class="dept-code-badge">{{ $dept->code }}</span></td>
+                            <td class="text-start name fw-semibold text-dark">{{ $dept->name }}</td>
+                            <td class="text-start description text-muted small">{{ Str::limit($dept->description, 50) }}</td>
+                            <td class="text-center status" data-status="{{ $dept->status }}">
+                                @if($dept->status)
                                     <span class="status-badge status-active"><i class="fas fa-circle me-1" style="font-size: 8px; vertical-align: middle;"></i> Active</span>
                                 @else
                                     <span class="status-badge status-inactive"><i class="fas fa-circle me-1" style="font-size: 8px; vertical-align: middle;"></i> Inactive</span>
@@ -338,14 +363,14 @@
                             </td>
                             <td class="text-end pe-4">
                                 @include('admin_panel.partials.action_buttons', [
-                                    'editRoute' => route('store.Unit'),
-                                    'deleteRoute' => route('delete.Unit', $unit->id),
+                                    'editRoute' => route('departments.store'),
+                                    'deleteRoute' => route('departments.delete', $dept->id),
                                     'editIsLink' => false,
                                     'permissions' => [
-                                        'edit' => 'units.edit',
-                                        'delete' => 'units.delete',
+                                        'edit' => 'departments.edit',
+                                        'delete' => 'departments.delete',
                                     ],
-                                    'deleteMsg' => 'Are you sure you want to delete this unit?',
+                                    'deleteMsg' => 'Are you sure you want to delete this department?',
                                 ])
                             </td>
                         </tr>
@@ -353,57 +378,67 @@
                 </tbody>
             </table>
         </div>
+
+        {{-- Mobile Cards View (< 768px) --}}
+        <div class="mobile-dept-cards">
+            @foreach ($departments as $dept)
+                <div class="dept-mcard">
+                    <div class="dept-mcard-hdr">
+                        <span class="dept-id-badge">#{{ $dept->id }}</span>
+                        @if($dept->status)
+                            <span class="status-badge status-active">Active</span>
+                        @else
+                            <span class="status-badge status-inactive">Inactive</span>
+                        @endif
+                    </div>
+                    <div class="dept-mcard-title mb-1">{{ $dept->name }}</div>
+                    <div class="text-muted small mb-2"><span class="dept-code-badge">{{ $dept->code }}</span></div>
+                    <div class="dept-mcard-actions">
+                        @include('admin_panel.partials.action_buttons', [
+                            'editRoute' => route('departments.store'),
+                            'deleteRoute' => route('departments.delete', $dept->id),
+                            'editIsLink' => false,
+                            'permissions' => [
+                                'edit' => 'departments.edit',
+                                'delete' => 'departments.delete',
+                            ],
+                            'deleteMsg' => 'Are you sure you want to delete this department?',
+                        ])
+                    </div>
+                </div>
+            @endforeach
+        </div>
     </div>
+
 </div>
 
-{{-- Add/Edit Unit Modal --}}
+{{-- Add/Edit Department Modal --}}
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
             <div class="modal-header bg-white px-4 py-3 border-bottom">
-                <h5 class="modal-title fw-bold text-dark" id="exampleModalLabel"><i class="fas fa-balance-scale text-primary me-2" style="color: #c026d3 !important;"></i><span id="modalTitleText">Add Unit</span></h5>
+                <h5 class="modal-title fw-bold text-dark" id="exampleModalLabel"><i class="fas fa-industry text-primary me-2" style="color: #0284c7 !important;"></i><span id="modalTitleText">Add Department</span></h5>
                 <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form class="myform" action="{{ route('store.Unit') }}" method="POST">
+            <form class="myform" action="{{ route('departments.store') }}" method="POST">
                 @csrf
                 <div class="modal-body p-4">
                     <input type="hidden" name="edit_id" id="id" />
                     
                     <div class="row g-3">
                         <div class="col-md-6 mb-3">
-                            <label for="name" class="form-label fw-semibold text-dark small">Unit Name <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control px-3 py-2" id="name" placeholder="e.g. Kilogram" required style="border-radius: 10px; border: 1.5px solid #cbd5e1;" />
+                            <label for="name" class="form-label fw-semibold text-dark small">Department Name <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control px-3 py-2" id="name" placeholder="e.g. Syrup Production" required style="border-radius: 10px; border: 1.5px solid #cbd5e1;" />
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="short_code" class="form-label fw-semibold text-dark small">Short Code <span class="text-danger">*</span></label>
-                            <input type="text" name="short_code" class="form-control px-3 py-2" id="short_code" placeholder="e.g. KG" required style="border-radius: 10px; border: 1.5px solid #cbd5e1; text-transform: uppercase;" />
+                            <label for="code" class="form-label fw-semibold text-dark small">Department Code <span class="text-danger">*</span></label>
+                            <input type="text" name="code" class="form-control px-3 py-2" id="code" placeholder="e.g. SYRUP" required style="border-radius: 10px; border: 1.5px solid #cbd5e1; text-transform: uppercase;" />
                         </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label for="unit_type" class="form-label fw-semibold text-dark small">Unit Type <span class="text-danger">*</span></label>
-                            <select name="unit_type" id="unit_type" class="form-control px-3 py-2" required style="border-radius: 10px; border: 1.5px solid #cbd5e1;">
-                                <option value="Weight">Weight</option>
-                                <option value="Volume">Volume</option>
-                                <option value="Quantity">Quantity</option>
-                            </select>
+                        <div class="col-md-12 mb-3">
+                            <label for="description" class="form-label fw-semibold text-dark small">Description</label>
+                            <textarea name="description" class="form-control px-3 py-2" id="description" rows="3" placeholder="Optional details..." style="border-radius: 10px; border: 1.5px solid #cbd5e1;"></textarea>
                         </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label for="base_unit" class="form-label fw-semibold text-dark small">Base Unit</label>
-                            <select name="base_unit" id="base_unit" class="form-control px-3 py-2" style="border-radius: 10px; border: 1.5px solid #cbd5e1;">
-                                <option value="">-- None (Primary Base) --</option>
-                                @foreach($baseUnits as $bu)
-                                    <option value="{{ $bu->id }}">{{ $bu->name }} ({{ $bu->short_code }})</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-                            <label for="conversion_factor" class="form-label fw-semibold text-dark small">Conversion Factor</label>
-                            <input type="number" step="0.0001" name="conversion_factor" class="form-control px-3 py-2" id="conversion_factor" placeholder="e.g. 0.001" value="1" style="border-radius: 10px; border: 1.5px solid #cbd5e1;" />
-                        </div>
-
-                        <div class="col-md-12 mb-1 d-flex align-items-center mt-2">
+                        <div class="col-md-12 mb-1 d-flex align-items-center">
                             <label class="form-label fw-semibold text-dark small mb-0 me-3">Status</label>
                             <input type="hidden" name="status" value="0">
                             <label class="switch mb-0">
@@ -416,9 +451,9 @@
                 </div>
                 <div class="modal-footer bg-light px-4 py-3 border-top">
                     <button type="button" class="btn btn-outline-secondary px-4 fw-semibold" data-dismiss="modal" style="border-radius: 8px;">Close</button>
-                    @canany(['units.add', 'units.edit'])
-                        <button type="submit" class="btn btn-primary px-4 fw-bold save-btn" style="border-radius: 8px; background: linear-gradient(135deg, #c026d3 0%, #9333ea 100%); border: none;">
-                            <i class="fas fa-check me-1"></i> Save Unit
+                    @canany(['departments.create', 'departments.edit'])
+                        <button type="submit" class="btn btn-primary px-4 fw-bold save-btn" style="border-radius: 8px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: none;">
+                            <i class="fas fa-check me-1"></i> Save Department
                         </button>
                     @endcanany
                 </div>
@@ -441,12 +476,10 @@
         }
     });
 
-    // Disable conversion factor if no base unit is selected
-    $('#base_unit').on('change', function() {
-        if($(this).val() === "") {
-            $('#conversion_factor').val("1").prop('readonly', true);
-        } else {
-            $('#conversion_factor').prop('readonly', false);
+    // Fix ARIA focus warning on modal close
+    $('.modal').on('hide.bs.modal', function () {
+        if (document.activeElement) {
+            document.activeElement.blur();
         }
     });
 
@@ -460,21 +493,17 @@
     });
 
     $(document).on('click', '.edit-btn', function() {
-        var tr = $(this).closest("tr");
-        var id = tr.find(".id").text().replace('#', '').trim();
-        var name = tr.find(".name").text().trim();
-        var code = tr.find(".code").text().trim();
-        var type = tr.find(".type").text().trim();
-        var base_id = tr.find(".base").data('baseid');
-        var factor = tr.find(".factor").text().trim();
+        var tr = $(this).closest("tr, .dept-mcard");
+        var id = tr.find(".id, .dept-id-badge").text().replace('#', '').trim();
+        var name = tr.find(".name, .dept-mcard-title").text().trim();
+        var code = tr.find(".code, .dept-code-badge").text().trim();
+        var description = tr.find(".description").text().trim();
         var status = tr.find(".status").data('status');
 
         $('#id').val(id);
         $('#name').val(name);
-        $('#short_code').val(code);
-        $('#unit_type').val(type);
-        $('#base_unit').val(base_id).trigger('change');
-        $('#conversion_factor').val(factor);
+        $('#code').val(code);
+        $('#description').val(description);
         
         if (status == 1 || status === undefined) {
             $('#status').prop('checked', true).trigger('change');
@@ -482,30 +511,26 @@
             $('#status').prop('checked', false).trigger('change');
         }
 
-        $('#modalTitleText').text('Edit Unit');
+        $('#modalTitleText').text('Edit Department');
         $("#exampleModal").modal("show");
     });
 
     $('#reset').on('click', function() {
         $('#id').val('');
         $('#name').val('');
-        $('#short_code').val('');
-        $('#unit_type').val('Weight');
-        $('#base_unit').val('').trigger('change');
-        $('#conversion_factor').val('1');
+        $('#code').val('');
+        $('#description').val('');
         $('#status').prop('checked', true).trigger('change');
-        $('#modalTitleText').text('Add Unit');
+        $('#modalTitleText').text('Add Department');
     });
 
     $(document).ready(function() {
-        $('#base_unit').trigger('change'); // Initial state
-
         $('#default-datatable').DataTable({
             "pageLength": 10,
             "lengthMenu": [5, 10, 25, 50, 100],
             "order": [[0, 'desc']],
             "language": {
-                "search": "Search Units:",
+                "search": "Search Department:",
                 "lengthMenu": "Show _MENU_ entries"
             }
         });

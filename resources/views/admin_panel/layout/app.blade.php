@@ -463,10 +463,44 @@
 
                         </li>
                         <!--=========================*
+                              Manufacturing
+                    *===========================-->
+                        @canany(['departments.view', 'units.view', 'raw_materials.view', 'packaging_materials.view'])
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="menu_icon fas fa-industry"></i>
+                                <span class="menu-title">Manufacturing</span>
+                                <i class="menu-arrow"></i>
+                            </a>
+                            <div class="submenu">
+                                <ul class="submenu-item">
+                                    @can('departments.view')
+                                        <li><a href="{{ route('departments.index') }}"><i class="fas fa-industry"></i> Departments</a></li>
+                                    @endcan
+                                    @can('units.view')
+                                        <li><a href="{{ route('Unit.home') }}"><i class="fas fa-balance-scale"></i> Units</a></li>
+                                    @endcan
+                                    @can('raw_materials.view')
+                                        <li><a href="{{ route('raw_materials.index') }}"><i class="fas fa-box-open"></i> Raw Materials</a></li>
+                                    @endcan
+                                    @can('packaging_materials.view')
+                                        <li><a href="{{ route('packaging_materials.index') }}"><i class="fas fa-boxes"></i> Packaging Materials</a></li>
+                                    @endcan
+                                    <li><a href="{{ route('formulations.index') }}"><i class="fas fa-flask"></i> Formulations</a></li>
+                                    <li><a href="{{ route('material-purchases.index') }}"><i class="fas fa-shopping-cart"></i> Material Purchases</a></li>
+                                    @can('vendors.view')
+                                        <li><a href="{{ url('vendor') }}"><i class="fas fa-truck"></i> Vendors & Suppliers</a></li>
+                                    @endcan
+                                </ul>
+                            </div>
+                        </li>
+                        @endcanany
+
+                        <!--=========================*
                               UI Features
                     *===========================-->
                         <li class="nav-item mega-menu">
-                            @canany(['products.view', 'discount.products.view', 'categories.view', 'subcategories.view',
+                            @canany(['departments.view', 'raw_materials.view', 'packaging_materials.view', 'products.view', 'discount.products.view', 'categories.view', 'subcategories.view',
                                 'brands.view', 'units.view', 'vendors.view', 'warehouse.view', 'warehouse.stock.view',
                                 'stock.transfer.view', 'sales.view', 'customers.view', 'sales.officers.view'])
                                 <a href="#" class="nav-link">
@@ -477,42 +511,30 @@
                                 <div class="submenu">
                                     <div class="col-group-wrapper row">
                                         <!-- Products & Categories -->
-                                        @canany(['products.view', 'discount.products.view', 'categories.view',
-                                            'subcategories.view', 'brands.view', 'units.view'])
+                                        @canany(['products.view', 'discount.products.view', 'categories.view', 'subcategories.view', 'brands.view'])
                                             <div class="col-group col-md-3">
                                                 <p class="category-heading">Products & Categories</p>
                                                 <ul class="submenu-item">
 
                                                     @can('products.view')
-                                                        <li><a href="{{ route('product') }}"><i class="fas fa-box"></i>
-                                                                Products</a></li>
+                                                        <li><a href="{{ route('product') }}"><i class="fas fa-box"></i> Products</a></li>
                                                     @endcan
 
                                                     @can('discount.products.view')
-                                                        <li><a href="{{ route('discount.index') }}"><i class="fas fa-tags"></i>
-                                                                Discount Products</a></li>
+                                                        <li><a href="{{ route('discount.index') }}"><i class="fas fa-tags"></i> Discount Products</a></li>
                                                     @endcan
 
                                                     @can('categories.view')
-                                                        <li><a href="{{ route('Category.home') }}"><i class="fas fa-list"></i>
-                                                                Category</a></li>
+                                                        <li><a href="{{ route('Category.home') }}"><i class="fas fa-list"></i> Category</a></li>
                                                     @endcan
 
                                                     @can('subcategories.view')
-                                                        <li><a href="{{ route('subcategory.home') }}"><i
-                                                                    class="fas fa-th-list"></i> Sub Category</a></li>
+                                                        <li><a href="{{ route('subcategory.home') }}"><i class="fas fa-th-list"></i> Sub Category</a></li>
                                                     @endcan
 
                                                     @can('brands.view')
-                                                        <li><a href="{{ route('Brand.home') }}"><i class="fas fa-trademark"></i>
-                                                                Brands</a></li>
+                                                        <li><a href="{{ route('Brand.home') }}"><i class="fas fa-trademark"></i> Brands</a></li>
                                                     @endcan
-
-                                                    @can('units.view')
-                                                        <li><a href="{{ route('Unit.home') }}"><i
-                                                                    class="fas fa-balance-scale"></i> Units</a></li>
-                                                    @endcan
-
                                                 </ul>
                                             </div>
                                         @endcanany

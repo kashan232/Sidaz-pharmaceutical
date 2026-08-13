@@ -18,6 +18,17 @@ class VendorController extends Controller
         return view('admin_panel.vendors.index', compact('vendors'));
     }
 
+    // Show form to create a new vendor
+    public function create() {
+        return view('admin_panel.vendors.create_edit');
+    }
+
+    // Show form to edit an existing vendor
+    public function edit($id) {
+        $vendor = Vendor::findOrFail($id);
+        return view('admin_panel.vendors.create_edit', compact('vendor'));
+    }
+
     // Store or update vendor information
     public function store(Request $request)
     {
@@ -59,15 +70,7 @@ class VendorController extends Controller
             }
         }
 
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'vendor' => $vendor ?? Vendor::find($request->id),
-                'message' => 'Saved Successfully'
-            ]);
-        }
-
-        return back()->with('success', 'Saved Successfully');
+        return redirect()->route('vendors.index')->with('success', 'Saved Successfully');
     }
 
     // Soft delete vendor and related ledger entry

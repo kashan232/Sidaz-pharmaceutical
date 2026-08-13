@@ -5,6 +5,7 @@ use App\Http\Controllers\AccountsHeadController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\ExpenseCategoryController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DiscountController;
@@ -31,6 +32,8 @@ use App\Http\Controllers\VendorController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\WarehouseStockController;
+use App\Http\Controllers\RawMaterialController;
+use App\Http\Controllers\PackagingMaterialController;
 use App\Http\Controllers\ZoneController;
 use Illuminate\Support\Facades\Route;
 
@@ -88,6 +91,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/category/delete/{id}', [CategoryController::class, 'delete'])->middleware('permission:categories.delete')->name('delete.category');
     route::post('/category/store', [CategoryController::class, 'store'])->middleware('permission:categories.create|categories.edit')->name('store.category');
 
+    Route::get('/departments', [DepartmentController::class, 'index'])->middleware('permission:departments.view')->name('departments.index');
+    Route::post('/departments/store', [DepartmentController::class, 'store'])->middleware('permission:departments.create|departments.edit')->name('departments.store');
+    Route::get('/departments/delete/{id}', [DepartmentController::class, 'delete'])->middleware('permission:departments.delete')->name('departments.delete');
+
     Route::get('/expense-categories', [ExpenseCategoryController::class, 'index'])->middleware('permission:expense.voucher.view')->name('expense_categories.index');
     Route::post('/expense-categories/store', [ExpenseCategoryController::class, 'store'])->middleware('permission:expense.voucher.create')->name('expense_categories.store');
     Route::get('/expense-categories/delete/{id}', [ExpenseCategoryController::class, 'delete'])->middleware('permission:expense.voucher.create')->name('expense_categories.delete');
@@ -99,6 +106,14 @@ Route::middleware('auth')->group(function () {
     route::get('/Unit', [UnitController::class, 'index'])->middleware('permission:units.view')->name('Unit.home');
     Route::get('/Unit/delete/{id}', [UnitController::class, 'delete'])->middleware('permission:units.delete')->name('delete.Unit');
     route::post('/Unit/store', [UnitController::class, 'store'])->middleware('permission:units.create|units.edit')->name('store.Unit');
+
+    Route::get('/raw-materials', [RawMaterialController::class, 'index'])->middleware('permission:raw_materials.view')->name('raw_materials.index');
+    Route::post('/raw-materials/store', [RawMaterialController::class, 'store'])->middleware('permission:raw_materials.create|raw_materials.edit')->name('raw_materials.store');
+    Route::get('/raw-materials/delete/{id}', [RawMaterialController::class, 'delete'])->middleware('permission:raw_materials.delete')->name('raw_materials.delete');
+
+    Route::get('/packaging-materials', [PackagingMaterialController::class, 'index'])->middleware('permission:packaging_materials.view')->name('packaging_materials.index');
+    Route::post('/packaging-materials/store', [PackagingMaterialController::class, 'store'])->middleware('permission:packaging_materials.create|packaging_materials.edit')->name('packaging_materials.store');
+    Route::get('/packaging-materials/delete/{id}', [PackagingMaterialController::class, 'delete'])->middleware('permission:packaging_materials.delete')->name('packaging_materials.delete');
 
     route::get('/subcategory', [SubcategoryController::class, 'index'])->middleware('permission:subcategories.view')->name('subcategory.home');
     Route::get('/subcategory/delete/{id}', [SubcategoryController::class, 'delete'])->middleware('permission:subcategories.delete')->name('delete.subcategory');
@@ -186,6 +201,8 @@ Route::middleware('auth')->group(function () {
 
     // Vendor Routes
     Route::get('/vendor', [VendorController::class,'index'])->middleware('permission:vendors.view')->name('vendors.index');
+    Route::get('/vendor/create', [VendorController::class, 'create'])->middleware('permission:vendors.create')->name('vendors.create');
+    Route::get('/vendor/edit/{id}', [VendorController::class, 'edit'])->middleware('permission:vendors.edit')->name('vendors.edit');
     Route::post('/vendor/store', [VendorController::class, 'store'])->name('vendors.store.ajax')->middleware('permission:vendors.create|vendors.edit');
     Route::get('/vendor/delete/{id}', [VendorController::class, 'delete'])->middleware('permission:vendors.delete');
     Route::get('/vendors-ledger', [VendorController::class, 'vendors_ledger'])->middleware('permission:vendors.view')->name('vendors-ledger');
@@ -196,6 +213,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/vendor/{vendor}/ledger', [VendorController::class, 'ledger'])->middleware('permission:vendors.view')->name('vendor.ledger');
     Route::get('/vendor/{vendor}/balance', [VendorController::class, 'getVendorBalance'])->name('vendor.balance');
     Route::get('/vendor/{vendor}/ledger-json', [VendorController::class, 'getVendorLedgerJson'])->name('vendor.ledger.json');
+
+    // Material Purchases
+    Route::get('/material-purchases', [App\Http\Controllers\MaterialPurchaseController::class, 'index'])->name('material-purchases.index');
+    Route::get('/material-purchases/create', [App\Http\Controllers\MaterialPurchaseController::class, 'create'])->name('material-purchases.create');
+    Route::post('/material-purchases', [App\Http\Controllers\MaterialPurchaseController::class, 'store'])->name('material-purchases.store');
+    Route::get('/material-purchases/{id}', [App\Http\Controllers\MaterialPurchaseController::class, 'show'])->name('material-purchases.show');
+    Route::get('/material-purchases/{id}/edit', [App\Http\Controllers\MaterialPurchaseController::class, 'edit'])->name('material-purchases.edit');
+    Route::post('/material-purchases/{id}', [App\Http\Controllers\MaterialPurchaseController::class, 'update'])->name('material-purchases.update');
+    Route::delete('/material-purchases/{id}', [App\Http\Controllers\MaterialPurchaseController::class, 'destroy'])->name('material-purchases.destroy');
+
+    // Formulations (Recipe Management)
+    Route::resource('formulations', App\Http\Controllers\FormulationController::class);
 
     // Warehouse Routes
     // ///

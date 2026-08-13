@@ -52,7 +52,7 @@
                             </li>
                         </ul>
 
-                        <form id="settingsForm" class="mt-4">
+                        <form id="settingsForm" class="mt-4" enctype="multipart/form-data">
                             @csrf
                             <div class="tab-content" id="settingsTabContent">
                                 <!-- Company Tab -->
@@ -63,6 +63,13 @@
                                                 <label>{{ $setting['label'] }}</label>
                                                 @if ($setting['type'] === 'text')
                                                     <textarea name="settings[{{ $setting['key'] }}]" class="form-control" rows="3">{{ $setting['value'] }}</textarea>
+                                                @elseif ($setting['type'] === 'file')
+                                                    @if($setting['value'])
+                                                        <div class="mb-2">
+                                                            <img src="{{ $setting['value'] }}" alt="Current Logo" style="max-height: 50px;">
+                                                        </div>
+                                                    @endif
+                                                    <input type="file" name="settings[{{ $setting['key'] }}]" class="form-control-file">
                                                 @else
                                                     <input type="text" name="settings[{{ $setting['key'] }}]"
                                                         class="form-control" value="{{ $setting['value'] }}">
@@ -156,7 +163,9 @@
                     $.ajax({
                         url: '{{ route('settings.update') }}',
                         method: 'POST',
-                        data: $(this).serialize(),
+                        data: new FormData(this),
+                        processData: false,
+                        contentType: false,
                         success: function(response) {
                             Swal.fire({
                                 icon: 'success',

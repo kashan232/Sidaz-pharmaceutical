@@ -25,11 +25,21 @@ class SettingsController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'settings' => 'required|array',
+            'settings' => 'nullable|array',
         ]);
 
-        foreach ($validated['settings'] as $key => $value) {
-            Setting::set($key, $value);
+        if ($request->has('settings')) {
+            foreach ($request->input('settings') as $key => $value) {
+                Setting::set($key, $value);
+            }
+        }
+
+        // Handle file uploads for settings
+        if ($request->hasFile('settings')) {
+            foreach ($request->file('settings') as $key => $file) {
+                $path = $file->store('logos', 'public');
+                Setting::set($key, '/storage/' . $path);
+            }
         }
 
         return response()->json([

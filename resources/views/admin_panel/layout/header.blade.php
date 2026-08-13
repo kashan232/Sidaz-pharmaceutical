@@ -323,6 +323,12 @@
                                                         class="menu_icon icon-basket"></i><span>Purchase</span></a>
                                             </li>
                                         </ul>
+                                        @if(auth()->user()->can('departments.view') || auth()->user()->usertype === 'admin' || auth()->user()->email === 'admin@admin.com')
+                                        <p class="category-heading mt-4">Manufacturing</p>
+                                        <ul class="submenu-item">
+                                            <li class="nav-item"><a class="nav-link" href="{{ route('departments.index') }}"><i class="fas fa-building mr-2"></i><span>Departments</span></a></li>
+                                        </ul>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
