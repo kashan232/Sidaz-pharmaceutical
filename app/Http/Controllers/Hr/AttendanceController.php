@@ -476,6 +476,11 @@ class AttendanceController extends Controller
                     $earlyLeaveMinutes = $now->diffInMinutes($shiftEndTime);
                     $attendance->is_early_leave = true;
                     $attendance->early_leave_minutes = $earlyLeaveMinutes;
+                } else {
+                    $isEarlyLeave = false;
+                    $earlyLeaveMinutes = 0;
+                    $attendance->is_early_leave = false;
+                    $attendance->early_leave_minutes = 0;
                 }
             }
         } catch (\Exception $e) {
@@ -685,6 +690,9 @@ class AttendanceController extends Controller
                 if ($now->lt($shiftEndTime)) {
                     $attendance->is_early_leave = true;
                     $attendance->early_leave_minutes = $now->diffInMinutes($shiftEndTime);
+                } else {
+                    $attendance->is_early_leave = false;
+                    $attendance->early_leave_minutes = 0;
                 }
             }
 

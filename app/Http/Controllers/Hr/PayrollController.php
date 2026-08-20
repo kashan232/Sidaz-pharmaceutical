@@ -386,8 +386,9 @@ class PayrollController extends Controller
 
         $validator = Validator::make($request->all(), [
             'employee_id' => 'required|exists:hr_employees,id',
-            'month' => 'required',
             'payroll_type' => 'required|in:monthly,daily',
+            'month' => 'required_if:payroll_type,monthly',
+            'date' => 'required_if:payroll_type,daily',
         ]);
 
         if ($validator->fails()) {
@@ -397,32 +398,24 @@ class PayrollController extends Controller
         try {
             DB::beginTransaction();
 
-            $employee = Employee::with('salaryStructure')->findOrFail($request->employee_id);
+            $employee = Employee::findOrFail($request->employee_id);
 
             // Check if payroll already exists
+            $periodKey = $request->payroll_type === 'monthly' ? $request->month : $request->date;
             $exists = Payroll::where('employee_id', $employee->id)
-                ->where('month', $request->month)
+                ->where('month', $periodKey)
                 ->where('payroll_type', $request->payroll_type)
                 ->exists();
 
             if ($exists) {
                 return response()->json([
-                    'errors' => ['month' => ['Payroll already generated for this period.']],
+                    'errors' => ['general' => ['Payroll already generated for this employee for the selected period.']],
                 ], 422);
             }
 
             if ($request->payroll_type === 'monthly') {
                 $payrollData = $this->payrollService->calculateMonthlyPayroll($employee, $request->month);
             } else { // daily
-                // For manual daily payroll generation, we need a date
-                $validator = Validator::make($request->all(), [
-                    'date' => 'required|date',
-                ]);
-
-                if ($validator->fails()) {
-                    return response()->json(['errors' => $validator->errors()], 422);
-                }
-
                 $attendance = Attendance::where('employee_id', $employee->id)
                     ->whereDate('date', $request->date)
                     ->first();
@@ -492,12 +485,11 @@ class PayrollController extends Controller
         try {
             DB::beginTransaction();
 
-            $employees = Employee::with('salaryStructure')
-                ->whereHas('salaryStructure', function ($q) {
-                    $q->whereIn('salary_type', ['salary', 'both']);
-                })
-                ->where('status', 'active')
-                ->get();
+            $activeEmployees = Employee::where('status', 'active')->get();
+            $employees = $activeEmployees->filter(function ($emp) {
+                $structure = $this->payrollService->getEffectiveSalaryStructure($emp);
+                return $structure && in_array($structure->salary_type, ['salary', 'both']);
+            });
 
             $generated = 0;
             $skipped = 0;
@@ -573,12 +565,11 @@ class PayrollController extends Controller
             DB::beginTransaction();
 
             // Fetch employees configured for daily wages
-            $employees = Employee::with('salaryStructure')
-                ->whereHas('salaryStructure', function ($q) {
-                    $q->where('use_daily_wages', true);
-                })
-                ->where('status', 'active')
-                ->get();
+            $activeEmployees = Employee::where('status', 'active')->get();
+            $employees = $activeEmployees->filter(function ($emp) {
+                $structure = $this->payrollService->getEffectiveSalaryStructure($emp);
+                return $structure && $structure->use_daily_wages;
+            });
 
             $generated = 0;
             $skipped = 0;

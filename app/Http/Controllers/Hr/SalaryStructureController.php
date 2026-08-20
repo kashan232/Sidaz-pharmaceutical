@@ -129,14 +129,14 @@ class SalaryStructureController extends Controller
             'salary_type' => $request->salary_type,
             'base_salary' => $request->base_salary ?? 0,
             'daily_wages' => $request->daily_wages ?? 0,
-            'use_daily_wages' => $request->has('use_daily_wages') || $request->use_daily_wages == '1',
+            'use_daily_wages' => (bool) ($request->use_daily_wages == '1' || $request->use_daily_wages === true),
             'commission_percentage' => $request->commission_percentage,
             'sales_target' => $request->sales_target,
             'leave_salary_per_day' => $request->leave_salary_per_day,
             'allowances' => $allowances ?: null,
             'deductions' => $deductions ?: null,
             'attendance_deduction_policy' => $attendancePolicy,
-            'carry_forward_deductions' => $request->has('carry_forward_deductions') || $request->carry_forward_deductions == '1',
+            'carry_forward_deductions' => (bool) ($request->carry_forward_deductions == '1' || $request->carry_forward_deductions === true),
         ]);
 
         return response()->json([
@@ -273,13 +273,13 @@ class SalaryStructureController extends Controller
                 'allowances' => $allowances ?: null,
                 'deductions' => $deductions ?: null,
                 'attendance_deduction_policy' => $attendancePolicy,
-                'carry_forward_deductions' => $request->has('carry_forward_deductions') || $request->carry_forward_deductions == '1',
+                'carry_forward_deductions' => (bool) ($request->carry_forward_deductions == '1' || $request->carry_forward_deductions === true),
             ];
 
             if (!$hasAssignments) {
                 // Only allow structure type changes if NO ONE is assigned
                 $updateData['salary_type'] = $request->salary_type;
-                $updateData['use_daily_wages'] = $request->has('use_daily_wages') || $request->use_daily_wages == '1';
+                $updateData['use_daily_wages'] = (bool) ($request->use_daily_wages == '1' || $request->use_daily_wages === true);
             }
 
             $salaryStructure->update($updateData);
@@ -456,7 +456,7 @@ class SalaryStructureController extends Controller
                 'salary_type' => $request->salary_type,
                 'base_salary' => $request->base_salary ?? 0,
                 'daily_wages' => $request->daily_wages ?? 0,
-                'use_daily_wages' => $request->has('use_daily_wages') || $request->use_daily_wages == '1',
+                'use_daily_wages' => (bool) ($request->use_daily_wages == '1' || $request->use_daily_wages === true),
                 'commission_percentage' => $request->commission_percentage,
                 'sales_target' => $request->sales_target,
                 'commission_tiers' => $commissionTiers ?: null,
@@ -464,7 +464,7 @@ class SalaryStructureController extends Controller
                 'allowances' => $allowances ?: null,
                 'deductions' => $deductions ?: null,
                 'attendance_deduction_policy' => $attendancePolicy,
-                'carry_forward_deductions' => $request->has('carry_forward_deductions') || $request->carry_forward_deductions == '1',
+                'carry_forward_deductions' => (bool) ($request->carry_forward_deductions == '1' || $request->carry_forward_deductions === true),
             ]
         );
 

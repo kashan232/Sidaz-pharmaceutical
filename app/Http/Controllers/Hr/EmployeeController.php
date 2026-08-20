@@ -28,15 +28,15 @@ class EmployeeController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'first_name' => 'required|string',
-            'last_name' => 'required|string',
-            'phone' => 'required|string|max:11',
-            'email' => 'required|email|max:255|unique:hr_employees,email,'.$request->edit_id,
+        $hasPortalAccess = $request->boolean('assign_portal_access');
+
+        $rules = [
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'phone' => 'nullable|string|max:25',
             'department_id' => 'required|exists:hr_departments,id',
             'designation_id' => 'required|exists:hr_designations,id',
             'joining_date' => 'required|date',
-            'basic_salary' => 'required|numeric',
             'password' => 'nullable|min:6',
             'punch_gap_minutes' => 'nullable|integer|min:1|max:120',
             'document_degree' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:2048',
@@ -44,14 +44,28 @@ class EmployeeController extends Controller
             'document_hsc_marksheet' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:2048',
             'document_ssc_marksheet' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:2048',
             'document_cv' => 'nullable|file|mimes:pdf,jpg,png,jpeg|max:2048',
-        ]);
+        ];
+
+        if ($hasPortalAccess) {
+            $rules['email'] = 'required|email|max:255|unique:hr_employees,email,'.$request->edit_id;
+        } else {
+            $rules['email'] = 'nullable|email|max:255|unique:hr_employees,email,'.$request->edit_id;
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $data = $request->except(['document_degree', 'document_certificate', 'document_hsc_marksheet', 'document_ssc_marksheet', 'document_cv', 'password', 'casual_leave_days']);
+        $data = $request->except(['document_degree', 'document_certificate', 'document_hsc_marksheet', 'document_ssc_marksheet', 'document_cv', 'password', 'casual_leave_days', 'assign_portal_access', 'basic_salary']);
         $data['is_docs_submitted'] = $request->has('is_docs_submitted') ? 1 : 0;
+
+        // If no email provided (portal access disabled), generate internal unique email for DB
+        if (empty($data['email'])) {
+            $sanitizedName = preg_replace('/[^a-zA-Z0-9]/', '', strtolower($request->first_name . '.' . $request->last_name));
+            $data['email'] = $sanitizedName . '.' . rand(1000, 9999) . '@system.local';
+        }
 
         // Handle Custom Shift Logic
         if ($request->shift_id === 'custom') {
@@ -68,17 +82,35 @@ class EmployeeController extends Controller
             }
             $employee = Employee::findOrFail($request->edit_id);
 
-            // Update User email if changed
-            if ($employee->user_id) {
-                $user = \App\Models\User::find($employee->user_id);
-                if ($user) {
-                    $user->email = $request->email;
-                    $user->name = $request->first_name.' '.$request->last_name;
-                    if ($request->filled('password')) {
-                        $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+            if ($hasPortalAccess) {
+                // Update or create User
+                if ($employee->user_id) {
+                    $user = \App\Models\User::find($employee->user_id);
+                    if ($user) {
+                        $user->email = $data['email'];
+                        $user->name = $request->first_name.' '.$request->last_name;
+                        if ($request->filled('password')) {
+                            $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+                        }
+                        $user->save();
                     }
-                    $user->save();
+                } else {
+                    $user = \App\Models\User::where('email', $data['email'])->first();
+                    if (! $user) {
+                        $user = \App\Models\User::create([
+                            'name' => $request->first_name.' '.$request->last_name,
+                            'email' => $data['email'],
+                            'password' => \Illuminate\Support\Facades\Hash::make($request->filled('password') ? $request->password : '12345678'),
+                        ]);
+                    } elseif ($request->filled('password')) {
+                        $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+                        $user->save();
+                    }
+                    $data['user_id'] = $user->id;
                 }
+            } else {
+                // Portal access untoggled
+                $data['user_id'] = null;
             }
 
             $employee->update($data);
@@ -86,14 +118,26 @@ class EmployeeController extends Controller
             if (! auth()->user()->can('hr.employees.create')) {
                 return response()->json(['error' => 'Unauthorized action.'], 403);
             }
-            // Create User Account
-            $user = \App\Models\User::create([
-                'name' => $request->first_name.' '.$request->last_name,
-                'email' => $request->email,
-                'password' => \Illuminate\Support\Facades\Hash::make($request->password),
-            ]);
 
-            $data['user_id'] = $user->id;
+            if ($hasPortalAccess) {
+                // Create or link User Account
+                $user = \App\Models\User::where('email', $data['email'])->first();
+                if (! $user) {
+                    $user = \App\Models\User::create([
+                        'name' => $request->first_name.' '.$request->last_name,
+                        'email' => $data['email'],
+                        'password' => \Illuminate\Support\Facades\Hash::make($request->filled('password') ? $request->password : '12345678'),
+                    ]);
+                } elseif ($request->filled('password')) {
+                    $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+                    $user->save();
+                }
+
+                $data['user_id'] = $user->id;
+            } else {
+                $data['user_id'] = null;
+            }
+
             $employee = Employee::create($data);
         }
 
@@ -113,13 +157,24 @@ class EmployeeController extends Controller
 
         // Handle Casual Leave Days Sync
         if ($request->has('casual_leave_days')) {
-            $submittedDates = $request->casual_leave_days ? explode(',', $request->casual_leave_days) : [];
-            $submittedDates = array_map('trim', $submittedDates);
+            $rawDates = $request->casual_leave_days ? explode(',', $request->casual_leave_days) : [];
+            $submittedDates = [];
+            foreach ($rawDates as $rawDate) {
+                $trimmed = trim($rawDate);
+                if (! empty($trimmed)) {
+                    try {
+                        $submittedDates[] = \Carbon\Carbon::parse($trimmed)->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        // Skip unparseable dates
+                    }
+                }
+            }
+            $submittedDates = array_unique($submittedDates);
 
             // Get existing single-day Casual leaves
             $existingLeaves = $employee->leaves()
                 ->where('leave_type', 'Casual')
-                ->whereRaw('start_date = end_date') // Only manage single-day leaves to avoid messing up ranges
+                ->whereRaw('start_date = end_date')
                 ->get();
 
             $existingDates = $existingLeaves->pluck('start_date')->map(function ($d) {
@@ -128,8 +183,7 @@ class EmployeeController extends Controller
 
             // 1. Create new leaves
             foreach ($submittedDates as $date) {
-                if (! empty($date) && ! in_array($date, $existingDates)) {
-                    // Check if leave already exists (e.g. part of a range) - optional check
+                if (! in_array($date, $existingDates)) {
                     $employee->leaves()->create([
                         'leave_type' => 'Casual',
                         'start_date' => $date,

@@ -658,29 +658,27 @@
                         @can('hr.payroll.create')
                             <div class="dropdown">
                                 <button class="btn btn-create dropdown-toggle" type="button" id="generateDropdown"
-                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fa fa-plus-circle"></i> Generate Payroll
+                                    data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fa fa-plus-circle me-1"></i> Generate Payroll
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="generateDropdown">
-                                    <li>
-                                        <a class="dropdown-item py-2" href="javascript:void(0)" id="generateMonthlyBtn">
-                                            <i class="fa fa-calendar-alt me-2 text-primary"></i> Generate Monthly Payroll
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item py-2" href="javascript:void(0)" id="generateDailyBtn">
-                                            <i class="fa fa-calendar-day me-2 text-success"></i> Generate Daily Payroll
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <hr class="dropdown-divider">
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item py-2" href="javascript:void(0)" id="generateBtn">
-                                            <i class="fa fa-hand-holding-usd me-2 text-warning"></i> Manual / Single Entry
-                                        </a>
-                                    </li>
-                                </ul>
+                                <div class="dropdown-menu dropdown-menu-right dropdown-menu-end shadow" aria-labelledby="generateDropdown" style="border-radius: 12px; border: 1px solid #e2e8f0; padding: 8px;">
+                                    <a class="dropdown-item py-2 px-3 rounded" href="javascript:void(0)" id="generateMonthlyBtn"
+                                        data-toggle="modal" data-target="#generateMonthlyModal"
+                                        data-bs-toggle="modal" data-bs-target="#generateMonthlyModal">
+                                        <i class="fa fa-calendar-alt me-2 text-primary"></i> Generate Monthly Payroll
+                                    </a>
+                                    <a class="dropdown-item py-2 px-3 rounded" href="javascript:void(0)" id="generateDailyBtn"
+                                        data-toggle="modal" data-target="#generateDailyModal"
+                                        data-bs-toggle="modal" data-bs-target="#generateDailyModal">
+                                        <i class="fa fa-calendar-day me-2 text-success"></i> Generate Daily Payroll
+                                    </a>
+                                    <div class="dropdown-divider my-1"></div>
+                                    <a class="dropdown-item py-2 px-3 rounded" href="javascript:void(0)" id="generateBtn"
+                                        data-toggle="modal" data-target="#generatePayrollModal"
+                                        data-bs-toggle="modal" data-bs-target="#generatePayrollModal">
+                                        <i class="fa fa-hand-holding-usd me-2 text-warning"></i> Manual / Single Entry
+                                    </a>
+                                </div>
                             </div>
                         @endcan
                     </div>
@@ -887,16 +885,19 @@
     </div>
 
     <!-- Generate Payroll Modal -->
-    <div class="modal fade" id="generatePayrollModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+    <div class="modal fade" id="generatePayrollModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
-                <div class="modal-header gradient"
+                <div class="modal-header gradient text-white d-flex justify-content-between align-items-center"
                     style="background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;">
-                    <h5 class="modal-title">
-                        <i class="fa fa-plus"></i>
-                        <span>Generate Payroll</span>
+                    <h5 class="modal-title text-white mb-0">
+                        <i class="fa fa-plus-circle me-1"></i>
+                        <span>Generate Manual Payroll</span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close text-white" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"
+                        style="background: none; border: none; font-size: 1.5rem; opacity: 0.9; cursor: pointer;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
                 <form id="generatePayrollForm" action="{{ route('hr.payroll.generate') }}" method="POST"
                     data-ajax-validate="true">
@@ -929,7 +930,7 @@
                         </div>
                     </div>
                     <div class="modal-footer-modern">
-                        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                        <button type="button" class="btn btn-cancel" data-dismiss="modal" data-bs-dismiss="modal">
                             <i class="fa fa-times me-2"></i>Cancel
                         </button>
                         <button type="submit" class="btn btn-save"
@@ -944,16 +945,19 @@
     </div>
 
     <!-- Generate Daily Payrolls Modal -->
-    <div class="modal fade" id="generateDailyModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+    <div class="modal fade" id="generateDailyModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
-                <div class="modal-header gradient"
+                <div class="modal-header gradient text-white d-flex justify-content-between align-items-center"
                     style="background: linear-gradient(135deg, #10b981, #059669) !important;">
-                    <h5 class="modal-title">
-                        <i class="fa fa-calendar-day"></i>
+                    <h5 class="modal-title text-white mb-0">
+                        <i class="fa fa-calendar-day me-1"></i>
                         <span>Generate Daily Payrolls</span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close text-white" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"
+                        style="background: none; border: none; font-size: 1.5rem; opacity: 0.9; cursor: pointer;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
                 <form id="generateDailyForm" action="{{ route('hr.payroll.generate-daily') }}" method="POST"
                     data-ajax-validate="true">
@@ -969,7 +973,7 @@
                         </div>
                     </div>
                     <div class="modal-footer-modern">
-                        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                        <button type="button" class="btn btn-cancel" data-dismiss="modal" data-bs-dismiss="modal">
                             <i class="fa fa-times me-2"></i>Cancel
                         </button>
                         <button type="submit" class="btn btn-save"
@@ -984,16 +988,19 @@
     </div>
 
     <!-- Generate Monthly Payrolls Modal -->
-    <div class="modal fade" id="generateMonthlyModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+    <div class="modal fade" id="generateMonthlyModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
-                <div class="modal-header gradient"
+                <div class="modal-header gradient text-white d-flex justify-content-between align-items-center"
                     style="background: linear-gradient(135deg, #3b82f6, #2563eb) !important;">
-                    <h5 class="modal-title">
-                        <i class="fa fa-calendar-alt"></i>
+                    <h5 class="modal-title text-white mb-0">
+                        <i class="fa fa-calendar-alt me-1"></i>
                         <span>Generate Monthly Payrolls</span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close text-white" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"
+                        style="background: none; border: none; font-size: 1.5rem; opacity: 0.9; cursor: pointer;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
                 <form id="generateMonthlyForm" action="{{ route('hr.payroll.generate-monthly') }}" method="POST"
                     data-ajax-validate="true">
@@ -1009,7 +1016,7 @@
                         </div>
                     </div>
                     <div class="modal-footer-modern">
-                        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                        <button type="button" class="btn btn-cancel" data-dismiss="modal" data-bs-dismiss="modal">
                             <i class="fa fa-times me-2"></i>Cancel
                         </button>
                         <button type="submit" class="btn btn-save"
@@ -1024,16 +1031,19 @@
     </div>
 
     <!-- View Details Modal -->
-    <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
-                <div class="modal-header gradient"
+                <div class="modal-header gradient text-white d-flex justify-content-between align-items-center"
                     style="background: linear-gradient(135deg, #6366f1, #4f46e5) !important;">
-                    <h5 class="modal-title">
-                        <i class="fa fa-file-invoice"></i>
+                    <h5 class="modal-title text-white mb-0">
+                        <i class="fa fa-file-invoice me-1"></i>
                         <span>Payroll Details</span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close text-white" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"
+                        style="background: none; border: none; font-size: 1.5rem; opacity: 0.9; cursor: pointer;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
                 <div class="modal-body" id="detailsContent">
                     <div class="text-center py-4">
@@ -1047,16 +1057,19 @@
     </div>
 
     <!-- Edit Payroll Modal -->
-    <div class="modal fade" id="editPayrollModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+    <div class="modal fade" id="editPayrollModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
-                <div class="modal-header gradient"
+                <div class="modal-header gradient text-white d-flex justify-content-between align-items-center"
                     style="background: linear-gradient(135deg, #f59e0b, #d97706) !important;">
-                    <h5 class="modal-title">
-                        <i class="fa fa-edit"></i>
+                    <h5 class="modal-title text-white mb-0">
+                        <i class="fa fa-edit me-1"></i>
                         <span>Edit Payroll</span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="close text-white" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"
+                        style="background: none; border: none; font-size: 1.5rem; opacity: 0.9; cursor: pointer;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
                 <form id="editPayrollForm" method="POST" data-ajax-validate="true">
                     @csrf
@@ -1080,7 +1093,7 @@
                         </div>
                     </div>
                     <div class="modal-footer-modern">
-                        <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                        <button type="button" class="btn btn-cancel" data-dismiss="modal" data-bs-dismiss="modal">
                             <i class="fa fa-times me-2"></i>Cancel
                         </button>
                         <button type="submit" class="btn btn-save"
@@ -1093,9 +1106,9 @@
             </div>
         </div>
     </div>
-    <script src="{{ asset('assets/js/jquery.min.js') }}"></script>
+@endsection
 
-
+@push('scripts')
     <script>
         $(document).ready(function() {
             // Tab switching
@@ -1577,4 +1590,4 @@
             });
         });
     </script>
-@endsection
+@endpush

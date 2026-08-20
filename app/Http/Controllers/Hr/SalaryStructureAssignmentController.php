@@ -26,10 +26,23 @@ class SalaryStructureAssignmentController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        $salaryStructure->loadCount('assignedEmployees as assigned_count');
         $departments = Department::orderBy('name')->get();
         $designations = Designation::orderBy('name')->get();
 
-        return view('hr.salary-structure.assign', compact('salaryStructure', 'departments', 'designations'));
+        $assignedEmployeeIds = $salaryStructure->assignedEmployees->pluck('id')->toArray();
+        $employees = Employee::with(['department', 'designation', 'activeSalaryStructure.salaryStructure'])
+            ->orderBy('first_name')
+            ->get()
+            ->map(function ($employee) use ($assignedEmployeeIds, $salaryStructure) {
+                $employee->is_already_assigned = in_array($employee->id, $assignedEmployeeIds);
+                $activeStruct = $employee->activeSalaryStructure;
+                $employee->has_other_structure = $activeStruct && ($activeStruct->salary_structure_id != $salaryStructure->id);
+                $employee->other_structure_name = $employee->has_other_structure ? ($activeStruct->salaryStructure->name ?? 'Another Structure') : null;
+                return $employee;
+            });
+
+        return view('hr.salary-structure.assign', compact('salaryStructure', 'departments', 'designations', 'employees'));
     }
 
     /**
@@ -49,38 +62,29 @@ class SalaryStructureAssignmentController extends Controller
         }
 
         try {
-            // Restore functionality with safer query
             $query = Employee::with(['department', 'designation', 'activeSalaryStructure.salaryStructure']);
             
             // Apply filters
-            if ($request->filter_type === 'department') {
+            if ($request->filter_type === 'department' && $request->department_id) {
                 $query->where('department_id', $request->department_id);
-            } elseif ($request->filter_type === 'designation') {
+            } elseif ($request->filter_type === 'designation' && $request->designation_id) {
                 $query->where('designation_id', $request->designation_id);
             }
 
             $employees = $query->orderBy('first_name')->get();
 
-            // Add assignment status for this salary structure
             $salaryStructure = SalaryStructure::find($request->salary_structure_id);
             if (!$salaryStructure) {
                 return response()->json(['error' => 'Salary Structure not found (ID: ' . $request->salary_structure_id . ')'], 404);
             }
             
-            // Simplify pluck to avoid potential ambiguity or join issues
-            // Fetch validation of assignment via collection to be safe
-            // Use relations properly
             $assignedEmployeeIds = $salaryStructure->assignedEmployees->pluck('id')->toArray();
 
             $employees = $employees->map(function ($employee) use ($assignedEmployeeIds, $request) {
-                // Check if employee is strictly assigned to THIS structure
                 $employee->is_already_assigned = in_array($employee->id, $assignedEmployeeIds);
-                
-                // Check if has another active structure
                 $activeStruct = $employee->activeSalaryStructure;
-                $employee->has_other_structure = $activeStruct && 
-                                                 $activeStruct->salary_structure_id != $request->salary_structure_id;
-                
+                $employee->has_other_structure = $activeStruct && ($activeStruct->salary_structure_id != $request->salary_structure_id);
+                $employee->other_structure_name = $employee->has_other_structure ? ($activeStruct->salaryStructure->name ?? 'Another Structure') : null;
                 return $employee;
             });
 
@@ -393,14 +397,14 @@ class SalaryStructureAssignmentController extends Controller
                 'salary_type' => $request->salary_type,
                 'base_salary' => $request->base_salary ?? 0,
                 'daily_wages' => $request->daily_wages ?? 0,
-                'use_daily_wages' => $request->has('use_daily_wages') || $request->use_daily_wages == '1',
+                'use_daily_wages' => (bool) ($request->use_daily_wages == '1' || $request->use_daily_wages === true),
                 'commission_percentage' => $request->commission_percentage,
                 'sales_target' => $request->sales_target,
                 'allowances' => $allowances ?: null,
                 'deductions' => $deductions ?: null,
                 'attendance_deduction_policy' => $attendancePolicy, 
                 'leave_salary_per_day' => $request->leave_salary_per_day,
-                'carry_forward_deductions' => $request->has('carry_forward_deductions') || $request->carry_forward_deductions == '1',
+                'carry_forward_deductions' => (bool) ($request->carry_forward_deductions == '1' || $request->carry_forward_deductions === true),
             ]);
 
             // 3. End Current Active Assignment

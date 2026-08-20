@@ -433,20 +433,16 @@
 
                                 if ($isCustomShift) {
                                     $shiftName = 'Custom Timing';
-                                    $shiftTime =
-                                        \Carbon\Carbon::parse($emp->custom_start_time)->format('h:i A') .
-                                        ' - ' .
-                                        \Carbon\Carbon::parse($emp->custom_end_time)->format('h:i A');
                                 } elseif ($emp->shift) {
                                     $shiftName = $emp->shift->name;
-                                    $shiftTime =
-                                        \Carbon\Carbon::parse($emp->shift->start_time)->format('h:i A') .
-                                        ' - ' .
-                                        \Carbon\Carbon::parse($emp->shift->end_time)->format('h:i A');
                                 } else {
-                                    $shiftName = 'Default';
-                                    $shiftTime = '09:00 AM - 05:00 PM';
+                                    $defaultShift = \App\Models\Hr\Shift::getDefault();
+                                    $shiftName = $defaultShift ? $defaultShift->name : 'Default';
                                 }
+                                $shiftTime =
+                                    \Carbon\Carbon::parse($emp->getStartTime())->format('h:i A') .
+                                    ' - ' .
+                                    \Carbon\Carbon::parse($emp->getEndTime())->format('h:i A');
                             @endphp
 
                             <div class="attendance-card {{ $status }}">

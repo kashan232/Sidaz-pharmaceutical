@@ -155,7 +155,16 @@ class Employee extends Model
             return $this->custom_start_time;
         }
 
-        return $this->shift ? $this->shift->start_time : '09:00:00';
+        if ($this->shift && $this->shift->start_time) {
+            return $this->shift->start_time;
+        }
+
+        $defaultShift = Shift::getDefault();
+        if ($defaultShift && $defaultShift->start_time) {
+            return $defaultShift->start_time;
+        }
+
+        return '09:00:00';
     }
 
     /**
@@ -167,7 +176,16 @@ class Employee extends Model
             return $this->custom_end_time;
         }
 
-        return $this->shift ? $this->shift->end_time : '18:00:00';
+        if ($this->shift && $this->shift->end_time) {
+            return $this->shift->end_time;
+        }
+
+        $defaultShift = Shift::getDefault();
+        if ($defaultShift && $defaultShift->end_time) {
+            return $defaultShift->end_time;
+        }
+
+        return '17:00:00';
     }
 
     /**
@@ -175,7 +193,16 @@ class Employee extends Model
      */
     public function getGraceMinutes()
     {
-        return $this->shift ? $this->shift->grace_minutes : 15;
+        if ($this->shift) {
+            return $this->shift->grace_minutes;
+        }
+
+        $defaultShift = Shift::getDefault();
+        if ($defaultShift) {
+            return $defaultShift->grace_minutes;
+        }
+
+        return 15;
     }
 
     /**
