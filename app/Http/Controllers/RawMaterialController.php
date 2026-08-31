@@ -68,6 +68,9 @@ class RawMaterialController extends Controller
         $rawMaterial->status = $request->status;
         $rawMaterial->save();
 
+        $rawMaterial->load('unit');
+        $msg['data'] = $rawMaterial;
+
         return response()->json($msg);
     }
 

@@ -10,6 +10,12 @@ use App\Models\StockMovement;
 use App\Models\Subcategory;
 use App\Models\Unit;
 use App\Models\WarehouseStock;
+use App\Models\RawMaterial;
+use App\Models\PackagingMaterial;
+use App\Models\Formulation;
+use App\Models\FormulationRawMaterial;
+use App\Models\FormulationPackagingMaterial;
+use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -455,11 +461,18 @@ class ProductController extends Controller
     // ===== Create page =====
     public function view_store()
     {
-        $categories = Category::select('id', 'name')->get();
-        $units = Unit::select('id', 'name')->get();
-        $brands = Brand::select('id', 'name')->get();
+        $categories = Category::select('id', 'name')->orderBy('name')->get();
+        $units = Unit::select('id', 'name')->orderBy('name')->get();
+        $brands = Brand::select('id', 'name')->orderBy('name')->get();
+        $rawMaterials = RawMaterial::with('unit')->where(function($q) {
+            $q->where('status', 'active')->orWhere('status', 1)->orWhereNull('status');
+        })->orderBy('name')->get();
+        $packagingMaterials = PackagingMaterial::with('unit')->where(function($q) {
+            $q->where('status', 'active')->orWhere('status', 1)->orWhereNull('status');
+        })->orderBy('name')->get();
+        $departments = Department::select('id', 'name')->orderBy('name')->get();
 
-        return view('admin_panel.product.create', compact('categories', 'units', 'brands'));
+        return view('admin_panel.product.create', compact('categories', 'units', 'brands', 'rawMaterials', 'packagingMaterials', 'departments'));
     }
 
     // ===== Dependent subcategories =====
@@ -778,6 +791,53 @@ class ProductController extends Controller
                     'ref_type' => 'INIT',
                     'note' => 'Initial Stock',
                 ]);
+            }
+
+            // Create Formulation / Composition profile if raw materials or packaging materials provided
+            $hasRm = $request->has('raw_material_id') && is_array($request->raw_material_id) && count(array_filter($request->raw_material_id)) > 0;
+            $hasPm = $request->has('packaging_material_id') && is_array($request->packaging_material_id) && count(array_filter($request->packaging_material_id)) > 0;
+
+            if ($hasRm || $hasPm) {
+                $formulationCode = 'FORM-' . str_pad($product->id, 4, '0', STR_PAD_LEFT);
+                $formulation = Formulation::create([
+                    'formulation_code' => $formulationCode,
+                    'product_id' => $product->id,
+                    'department_id' => $request->department_id ?? null,
+                    'batch_size' => $request->batch_size ?? 1,
+                    'batch_unit_id' => $request->unit ?? null,
+                    'version' => '1.0',
+                    'effective_date' => date('Y-m-d'),
+                    'status' => 'active',
+                    'notes' => 'Composition profile created via Product Wizard',
+                ]);
+
+                if ($hasRm) {
+                    for ($i = 0; $i < count($request->raw_material_id); $i++) {
+                        if (!empty($request->raw_material_id[$i])) {
+                            FormulationRawMaterial::create([
+                                'formulation_id' => $formulation->id,
+                                'raw_material_id' => $request->raw_material_id[$i],
+                                'unit_id' => $request->rm_unit_id[$i] ?? null,
+                                'quantity' => $request->rm_quantity[$i] ?? 0,
+                                'waste_percent' => $request->rm_waste_percent[$i] ?? 0,
+                                'notes' => $request->rm_notes[$i] ?? null,
+                            ]);
+                        }
+                    }
+                }
+
+                if ($hasPm) {
+                    for ($i = 0; $i < count($request->packaging_material_id); $i++) {
+                        if (!empty($request->packaging_material_id[$i])) {
+                            FormulationPackagingMaterial::create([
+                                'formulation_id' => $formulation->id,
+                                'packaging_material_id' => $request->packaging_material_id[$i],
+                                'quantity' => $request->pm_quantity[$i] ?? 0,
+                                'notes' => $request->pm_notes[$i] ?? null,
+                            ]);
+                        }
+                    }
+                }
             }
         });
 

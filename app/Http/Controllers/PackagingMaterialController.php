@@ -72,6 +72,9 @@ class PackagingMaterialController extends Controller
         $packagingMaterial->status = $request->status;
         $packagingMaterial->save();
 
+        $packagingMaterial->load('unit');
+        $msg['data'] = $packagingMaterial;
+
         return response()->json($msg);
     }
 
