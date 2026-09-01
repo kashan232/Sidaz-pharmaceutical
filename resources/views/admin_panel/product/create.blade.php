@@ -325,7 +325,7 @@
                 </div>
 
                 <!-- MAIN FORM CONTAINER -->
-                <form id="productWizardForm" action="{{ route('store-product') }}" method="POST" enctype="multipart/form-data">
+                <form id="productWizardForm" action="{{ route('store-product') }}" method="POST" enctype="multipart/form-data" novalidate>
                     @csrf
                     <input type="hidden" name="size_mode" value="by_pieces">
 
@@ -825,7 +825,7 @@
         // Available Raw Materials Data
         let rawMaterialsData = [
             @foreach($rawMaterials as $rm)
-                { id: {{ $rm->id }}, name: "{{ addslashes($rm->name) }}", code: "{{ $rm->code }}", unit: "{{ $rm->unit->name ?? 'Unit' }}" },
+                { id: {{ $rm->id }}, name: "{{ addslashes($rm->name) }}", code: "{{ $rm->code }}", unit: "{{ $rm->unit->name ?? 'Unit' }}", unit_id: {{ $rm->unit_id ?? 'null' }} },
             @endforeach
         ];
 
@@ -840,24 +840,41 @@
         let rmCounter = 0;
         let pmCounter = 0;
 
+        function showAlert(title, message, icon = 'warning') {
+            if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+                Swal.fire(title, message, icon);
+            } else {
+                alert(title + ': ' + message);
+            }
+        }
+
         function switchStep(step) {
             if (step > currentWizardStep) {
                 // Validate current step before proceeding forward
                 if (currentWizardStep === 1) {
-                    if (!$('#product_name').val().trim()) {
-                        Swal.fire('Required Field', 'Please enter the Product Name before proceeding.', 'warning');
+                    const name = $('#product_name').val() ? $('#product_name').val().trim() : '';
+                    const unit = $('#product_unit').val();
+                    const category = $('#category_id').val();
+                    const price = $('#sale_price_per_box').val();
+
+                    if (!name) {
+                        showAlert('Required Field', 'Please enter the Product Name before proceeding.', 'warning');
+                        $('#product_name').focus();
                         return;
                     }
-                    if (!$('#product_unit').val()) {
-                        Swal.fire('Required Field', 'Please select a Base Unit (UOM).', 'warning');
+                    if (!unit) {
+                        showAlert('Required Field', 'Please select a Base Unit (UOM).', 'warning');
+                        $('#product_unit').focus();
                         return;
                     }
-                    if (!$('#category_id').val()) {
-                        Swal.fire('Required Field', 'Please select a Product Category.', 'warning');
+                    if (!category) {
+                        showAlert('Required Field', 'Please select a Product Category.', 'warning');
+                        $('#category_id').focus();
                         return;
                     }
-                    if (!$('#sale_price_per_box').val()) {
-                        Swal.fire('Required Field', 'Please enter Sale Price per unit.', 'warning');
+                    if (price === '' || price === null || price === undefined) {
+                        showAlert('Required Field', 'Please enter Sale Price per unit.', 'warning');
+                        $('#sale_price_per_box').focus();
                         return;
                     }
                 }
@@ -910,7 +927,7 @@
         function getRmOptionsHtml() {
             let optionsHtml = '<option value="">-- Search & Choose Raw Material --</option>';
             rawMaterialsData.forEach(rm => {
-                optionsHtml += `<option value="${rm.id}" data-unit="${rm.unit}">${rm.name} (${rm.code})</option>`;
+                optionsHtml += `<option value="${rm.id}" data-unit="${rm.unit}" data-unit-id="${rm.unit_id || ''}">${rm.name} (${rm.code})</option>`;
             });
             return optionsHtml;
         }
@@ -925,17 +942,18 @@
                     <div class="row g-2 align-items-center">
                         <div class="col-md-4">
                             <label class="form-label-pro" style="font-size: 0.68rem;">Raw Material / Ingredient</label>
-                            <select name="raw_material_id[]" class="form-select-pro rm-select select2-rm" required>
+                            <select name="raw_material_id[]" class="form-select-pro rm-select select2-rm">
                                 ${optionsHtml}
                             </select>
                         </div>
                         <div class="col-md-2">
                             <label class="form-label-pro" style="font-size: 0.68rem;">Qty / 1 Unit</label>
-                            <input type="number" step="0.0001" name="rm_quantity[]" class="form-control-pro font-weight-bold rm-qty" placeholder="0.00" required>
+                            <input type="number" step="0.0001" name="rm_quantity[]" class="form-control-pro font-weight-bold rm-qty" placeholder="0.00">
                         </div>
                         <div class="col-md-2">
                             <label class="form-label-pro" style="font-size: 0.68rem;">Unit</label>
-                            <input type="text" name="rm_unit_id[]" class="form-control-pro rm-unit-label" placeholder="mL / mg / Ltr" readonly style="background: #eef2ff; font-weight: 600;">
+                            <input type="hidden" name="rm_unit_id[]" class="rm-unit-id-val">
+                            <input type="text" class="form-control-pro rm-unit-label" placeholder="mL / mg / Ltr" readonly style="background: #eef2ff; font-weight: 600;">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label-pro" style="font-size: 0.68rem;">Mixing Notes / Stage</label>
@@ -1003,7 +1021,10 @@
         function updateRmUnit(selectEl) {
             const selectedOpt = $(selectEl).find('option:selected');
             const unitName = selectedOpt.data('unit') || 'Unit';
-            $(selectEl).closest('.comp-item-row').find('.rm-unit-label').val(unitName);
+            const unitId = selectedOpt.data('unit-id') || '';
+            const $row = $(selectEl).closest('.comp-item-row');
+            $row.find('.rm-unit-label').val(unitName);
+            $row.find('.rm-unit-id-val').val(unitId);
         }
 
         // Generate Options HTML for Packaging Material Selects
@@ -1025,13 +1046,13 @@
                     <div class="row g-2 align-items-center">
                         <div class="col-md-5">
                             <label class="form-label-pro" style="font-size: 0.68rem;">Packaging Material Item</label>
-                            <select name="packaging_material_id[]" class="form-select-pro pm-select select2-pm" required>
+                            <select name="packaging_material_id[]" class="form-select-pro pm-select select2-pm">
                                 ${optionsHtml}
                             </select>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label-pro" style="font-size: 0.68rem;">Qty Needed Per Unit</label>
-                            <input type="number" step="0.01" name="pm_quantity[]" class="form-control-pro font-weight-bold pm-qty" placeholder="1.00" value="1" required>
+                            <input type="number" step="0.01" name="pm_quantity[]" class="form-control-pro font-weight-bold pm-qty" placeholder="1.00" value="1">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label-pro" style="font-size: 0.68rem;">Notes</label>
@@ -1301,22 +1322,44 @@
         }
 
         // Subcategory Dependent Dropdown
-        $('#category_id').on('change', function() {
-            const categoryId = $(this).val();
+        function fetchSubcategories(categoryId) {
             const subCategorySelect = $('#sub_category_id');
             subCategorySelect.html('<option value="">-- Select Subcategory --</option>');
 
             if (categoryId) {
                 $.ajax({
-                    url: '/get-subcategories/' + categoryId,
+                    url: "{{ url('/get-subcategories') }}/" + categoryId,
                     type: 'GET',
+                    dataType: 'json',
                     success: function(data) {
-                        data.forEach(sub => {
-                            subCategorySelect.append(`<option value="${sub.id}">${sub.name}</option>`);
-                        });
+                        subCategorySelect.empty();
+                        subCategorySelect.append('<option value="">-- Select Subcategory --</option>');
+                        if (Array.isArray(data) && data.length > 0) {
+                            data.forEach(sub => {
+                                subCategorySelect.append(`<option value="${sub.id}">${sub.name}</option>`);
+                            });
+                        } else {
+                            subCategorySelect.html('<option value="">-- No Subcategories Available --</option>');
+                        }
+                        if ($.fn.select2 && subCategorySelect.hasClass('select2-hidden-accessible')) {
+                            subCategorySelect.trigger('change.select2');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Failed to fetch subcategories:', error);
                     }
                 });
+            } else {
+                if ($.fn.select2 && subCategorySelect.hasClass('select2-hidden-accessible')) {
+                    subCategorySelect.trigger('change.select2');
+                }
             }
+        }
+
+        // Global Event Delegation for Category Change
+        $(document).on('change select2:select', '#category_id', function() {
+            const catId = $(this).val();
+            fetchSubcategories(catId);
         });
 
         $(document).ready(function() {
@@ -1330,6 +1373,81 @@
             // Add initial rows
             addRawMaterialRow();
             addPackagingRow();
+
+            // Auto-fetch subcategories if category is pre-selected
+            if ($('#category_id').val()) {
+                fetchSubcategories($('#category_id').val());
+            }
+
+            // Fast AJAX Zero-Refresh Form Submission with Instant Visual Feedback
+            $('#productWizardForm').on('submit', function(e) {
+                e.preventDefault();
+
+                // 1. Remove blank rows
+                $('.rm-row').each(function() {
+                    if (!$(this).find('.rm-select').val()) $(this).remove();
+                });
+                $('.pm-row').each(function() {
+                    if (!$(this).find('.pm-select').val()) $(this).remove();
+                });
+
+                // 2. Instant visual UI feedback
+                const submitBtn = $('#btn_submit_final');
+                submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-2"></i> Saving Product Profile...');
+
+                const formData = new FormData(this);
+
+                $.ajax({
+                    url: $(this).attr('action'),
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function(res) {
+                        if (res.status === 'error') {
+                            submitBtn.prop('disabled', false).html('<i class="fa fa-check-circle me-1"></i> Finalize & Save Product Profile');
+                            let errMsg = res.errors ? Object.values(res.errors).flat().join('<br>') : (res.message || 'Validation failed');
+                            showAlert('Validation Error', errMsg, 'error');
+                            return;
+                        }
+
+                        if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Product Saved Successfully!',
+                                text: 'Product profile and composition recipe created in database.',
+                                showCancelButton: true,
+                                confirmButtonText: 'Go to Products List',
+                                cancelButtonText: '+ Create Another',
+                                confirmButtonColor: '#10b981',
+                                cancelButtonColor: '#3b82f6'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = "{{ route('product') }}";
+                                } else {
+                                    window.location.reload();
+                                }
+                            });
+                        } else {
+                            alert('Product Saved Successfully!');
+                            window.location.href = "{{ route('product') }}";
+                        }
+                    },
+                    error: function(xhr) {
+                        submitBtn.prop('disabled', false).html('<i class="fa fa-check-circle me-1"></i> Finalize & Save Product Profile');
+                        let errMsg = 'Failed to save product profile. Please check inputs.';
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            errMsg = Object.values(xhr.responseJSON.errors).flat().join('<br>');
+                        } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errMsg = xhr.responseJSON.message;
+                        }
+                        showAlert('Save Error', errMsg, 'error');
+                    }
+                });
+            });
         });
     </script>
 @endsection

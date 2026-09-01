@@ -524,7 +524,7 @@ class ProductController extends Controller
         // 1. Validate
         $validation = $this->validateProductRequest($request);
         if ($validation->fails()) {
-            if ($request->wantsJson()) {
+            if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['status' => 'error', 'errors' => $validation->errors()], 422);
             }
 
@@ -620,9 +620,9 @@ class ProductController extends Controller
 
         $userId = Auth::id();
 
-        // Auto item_code
-        $lastProduct = Product::orderBy('id', 'desc')->first();
-        $nextCode = $lastProduct ? ('ITEM-'.str_pad($lastProduct->id + 1, 4, '0', STR_PAD_LEFT)) : 'ITEM-0001';
+        // Fast Auto item_code using max ID
+        $maxId = Product::max('id') ?? 0;
+        $nextCode = 'ITEM-' . str_pad($maxId + 1, 4, '0', STR_PAD_LEFT);
 
         // Image upload
         if ($request->hasFile('image')) {
@@ -812,12 +812,19 @@ class ProductController extends Controller
                 ]);
 
                 if ($hasRm) {
+                    $rmIds = array_filter($request->raw_material_id);
+                    $rawMats = \App\Models\RawMaterial::whereIn('id', $rmIds)->get()->keyBy('id');
                     for ($i = 0; $i < count($request->raw_material_id); $i++) {
-                        if (!empty($request->raw_material_id[$i])) {
+                        $rmId = $request->raw_material_id[$i] ?? null;
+                        if (!empty($rmId)) {
+                            $rmUnitId = $request->rm_unit_id[$i] ?? null;
+                            if (empty($rmUnitId) || !is_numeric($rmUnitId)) {
+                                $rmUnitId = isset($rawMats[$rmId]) ? $rawMats[$rmId]->unit_id : null;
+                            }
                             FormulationRawMaterial::create([
                                 'formulation_id' => $formulation->id,
-                                'raw_material_id' => $request->raw_material_id[$i],
-                                'unit_id' => $request->rm_unit_id[$i] ?? null,
+                                'raw_material_id' => $rmId,
+                                'unit_id' => $rmUnitId,
                                 'quantity' => $request->rm_quantity[$i] ?? 0,
                                 'waste_percent' => $request->rm_waste_percent[$i] ?? 0,
                                 'notes' => $request->rm_notes[$i] ?? null,
@@ -828,10 +835,11 @@ class ProductController extends Controller
 
                 if ($hasPm) {
                     for ($i = 0; $i < count($request->packaging_material_id); $i++) {
-                        if (!empty($request->packaging_material_id[$i])) {
+                        $pmId = $request->packaging_material_id[$i] ?? null;
+                        if (!empty($pmId)) {
                             FormulationPackagingMaterial::create([
                                 'formulation_id' => $formulation->id,
-                                'packaging_material_id' => $request->packaging_material_id[$i],
+                                'packaging_material_id' => $pmId,
                                 'quantity' => $request->pm_quantity[$i] ?? 0,
                                 'notes' => $request->pm_notes[$i] ?? null,
                             ]);
@@ -841,11 +849,11 @@ class ProductController extends Controller
             }
         });
 
-        if ($request->wantsJson()) {
+        if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['status' => 'success', 'message' => 'Product created successfully']);
         }
 
-        return redirect()->back()->with('success', 'Product created successfully');
+        return redirect()->route('product')->with('success', 'Product created successfully');
     }
 
     /*
@@ -1300,7 +1308,7 @@ class ProductController extends Controller
             'product_name' => 'required|string|max:255',
             'category_id' => 'required',
             'sub_category_id' => 'nullable',
-            'brand_id' => 'required',
+            'brand_id' => 'nullable',
             'unit' => 'nullable',
             'model' => 'nullable', // Made nullable
             'size_mode' => 'required|in:by_size,by_cartons,by_pieces,by_kg,by_meter,by_gm',
@@ -1328,13 +1336,13 @@ class ProductController extends Controller
                 'boxes_quantity' => 'required|integer|min:0',
                 'loose_pieces' => 'nullable|integer|min:0',
                 'sale_price_per_box' => 'required|numeric|min:0',
-                'purchase_price_per_piece' => 'required|numeric|min:0',
+                'purchase_price_per_piece' => 'nullable|numeric|min:0',
             ]);
         } else {
             $rules = array_merge($rules, [
-                'piece_quantity' => 'required|integer|min:0', // Allowed 0 stock
+                'piece_quantity' => 'nullable|integer|min:0', // Allowed 0 stock
                 'sale_price_per_box' => 'required|numeric|min:0',
-                'purchase_price_per_piece' => 'required|numeric|min:0',
+                'purchase_price_per_piece' => 'nullable|numeric|min:0',
             ]);
         }
 

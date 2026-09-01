@@ -64,11 +64,17 @@ class FormulationController extends Controller
 
             if ($request->has('raw_material_id')) {
                 for ($i = 0; $i < count($request->raw_material_id); $i++) {
-                    if ($request->raw_material_id[$i]) {
+                    $rmId = $request->raw_material_id[$i] ?? null;
+                    if (!empty($rmId)) {
+                        $rmUnitId = $request->rm_unit_id[$i] ?? null;
+                        if (empty($rmUnitId) || !is_numeric($rmUnitId)) {
+                            $rmObj = RawMaterial::find($rmId);
+                            $rmUnitId = $rmObj ? $rmObj->unit_id : null;
+                        }
                         FormulationRawMaterial::create([
                             'formulation_id' => $formulation->id,
-                            'raw_material_id' => $request->raw_material_id[$i],
-                            'unit_id' => $request->rm_unit_id[$i] ?? null,
+                            'raw_material_id' => $rmId,
+                            'unit_id' => $rmUnitId,
                             'quantity' => $request->rm_quantity[$i] ?? 0,
                             'waste_percent' => $request->rm_waste_percent[$i] ?? 0,
                             'notes' => $request->rm_notes[$i] ?? null,
@@ -154,11 +160,17 @@ class FormulationController extends Controller
 
             if ($request->has('raw_material_id')) {
                 for ($i = 0; $i < count($request->raw_material_id); $i++) {
-                    if ($request->raw_material_id[$i]) {
+                    $rmId = $request->raw_material_id[$i] ?? null;
+                    if (!empty($rmId)) {
+                        $rmUnitId = $request->rm_unit_id[$i] ?? null;
+                        if (empty($rmUnitId) || !is_numeric($rmUnitId)) {
+                            $rmObj = RawMaterial::find($rmId);
+                            $rmUnitId = $rmObj ? $rmObj->unit_id : null;
+                        }
                         FormulationRawMaterial::create([
                             'formulation_id' => $formulation->id,
-                            'raw_material_id' => $request->raw_material_id[$i],
-                            'unit_id' => $request->rm_unit_id[$i] ?? null,
+                            'raw_material_id' => $rmId,
+                            'unit_id' => $rmUnitId,
                             'quantity' => $request->rm_quantity[$i] ?? 0,
                             'waste_percent' => $request->rm_waste_percent[$i] ?? 0,
                             'notes' => $request->rm_notes[$i] ?? null,
