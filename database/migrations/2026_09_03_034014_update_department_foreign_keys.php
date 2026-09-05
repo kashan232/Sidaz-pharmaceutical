@@ -16,19 +16,40 @@ return new class extends Migration
 
         // 1. Raw Materials
         Schema::table('raw_materials', function (Blueprint $table) {
-            // $table->dropForeign(['department_id']);
+            try {
+                $table->dropForeign(['department_id']);
+            } catch (\Exception $e) {
+                // Ignore if it doesn't exist or already dropped
+            }
+            try {
+                // Try dropping by exact name if the array method failed
+                DB::statement('ALTER TABLE raw_materials DROP FOREIGN KEY raw_materials_department_id_foreign');
+            } catch (\Exception $e) {
+                // Ignore
+            }
+            
             $table->foreign('department_id')->references('id')->on('hr_departments')->onDelete('cascade');
         });
 
         // 2. Packaging Materials
         Schema::table('packaging_materials', function (Blueprint $table) {
-            $table->dropForeign(['department_id']);
+            try {
+                $table->dropForeign(['department_id']);
+            } catch (\Exception $e) { }
+            try {
+                DB::statement('ALTER TABLE packaging_materials DROP FOREIGN KEY packaging_materials_department_id_foreign');
+            } catch (\Exception $e) { }
             $table->foreign('department_id')->references('id')->on('hr_departments')->onDelete('cascade');
         });
 
         // 3. Formulations
         Schema::table('formulations', function (Blueprint $table) {
-            $table->dropForeign(['department_id']);
+            try {
+                $table->dropForeign(['department_id']);
+            } catch (\Exception $e) { }
+            try {
+                DB::statement('ALTER TABLE formulations DROP FOREIGN KEY formulations_department_id_foreign');
+            } catch (\Exception $e) { }
             $table->foreign('department_id')->references('id')->on('hr_departments')->onDelete('cascade');
         });
 
