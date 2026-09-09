@@ -19,7 +19,7 @@
                         </button>
                         @can('hr.biometric.devices.create')
                             <button type="button" class="btn btn-create" id="addDeviceBtn" data-toggle="modal"
-                                data-target="#deviceModal">
+                                data-target="#deviceModal" data-bs-toggle="modal" data-bs-target="#deviceModal">
                                 <i class="fa fa-plus"></i> Add Device
                             </button>
                         @endcan
@@ -173,7 +173,9 @@
                                                 data-id="{{ $device->id }}" data-name="{{ $device->name }}"
                                                 data-ip="{{ $device->ip_address }}" data-port="{{ $device->port }}"
                                                 data-username="{{ $device->username }}" data-model="{{ $device->model }}"
-                                                data-notes="{{ $device->notes }}" data-active="{{ $device->is_active }}">
+                                                data-notes="{{ $device->notes }}" data-active="{{ $device->is_active }}"
+                                                data-toggle="modal" data-target="#deviceModal"
+                                                data-bs-toggle="modal" data-bs-target="#deviceModal">
                                                 <i class="fa fa-edit"></i> Edit
                                             </button>
                                         @endcan
@@ -195,7 +197,8 @@
                                     <p class="mt-3 text-muted">No biometric devices configured yet.</p>
                                     @can('hr.biometric.devices.create')
                                         <button type="button" class="btn btn-primary mt-2" id="addDeviceBtnEmpty"
-                                            data-toggle="modal" data-target="#deviceModal">
+                                            data-toggle="modal" data-target="#deviceModal"
+                                            data-bs-toggle="modal" data-bs-target="#deviceModal">
                                             <i class="fa fa-plus"></i> Add Your First Device
                                         </button>
                                     @endcan
@@ -319,32 +322,110 @@
                 });
             });
 
+            // Modal Helpers with full BS4/BS5/Vanilla fallbacks
+            function showDeviceModal() {
+                const modalEl = document.getElementById('deviceModal');
+                if (!modalEl) return;
+
+                // 1. Try jQuery Bootstrap Modal (BS4)
+                if (window.jQuery && typeof window.jQuery(modalEl).modal === 'function') {
+                    try {
+                        window.jQuery(modalEl).modal('show');
+                        return;
+                    } catch (e) {
+                        console.warn('jQuery modal show failed, attempting fallback:', e);
+                    }
+                }
+
+                // 2. Try Bootstrap 5 Modal
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    try {
+                        let modalInstance = bootstrap.Modal.getInstance ? bootstrap.Modal.getInstance(modalEl) : null;
+                        if (!modalInstance) {
+                            modalInstance = new bootstrap.Modal(modalEl);
+                        }
+                        modalInstance.show();
+                        return;
+                    } catch (e) {
+                        console.warn('Bootstrap 5 Modal show failed, attempting fallback:', e);
+                    }
+                }
+
+                // 3. Fallback: manual CSS display
+                modalEl.classList.add('show');
+                modalEl.style.display = 'block';
+                modalEl.removeAttribute('aria-hidden');
+                modalEl.setAttribute('aria-modal', 'true');
+                document.body.classList.add('modal-open');
+                if (!document.querySelector('.modal-backdrop')) {
+                    const backdrop = document.createElement('div');
+                    backdrop.className = 'modal-backdrop fade show';
+                    document.body.appendChild(backdrop);
+                }
+            }
+
+            function hideDeviceModal() {
+                const modalEl = document.getElementById('deviceModal');
+                if (!modalEl) return;
+
+                if (window.jQuery && typeof window.jQuery(modalEl).modal === 'function') {
+                    try {
+                        window.jQuery(modalEl).modal('hide');
+                    } catch (e) {}
+                }
+
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    try {
+                        let modalInstance = bootstrap.Modal.getInstance ? bootstrap.Modal.getInstance(modalEl) : null;
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                    } catch (e) {}
+                }
+
+                modalEl.classList.remove('show');
+                modalEl.style.display = 'none';
+                modalEl.setAttribute('aria-hidden', 'true');
+                modalEl.removeAttribute('aria-modal');
+                document.body.classList.remove('modal-open');
+                document.querySelectorAll('.modal-backdrop').forEach(function(b) {
+                    b.remove();
+                });
+            }
+
+            // Close modal on dismiss buttons
+            $(document).on('click', '#deviceModal [data-dismiss="modal"], #deviceModal [data-bs-dismiss="modal"]', function() {
+                hideDeviceModal();
+            });
+
             // Open Add Modal
-            $(document).on('click', '#addDeviceBtn, #addDeviceBtnEmpty', function(e) {
-                e.preventDefault();
+            $(document).on('click', '#addDeviceBtn, #addDeviceBtnEmpty', function() {
                 $('#device_id').val('');
                 $('#_method').val('POST');
-                $('#deviceForm')[0].reset();
+                const form = document.getElementById('deviceForm');
+                if (form) {
+                    form.reset();
+                }
                 $('#device_active').prop('checked', true);
                 $('#modalTitle').text('Add Device');
-                $('#deviceModal').modal('show');
+                showDeviceModal();
             });
 
             // Open Edit Modal
-            $(document).on('click', '.edit-device-btn', function(e) {
-                e.preventDefault();
+            $(document).on('click', '.edit-device-btn', function() {
                 const id = $(this).data('id');
                 $('#device_id').val(id);
                 $('#_method').val('PUT');
                 $('#device_name').val($(this).data('name'));
                 $('#device_ip').val($(this).data('ip'));
                 $('#device_port').val($(this).data('port'));
-                $('#device_username').val($(this).data('username'));
-                $('#device_model').val($(this).data('model'));
-                $('#device_notes').val($(this).data('notes'));
+                $('#device_username').val($(this).data('username') || '');
+                $('#device_password').val('');
+                $('#device_model').val($(this).data('model') || '');
+                $('#device_notes').val($(this).data('notes') || '');
                 $('#device_active').prop('checked', $(this).data('active') == 1);
                 $('#modalTitle').text('Edit Device');
-                $('#deviceModal').modal('show');
+                showDeviceModal();
             });
 
             // Submit Form
@@ -355,7 +436,7 @@
                 submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Saving...');
 
                 const deviceId = $('#device_id').val();
-                const method = $('#_method').val();
+                const method = $('#_method').val() || 'POST';
                 const url = deviceId ?
                     `{{ url('hr/biometric-devices') }}/${deviceId}` :
                     '{{ route('hr.biometric-devices.store') }}';
@@ -372,7 +453,7 @@
                         'X-HTTP-Method-Override': method
                     },
                     success: function(response) {
-                        $('#deviceModal').modal('hide');
+                        hideDeviceModal();
                         Swal.fire(
                             response.warning ? 'Notice' : 'Success!',
                             response.message,
