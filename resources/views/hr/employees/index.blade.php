@@ -7,35 +7,6 @@
     @include('hr.partials.hr-styles')
 
     <style>
-        /* Off Day Pill Styles */
-        .emp-off-day-pill {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 46px;
-            height: 38px;
-            border: 2px solid #e5e7eb;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 0.76rem;
-            font-weight: 700;
-            color: #6b7280;
-            background: #f9fafb;
-            transition: all 0.18s ease;
-            user-select: none;
-        }
-        .emp-off-day-pill:hover {
-            border-color: #ef4444;
-            background: #fff1f2;
-            color: #dc2626;
-        }
-        .emp-off-day-pill.active {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            border-color: #dc2626;
-            color: white;
-            box-shadow: 0 4px 10px rgba(220,38,38,0.3);
-        }
-
         /* Modern Employee Modal Specific Styling */
         #employeeModal .modal-dialog {
             max-width: 860px;
@@ -714,19 +685,6 @@
                                     @if (!empty($emp->face_encoding) && is_array($emp->face_encoding) && count($emp->face_encoding) > 0)
                                         <span class="badge bg-info text-white p-1 mb-1"><i class="fa fa-smile me-1"></i>Face ID</span>
                                     @endif
-
-                                    {{-- Weekly Off Days Badge --}}
-                                    @php
-                                        $empDayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-                                        $empOffDays = $emp->getWeeklyOffDays();
-                                    @endphp
-                                    <span class="badge p-1 mb-1" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; font-size: 0.72rem;">
-                                        <i class="fa fa-moon me-1"></i>Off:
-                                        {{ implode(', ', array_map(fn($d) => $empDayNames[$d] ?? $d, $empOffDays)) }}
-                                        @if(!empty($emp->weekly_off_days))
-                                            <small>(custom)</small>
-                                        @endif
-                                    </span>
                                 </div>
 
                                 <!-- Hidden fields for edit -->
@@ -751,8 +709,6 @@
                                 <input type="hidden" class="doc_cv" value="{{ $emp->getDocument('cv') }}">
                                 <input type="hidden" class="casual_leave_dates"
                                     value="{{ $emp->leaves->pluck('start_date')->map(fn($d) => \Carbon\Carbon::parse($d)->format('Y-m-d'))->implode(', ') }}">
-                                <input type="hidden" class="weekly_off_days"
-                                    value="{{ json_encode(is_array($emp->weekly_off_days) ? $emp->weekly_off_days : []) }}">
                             </div>
                         @empty
                             <div class="empty-state" style="grid-column: 1/-1;">
@@ -990,63 +946,6 @@
                                                 <input type="time" name="custom_end_time" id="custom_end_time" class="form-control">
                                                 <small class="text-muted">End of working hours</small>
                                             </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Section 3.5: Weekly Off Days (Per-Employee Override) -->
-                        <div class="form-section-banner">
-                            <i class="fa fa-moon"></i>
-                            <span>3.5 Weekly Off Days</span>
-                        </div>
-                        <div class="form-card-box">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <div class="form-group-modern">
-                                        <label class="form-label">
-                                            <i class="fa fa-moon"></i> Weekly Off Days
-                                            <small class="text-muted">(Override shift's default off days for this employee)</small>
-                                        </label>
-                                        <div class="d-flex align-items-center gap-2 mb-2">
-                                            <div class="form-check form-switch">
-                                                <input type="checkbox" id="enable_emp_off_override" class="form-check-input">
-                                                <label class="form-check-label" for="enable_emp_off_override">
-                                                    <small class="fw-bold">Custom off days for this employee</small>
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div id="emp_off_days_container" style="display: none;">
-                                            <div class="d-flex flex-wrap gap-2 mt-2">
-                                                @php
-                                                    $empWeekDays = [
-                                                        0 => 'Sunday',
-                                                        1 => 'Monday',
-                                                        2 => 'Tuesday',
-                                                        3 => 'Wednesday',
-                                                        4 => 'Thursday',
-                                                        5 => 'Friday',
-                                                        6 => 'Saturday',
-                                                    ];
-                                                @endphp
-                                                @foreach($empWeekDays as $num => $dayLabel)
-                                                    <label class="emp-off-day-pill" for="emp_off_day_{{ $num }}" title="{{ $dayLabel }}">
-                                                        <input type="checkbox" name="employee_weekly_off_days[]" id="emp_off_day_{{ $num }}" value="{{ $num }}" class="emp-off-day-cb" hidden>
-                                                        <span>{{ substr($dayLabel, 0, 3) }}</span>
-                                                    </label>
-                                                @endforeach
-                                            </div>
-                                            <small class="text-muted d-block mt-2">
-                                                <i class="fa fa-info-circle me-1 text-primary"></i>
-                                                Selected days override the shift's weekly off days. If disabled, the employee uses the shift's default off days.
-                                            </small>
-                                        </div>
-                                        <div id="emp_off_days_info" class="mt-1">
-                                            <small class="text-muted">
-                                                <i class="fa fa-info-circle me-1"></i>
-                                                Currently using shift's default off days. Enable toggle above to set custom off days.
-                                            </small>
                                         </div>
                                     </div>
                                 </div>
@@ -1318,13 +1217,6 @@
                 $('#shift_id').val($('#shift_id option:first').val());
                 $('#link_degree, #link_certificate, #link_hsc_marksheet, #link_ssc_marksheet, #link_cv').html('');
 
-                // Reset Weekly Off Days
-                $('#enable_emp_off_override').prop('checked', false);
-                $('#emp_off_days_container').hide();
-                $('#emp_off_days_info').show();
-                $('.emp-off-day-pill').removeClass('active');
-                $('.emp-off-day-cb').prop('checked', false);
-
                 $('#modalIcon').html('<i class="fa fa-user-plus"></i>');
                 $('#modalLabel').text('Add Employee');
                 $('#modalSubLabel').text('Configure organization credentials, job roles & details');
@@ -1410,27 +1302,6 @@
                     } else {
                         casualLeavePicker.clear();
                     }
-                }
-
-                // Load Weekly Off Days Override
-                var empOffDays = card.find('.weekly_off_days').val() || '[]';
-                try { empOffDays = JSON.parse(empOffDays); } catch(e) { empOffDays = []; }
-                if (empOffDays && empOffDays.length > 0) {
-                    $('#enable_emp_off_override').prop('checked', true);
-                    $('#emp_off_days_container').show();
-                    $('#emp_off_days_info').hide();
-                    $('.emp-off-day-cb').each(function() {
-                        var val = parseInt($(this).val());
-                        var isOff = empOffDays.indexOf(val) !== -1;
-                        $(this).prop('checked', isOff);
-                        $(this).closest('.emp-off-day-pill').toggleClass('active', isOff);
-                    });
-                } else {
-                    $('#enable_emp_off_override').prop('checked', false);
-                    $('#emp_off_days_container').hide();
-                    $('#emp_off_days_info').show();
-                    $('.emp-off-day-pill').removeClass('active');
-                    $('.emp-off-day-cb').prop('checked', false);
                 }
 
                 $('#modalIcon').html('<i class="fa fa-user-edit"></i>');
@@ -1673,29 +1544,6 @@
                 setFaceStatus('reset');
                 $('#face_status').empty();
                 $('#btn-capture-face').prop('disabled', true).html('<i class="fa fa-camera me-1"></i> Capture & Save Face ID');
-            });
-
-            // ── Weekly Off Days Toggle & Pill Interactions ──
-            $('#enable_emp_off_override').on('change', function() {
-                if ($(this).is(':checked')) {
-                    $('#emp_off_days_container').slideDown(200);
-                    $('#emp_off_days_info').slideUp(200);
-                } else {
-                    $('#emp_off_days_container').slideUp(200);
-                    $('#emp_off_days_info').slideDown(200);
-                    // Uncheck all pills when disabled
-                    $('.emp-off-day-pill').removeClass('active');
-                    $('.emp-off-day-cb').prop('checked', false);
-                }
-            });
-
-            // Pill toggle (toggle active state on click)
-            $(document).on('click', '.emp-off-day-pill', function(e) {
-                e.preventDefault();
-                var cb = $(this).find('.emp-off-day-cb');
-                var isChecked = !cb.prop('checked');
-                cb.prop('checked', isChecked);
-                $(this).toggleClass('active', isChecked);
             });
         });
     </script>
