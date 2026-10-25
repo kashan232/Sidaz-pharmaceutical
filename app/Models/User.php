@@ -61,6 +61,13 @@ class User extends Authenticatable
      */
     public function isEmployeeActive()
     {
+        // Super Admin or Admin users should never be deactivated from system login
+        try {
+            if ($this->hasAnyRole(['Super Admin', 'Admin'])) {
+                return true;
+            }
+        } catch (\Throwable $e) {}
+
         $employee = $this->employee;
 
         // If no employee profile, user can login (admin users, etc.)
